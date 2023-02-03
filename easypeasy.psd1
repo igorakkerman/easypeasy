@@ -71,7 +71,12 @@ FunctionsToExport = @(
     'Set-EnvironmentVariable',
     'Set-UserEnvironmentVariable'
     'Remove-EnvironmentVariable',
-    'Remove-UserEnvironmentVariable'
+    'Remove-UserEnvironmentVariable',
+    'Set-ShortcutRunAsAdministrator',
+    'New-StartMenuShortcut',
+    'New-PowershellStartMenuShortcut',
+    'Get-StartMenuProgramsPath',
+    'New-StartMenuProgramsFolder'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
