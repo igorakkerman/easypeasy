@@ -64,7 +64,8 @@ Copyright = '(c) Igor Akkerman. All rights reserved.'
 FunctionsToExport = @(
     'Get-Timestamp',
     'Get-MyDocumentsFolder',
-    'Stop-Explorer'
+    'Stop-Explorer',
+    'Add-SystemPathLocation'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
