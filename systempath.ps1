@@ -1,3 +1,5 @@
+. "$PSScriptRoot\environment.ps1"
+
 function Add-SystemPathLocation {
   [CmdletBinding()]
   param (
@@ -5,7 +7,7 @@ function Add-SystemPathLocation {
     [string]$Folder
   )
   
-  $oldPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+  $oldPath = Get-EnvironmentVariable -Name "Path"
   
   $oldFolders = $oldPath -split ';'
   
@@ -19,5 +21,5 @@ function Add-SystemPathLocation {
 
   $newPath = "$oldPathWithoutSemicolon;$Folder"
 
-  [Environment]::SetEnvironmentVariable("Path", $newPath, "Machine")
+  Set-EnvironmentVariable -Name "Path" -Value $newPath
 }

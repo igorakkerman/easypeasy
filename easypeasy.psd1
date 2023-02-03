@@ -65,7 +65,13 @@ FunctionsToExport = @(
     'Get-Timestamp',
     'Get-MyDocumentsFolder',
     'Stop-Explorer',
-    'Add-SystemPathLocation'
+    'Add-SystemPathLocation',
+    'Get-EnvironmentVariable',
+    'Get-UserEnvironmentVariable',
+    'Set-EnvironmentVariable',
+    'Set-UserEnvironmentVariable'
+    'Remove-EnvironmentVariable',
+    'Remove-UserEnvironmentVariable'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
