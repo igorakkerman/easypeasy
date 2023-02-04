@@ -65,7 +65,13 @@ FunctionsToExport = @(
     'Get-Timestamp',
     'Get-MyDocumentsFolder',
     'Stop-Explorer',
+    'Get-SystemPath',
+    'Get-UserSystemPath',
     'Add-SystemPathLocation',
+    'Add-UserSystemPathLocation',
+    'Remove-SystemPathLocation',
+    'Remove-UserSystemPathLocation',
+    'Backup-SystemPath',
     'Get-EnvironmentVariable',
     'Get-UserEnvironmentVariable',
     'Set-EnvironmentVariable',
@@ -89,7 +95,9 @@ CmdletsToExport = @()
 AliasesToExport = @(
     'docs',
     'sx',
-    'time'
+    'time',
+    'path',
+    'userpath'
 )
 
 # DSC resources to export from this module
