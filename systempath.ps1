@@ -1,4 +1,5 @@
 . "$PSScriptRoot\environment.ps1"
+. "$PSScriptRoot\timestamp.ps1"
 
 function Add-SystemPathLocation {
   [CmdletBinding()]
@@ -7,6 +8,8 @@ function Add-SystemPathLocation {
     [string]$Folder
   )
   
+  $env:PATH > "$env:TEMP\PATH-$(Get-Timestamp).txt"
+
   $oldPath = Get-EnvironmentVariable -Name "Path"
   
   $oldFolders = $oldPath -split ';'
