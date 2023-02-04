@@ -1,6 +1,3 @@
-. "$PSScriptRoot\environment.ps1"
-. "$PSScriptRoot\timestamp.ps1"
-
 function Add-SystemPathLocation {
   [CmdletBinding()]
   param (
