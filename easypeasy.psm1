@@ -4,3 +4,4 @@
 . "$PSScriptRoot\specialfolder.ps1"
 . "$PSScriptRoot\startmenu.ps1"
 . "$PSScriptRoot\systempath.ps1"
+. "$PSScriptRoot\shortcut.ps1"
