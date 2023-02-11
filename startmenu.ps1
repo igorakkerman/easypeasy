@@ -1,3 +1,5 @@
+. "$PSScriptRoot\shortcut.ps1"
+
 $wshShell = New-Object -ComObject WScript.Shell
 $allUsersProgramsPath = $wshShell.SpecialFolders("AllUsersPrograms")
 
@@ -48,17 +50,52 @@ function New-PowershellStartMenuShortcut {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
+        [Alias("Script")]
         [string] $Command,
 
         [Parameter(Mandatory = $true)]
-        [string] $AppName
+        [Alias("App")]
+        [string] $AppName,
+
+        [Parameter(Mandatory = $false)]
+        [Alias("FolderName", "Folder")]
+        [string] $GroupName,
+
+        [Parameter(Mandatory = $false)]
+        [Alias("Administrator", "Admin", "Elevate")]
+        [switch] $RunAsAdministrator = $false,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $Visible = $false,
+
+        [Parameter(Mandatory = $false)]
+        [Alias("NoExit")]
+        [switch] $KeepOpen = $false
     )
 
-    $shortcutFolder = New-StartMenuProgramsFolder -AppName $AppName
+    $shortcutFolder = if ($GroupName -ne "") {
+        New-StartMenuProgramsFolder -AppName $GroupName
+    }
+    else {
+        Get-StartMenuProgramsPath
+    }
+
+    $arguments = @()
+    if ($KeepOpen) {
+        $arguments += "-NoExit"
+    }
+    $arguments += "-Command `"$Command`""
+
     $shortcutPath = "$shortcutFolder\$AppName.lnk"
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = "pwsh"
-    $shortcut.Arguments = "-Command `"$Command`""
-    $shortcut.WindowStyle = $windowStyleMinimized
+    $shortcut.Arguments = $arguments -join ' '
+    if (-not $Visible) {
+        $shortcut.WindowStyle = $windowStyleMinimized
+    }
     $shortcut.Save()
+
+    if ($RunAsAdministrator) {
+        Set-ShortcutRunAsAdministrator $shortcutPath
+    }
 }
