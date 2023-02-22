@@ -63,6 +63,7 @@ Copyright = '(c) Igor Akkerman. All rights reserved.'
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
     'Get-Timestamp',
+    'Get-Usage',
     'Get-MyDocumentsFolder',
     'Stop-Explorer',
     'Get-SystemPath',
@@ -97,7 +98,8 @@ AliasesToExport = @(
     'sx',
     'time',
     'path',
-    'userpath'
+    'userpath',
+    'du'
 )
 
 # DSC resources to export from this module
