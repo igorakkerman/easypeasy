@@ -3,6 +3,9 @@
 $wshShell = New-Object -ComObject WScript.Shell
 $allUsersProgramsPath = $wshShell.SpecialFolders("AllUsersPrograms")
 
+# https://www.vbsedit.com/html/a239a3ac-e51c-4e70-859e-d2d8c2eb3135.asp
+# $windowStyleDefault = 1
+# $windowStyleMaximized = 3
 $windowStyleMinimized = 7
 
 function Get-StartMenuProgramsPath {
