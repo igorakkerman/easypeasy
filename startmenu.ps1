@@ -35,7 +35,11 @@ function New-StartMenuShortcut {
         [string] $Executable,
 
         [Parameter(Mandatory = $false)]
-        [string] $Arguments
+        [string] $Arguments,
+
+        [Parameter(Mandatory = $false)]
+        [Alias("Icon")]
+        [string] $IconLocation
     )
 
     # infer the app name
@@ -46,6 +50,9 @@ function New-StartMenuShortcut {
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $Executable
     $shortcut.Arguments = $Arguments
+    If ($IconLocation) {
+        $shortcut.IconLocation = "$IconLocation,0"
+    }
     $shortcut.Save()
 }
 
