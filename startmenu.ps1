@@ -5,7 +5,7 @@ $allUsersProgramsPath = $wshShell.SpecialFolders("AllUsersPrograms")
 
 # https://www.vbsedit.com/html/a239a3ac-e51c-4e70-859e-d2d8c2eb3135.asp
 # $windowStyleDefault = 1
-# $windowStyleMaximized = 3
+$windowStyleMaximized = 3
 $windowStyleMinimized = 7
 
 function Get-StartMenuProgramsPath {
@@ -79,6 +79,9 @@ function New-PowershellStartMenuShortcut {
         [switch] $Visible = $false,
 
         [Parameter(Mandatory = $false)]
+        [switch] $Maximized = $false,
+
+        [Parameter(Mandatory = $false)]
         [Alias("NoExit")]
         [switch] $KeepOpen = $false
     )
@@ -102,6 +105,9 @@ function New-PowershellStartMenuShortcut {
     $shortcut.Arguments = $arguments -join ' '
     if (-not $Visible) {
         $shortcut.WindowStyle = $windowStyleMinimized
+    }
+    if ($Maximized) {
+        $shortcut.WindowStyle = $windowStyleMaximized
     }
     $shortcut.Save()
 
