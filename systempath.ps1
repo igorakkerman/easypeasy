@@ -108,6 +108,8 @@ function Add-SystemPathLocation {
   )
 
   Set-SystemPath -Path (Add-PathLocation -Path (Get-SystemPath) -Folder $Folder -First $First)
+  # enable new location immediately
+  $env:PATH = Add-PathLocation -Path "$env:PATH" -Folder $Folder -First $First 
 }
 
 function Add-UserSystemPathLocation {
@@ -122,6 +124,8 @@ function Add-UserSystemPathLocation {
   )
 
   Set-UserSystemPath -Path (Add-PathLocation -Path (Get-UserSystemPath) -Folder $Folder -First $First)
+  # enable new location immediately
+  $env:PATH = Add-PathLocation -Path "$env:PATH" -Folder $Folder -First $First 
 }
 
 function Remove-SystemPathLocation {
@@ -131,6 +135,8 @@ function Remove-SystemPathLocation {
   )
 
   Set-SystemPath (Remove-PathLocation -Path (Get-SystemPath) -Folder $Folder)
+  # disable new location immediately
+  $env:PATH = Remove-PathLocation -Path "$env:PATH" -Folder $Folder 
 }
 
 function Remove-UserSystemPathLocation {
@@ -140,4 +146,6 @@ function Remove-UserSystemPathLocation {
   )
 
   Set-UserSystemPath(Remove-PathLocation -Path (Get-UserSystemPath) -Folder $Folder)
+  # disable new location immediately
+  $env:PATH = Remove-PathLocation -Path "$env:PATH" -Folder $Folder 
 }
