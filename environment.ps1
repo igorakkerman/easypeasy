@@ -1,65 +1,70 @@
 function Get-EnvironmentVariable() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = "true")]
-        [string] $Name
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string] $Name,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Effective")]
+        [switch] $Effective
     )
 
-    [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::Machine)
-}
-
-function Get-UserEnvironmentVariable() {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = "true")]
-        [string] $Name
-    )
-
-    [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)
+    if ($Machine) {
+        [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::Machine)
+    }
+    elseif ($User) {
+        [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)        
+    }
+    else {
+        (Get-Item env:$Name).Value
+    }
 }
 
 function Set-EnvironmentVariable() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = "true")]
+        [Parameter(Position = 0, Mandatory = $true)]
         [string] $Name,
 
-        [Parameter(Mandatory = "true")]
-        [string] $Value
+        [Parameter(Position = 1, Mandatory = $true)]
+        [string] $Value,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Machine")]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User
     )
 
-    [Environment]::SetEnvironmentVariable($Name, $Value, [System.EnvironmentVariableTarget]::Machine)
-}
-
-function Set-UserEnvironmentVariable() {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = "true")]
-        [string] $Name,
-
-        [Parameter(Mandatory = "true")]
-        [string] $Value
-    )
-
-    [Environment]::SetEnvironmentVariable($Name, $Value, [System.EnvironmentVariableTarget]::User)
+    if ($User) {
+        [Environment]::SetEnvironmentVariable($Name, $Value, [System.EnvironmentVariableTarget]::User)
+    }
+    else {
+        [Environment]::SetEnvironmentVariable($Name, $Value, [System.EnvironmentVariableTarget]::Machine)
+    }
 }
 
 function Remove-EnvironmentVariable() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = "true")]
-        [string] $Name
+        [Parameter(Position = 0, Mandatory = "true")]
+        [string] $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Machine")]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User
     )
-
-    [Environment]::SetEnvironmentVariable($Name, $null, [System.EnvironmentVariableTarget]::Machine)
-}
-
-function Remove-UserEnvironmentVariable() {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = "true")]
-        [string] $Name
-    )
-
-    [Environment]::SetEnvironmentVariable($Name, $null, [System.EnvironmentVariableTarget]::User)
+    if ($User) {
+        [Environment]::SetEnvironmentVariable($Name, $null, [System.EnvironmentVariableTarget]::User)
+    }
+    else {
+        [Environment]::SetEnvironmentVariable($Name, $null, [System.EnvironmentVariableTarget]::Machine)
+    }
 }
