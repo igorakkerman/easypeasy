@@ -7,3 +7,4 @@
 . "$PSScriptRoot\systempath.ps1"
 . "$PSScriptRoot\shortcut.ps1"
 . "$PSScriptRoot\task.ps1"
+. "$PSScriptRoot\theme.ps1"
