@@ -1,3 +1,11 @@
+class SystemPathLocation {
+    [ValidateNotNullOrEmpty()] [string] $Location
+
+    SystemPathLocation($Location) {
+        $this.Location = $Location
+    }
+}
+
 function Backup-SystemPath {
     $env:PATH > "$env:TEMP\PATH-$(Get-Timestamp).txt"
 }
@@ -80,7 +88,8 @@ function Get-SystemPath {
         $path = $env:PATH
     }
 
-    return $Join ? $path : $path -split ";"
+    return $Join ? $path  : 
+        ($path -split ";" | ForEach-Object { [SystemPathLocation]::new($_) }) 
 }
 
 New-Alias -Name path -Value Get-SystemPath
