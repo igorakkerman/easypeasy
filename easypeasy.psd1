@@ -80,7 +80,7 @@
         'New-PowershellStartMenuShortcut',
         'Get-StartMenuProgramsPath',
         'New-StartMenuProgramsFolder',
-        'Register-LogonUserTask',
+        'Register-LogonTask',
         'Set-Theme',
         'Switch-Theme'
     )
@@ -119,7 +119,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags       = @('System', 'Environment', 'Path', 'EnvironmentVariable', 'Shortcut', 'StartMenu', 'LogonUserTask', 'Theme')
+            Tags       = @('System', 'Environment', 'Path', 'EnvironmentVariable', 'Shortcut', 'StartMenu', 'LogonTask', 'Theme')
 
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/igorakkerman/easypeasy/blob/main/LICENSE'

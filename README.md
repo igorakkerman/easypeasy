@@ -101,9 +101,9 @@ Modifies a shortcut to always run as administrator.
 
 ### System startup operations
 
-#### Register-LogonUserTask
+#### Register-LogonTask
 
-Registers a new task to run at user logon.
+Registers a task to run at user logon.
 
 ### Utilities
 

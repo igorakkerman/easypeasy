@@ -1,4 +1,4 @@
-function Register-LogonUserTask {
+function Register-LogonTask {
     [CmdletBinding()]
     Param(
         [string] $Name,
@@ -18,10 +18,10 @@ function Register-LogonUserTask {
 
     <#
    .SYNOPSIS
-        Registers a scheduled task that runs at logon.
+        Registers a task to run at user logon.
 
     .DESCRIPTION
-        Registers a scheduled task that runs at logon.
+        Registers a scheduled task that runs when the user logs in.
 
     .PARAMETER Name
         Name of the task.
@@ -39,7 +39,7 @@ function Register-LogonUserTask {
         If specified, overwrites the task if it already exists.
 
     .EXAMPLE
-        Register-LogonUserTask -Name "MyTask" -Path "\MyFolder" -Executable "C:\MyFolder\MyExecutable.exe" -Argument "MyArgument"
+        Register-LogonTask -Name "MyTask" -Path "\MyFolder" -Executable "C:\MyFolder\MyExecutable.exe" -Argument "MyArgument"
     #>
 }
 
