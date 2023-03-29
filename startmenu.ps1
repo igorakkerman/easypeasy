@@ -9,6 +9,9 @@ $windowStyleMaximized = 3
 $windowStyleMinimized = 7
 
 function Get-StartMenuProgramsPath {
+    [CmdletBinding()]
+    param ()
+    
     return $allUsersProgramsPath
 }
 
