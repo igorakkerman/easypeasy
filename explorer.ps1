@@ -1,4 +1,7 @@
 function Stop-Explorer {
+    [CmdletBinding()]
+    Param()
+
     Stop-Process -ProcessName explorer
 }
 
