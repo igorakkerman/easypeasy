@@ -1,4 +1,7 @@
 function Get-Timestamp {
+    [CmdletBinding()]
+    Param()
+
     Get-Date -Format "yyyy-MM-dd HH.mm.ss"
 }
 
