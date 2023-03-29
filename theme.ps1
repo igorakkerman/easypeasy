@@ -24,6 +24,29 @@ function Set-Theme {
         Import-Module easypeasy
         Stop-Explorer
     }
+
+    <#
+    .SYNOPSIS
+        Sets the Windows theme to either light or dark.
+
+    .DESCRIPTION
+        Sets the Windows theme to either light or dark.
+
+    .PARAMETER Theme
+        The theme to set. Valid values are "light" or "dark".
+
+    .PARAMETER RestartExplorer
+        If specified, Explorer is restarted after setting the theme.
+
+    .EXAMPLE
+        Set-Theme -Theme dark
+
+    .EXAMPLE
+        Set-Theme -Theme dark -RestartExplorer
+
+    .EXAMPLE
+        Set-Theme -Theme light -RestartExplorer
+    #>
 }
 
 function Switch-Theme {
@@ -38,6 +61,26 @@ function Switch-Theme {
         1 { Set-Theme dark -RestartExplorer:$RestartExplorer }
         default { throw "unexpected value in SystemUsesLightTheme '$light'" }
     }
+
+    <#
+    .SYNOPSIS
+        Switches the Windows theme between light and dark.
+
+    .DESCRIPTION
+        Switches the Windows theme from light to dark or dark to light.
+
+    .PARAMETER RestartExplorer
+        If specified, Explorer is restarted after switching the theme.
+
+    .ALIAS
+        theme
+
+    .EXAMPLE
+        Switch-Theme
+
+    .EXAMPLE
+        Switch-Theme -RestartExplorer
+    #>
 }
 
 New-Alias -Name theme -Value Switch-Theme
