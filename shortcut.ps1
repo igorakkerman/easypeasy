@@ -1,6 +1,6 @@
 function Set-ShortcutRunAsAdministrator {
 
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
         [Alias("Path")]
@@ -9,8 +9,11 @@ function Set-ShortcutRunAsAdministrator {
 
     $bytes = [System.IO.File]::ReadAllBytes($ShortcutPath)
     $bytes[0x15] = $bytes[0x15] -bor 0x20 #set byte 21 (0x15) bit 6 (0x20) ON
-    [System.IO.File]::WriteAllBytes($ShortcutPath, $bytes)
-
+    
+    if ($PSCmdlet.ShouldProcess($ShortcutPath, "Set 'Run as administrator' flag")) {
+        [System.IO.File]::WriteAllBytes($ShortcutPath, $bytes)
+    }
+ 
     <#
     .SYNOPSIS
         Modifies a shortcut to run as administrator.
