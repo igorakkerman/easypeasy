@@ -259,13 +259,13 @@ function Add-SystemPathLocation {
         else { @{ Machine = $true } } 
 
     $params = @{
-        Path = Add-PathLocation -Path (Get-SystemPath @context -Join)
+        Path = Add-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -First:$First
     }
     
     Set-SystemPath @context @params
     
     # enable new location immediately
-    $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First $First 
+    $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First:$First 
 
     <#
     .SYNOPSIS
