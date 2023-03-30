@@ -1,7 +1,7 @@
 $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
 
 function Set-Theme {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         [ValidateSet("light", "dark")]
@@ -17,11 +17,13 @@ function Set-Theme {
         default { throw "unexpected theme '$Theme'" }
     }
 
-    Set-ItemProperty $path "SystemUsesLightTheme" $lightTheme
-    Set-ItemProperty $path "AppsUseLightTheme" $lightTheme
+    if ($PSCmdlet.ShouldProcess("Windows theme", "Set value to '$Theme'")) { 
+        Set-ItemProperty $path "SystemUsesLightTheme" $lightTheme
+        Set-ItemProperty $path "AppsUseLightTheme" $lightTheme
 
-    if ($RestartExplorer) {
-        Stop-Explorer
+        if ($RestartExplorer) {
+            Stop-Explorer
+        }
     }
 
     <#
@@ -49,7 +51,7 @@ function Set-Theme {
 }
 
 function Switch-Theme {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $false)]
         [switch] $RestartExplorer = $false
