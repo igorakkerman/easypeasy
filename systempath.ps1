@@ -93,8 +93,8 @@ function local:Remove-PathLocation {
     )
   
     return $Path -split ";" `
-  | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
-  | Join-String -Separator ";"
+    | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
+    | Join-String -Separator ";"
 
     <#
     .SYNOPSIS
