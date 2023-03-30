@@ -18,8 +18,8 @@ function Set-Theme {
     }
 
     if ($PSCmdlet.ShouldProcess("Windows theme", "Set value to '$Theme'")) { 
-        Set-ItemProperty $path "SystemUsesLightTheme" $lightTheme
-        Set-ItemProperty $path "AppsUseLightTheme" $lightTheme
+        Set-ItemProperty -Path $path -Name "SystemUsesLightTheme" -Value $lightTheme
+        Set-ItemProperty -Path $path -Name "AppsUseLightTheme" -Value $lightTheme
 
         if ($RestartExplorer) {
             Stop-Explorer
