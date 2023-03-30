@@ -14,6 +14,7 @@ function Get-EnvironmentVariable() {
         [switch] $Effective
     )
 
+    $value = 
     if ($Machine) {
         [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::Machine)
     }
@@ -21,8 +22,14 @@ function Get-EnvironmentVariable() {
         [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)        
     }
     else {
-        (Get-Item env:$Name).Value
+        (Get-Item env:$Name -ErrorAction SilentlyContinue)?.Value
     }
+
+    if (! $value) {
+        Write-Error "Environment variable '$Name' not found."
+    }
+
+    return $value
 
     <#
     .SYNOPSIS
