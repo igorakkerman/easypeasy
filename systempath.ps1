@@ -48,8 +48,6 @@ function local:Add-PathLocation {
         [bool] $First
     )
 
-    Backup-SystemPath
-
     $oldLocations = $Path -split ";"
   
     foreach ($oldLocation in $oldLocations) {
@@ -94,8 +92,6 @@ function local:Remove-PathLocation {
         [string] $Location
     )
   
-    Backup-SystemPath
-
     return $Path -split ";" `
   | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
   | Join-String -Separator ";"
@@ -203,6 +199,8 @@ function local:Set-SystemPath {
         [switch] $User
     )
 
+    Backup-SystemPath
+
     $context = `
         if ($Machine) { @{ Machine = $true } } `
         elseif ($User) { @{ User = $true } }
@@ -305,7 +303,6 @@ function Remove-SystemPathLocation {
         [Parameter(Mandatory = $true, ParameterSetName = "User")]
         [switch] $User
     )
-                
     $context = `
         if ($User) { @{ User = $true } } `
         else { @{ Machine = $true } } 
