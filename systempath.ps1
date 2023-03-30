@@ -18,10 +18,14 @@ class SystemPathLocation {
 
 function Backup-SystemPath {
     
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param ()
     
-    $env:PATH > "$env:TEMP\PATH-$(Get-Timestamp).txt"
+    $backupFile = "$env:TEMP\PATH-$(Get-Timestamp).txt"
+
+    if ($PSCmdlet.ShouldProcess($backupFile, "Backup system path")) {
+        $env:PATH > $backupFile
+    }
 
     <# 
     .SYNOPSIS
@@ -187,7 +191,7 @@ New-Alias -Name path -Value Get-SystemPath
 
 function local:Set-SystemPath {
 
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
         [string] $Path,
@@ -235,7 +239,7 @@ function local:Set-SystemPath {
 
 function Add-SystemPathLocation {
 
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Position = 0, Mandatory = $true)]
         [Alias("Folder")]
@@ -260,10 +264,12 @@ function Add-SystemPathLocation {
         Path = Add-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -First:$First
     }
     
-    Set-SystemPath @context @params
-    
-    # enable new location immediately
-    $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First:$First 
+    if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
+        Set-SystemPath @context @params
+        
+        # enable new location immediately
+        $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First:$First 
+    }
 
     <#
     .SYNOPSIS
@@ -291,7 +297,7 @@ function Add-SystemPathLocation {
 
 function Remove-SystemPathLocation {
 
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Position = 0, Mandatory = $true)]
         [Alias("Folder")]
@@ -311,9 +317,11 @@ function Remove-SystemPathLocation {
         Path = Remove-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location
     }
 
-    Set-SystemPath @context @params
-    # disable new location immediately
-    $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location 
+    if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
+        Set-SystemPath @context @params
+        # disable new location immediately
+        $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location 
+    }
 
     <#
     .SYNOPSIS
