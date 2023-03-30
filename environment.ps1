@@ -66,7 +66,7 @@ function Get-EnvironmentVariable() {
 }
 
 function Set-EnvironmentVariable() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string] $Name,
@@ -82,10 +82,16 @@ function Set-EnvironmentVariable() {
     )
 
     if ($User) {
-        [Environment]::SetEnvironmentVariable($Name, $Value, [System.EnvironmentVariableTarget]::User)
+        $environment = [System.EnvironmentVariableTarget]::User
+        $envType = "User"
     }
     else {
-        [Environment]::SetEnvironmentVariable($Name, $Value, [System.EnvironmentVariableTarget]::Machine)
+        $environment = [System.EnvironmentVariableTarget]::Machine
+        $envType = "Machine"
+    }
+
+    if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
+        [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
     }
 
     <#
@@ -119,7 +125,7 @@ function Set-EnvironmentVariable() {
 }
 
 function Remove-EnvironmentVariable() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = "true")]
         [string] $Name,
@@ -130,11 +136,18 @@ function Remove-EnvironmentVariable() {
         [Parameter(Mandatory = $true, ParameterSetName = "User")]
         [switch] $User
     )
+
     if ($User) {
-        [Environment]::SetEnvironmentVariable($Name, $null, [System.EnvironmentVariableTarget]::User)
+        $environment = [System.EnvironmentVariableTarget]::User
+        $envType = "User"
     }
     else {
-        [Environment]::SetEnvironmentVariable($Name, $null, [System.EnvironmentVariableTarget]::Machine)
+        $environment = [System.EnvironmentVariableTarget]::Machine
+        $envType = "Machine"
+    }
+
+    if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
+        [Environment]::SetEnvironmentVariable($Name, $null, $environment)
     }
 
     <#
