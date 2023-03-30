@@ -27,15 +27,16 @@ function Get-StartMenuProgramsPath {
 }
 
 function New-StartMenuProgramsFolder {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
         [string] $AppName
     )
 
     $shortcutFolderName = "$allUsersProgramsPath\$AppName"
-    New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
-    
+    if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
+        New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
+    }    
     return $shortcutFolderName
 
     <#
@@ -54,7 +55,7 @@ function New-StartMenuProgramsFolder {
 }
 
 function New-StartMenuShortcut {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $false)]
         [string] $AppName,
@@ -81,7 +82,10 @@ function New-StartMenuShortcut {
     If ($IconLocation) {
         $shortcut.IconLocation = "$IconLocation,0"
     }
-    $shortcut.Save()
+    
+    if ($PSCmdlet.ShouldProcess($shortcutPath, "Create shortcut")) {
+        $shortcut.Save()
+    }
 
     return $shortcutPath
 
@@ -110,7 +114,7 @@ function New-StartMenuShortcut {
 }
 
 function New-PowershellStartMenuShortcut {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
         [Alias("Script")]
@@ -162,7 +166,10 @@ function New-PowershellStartMenuShortcut {
     if ($Maximized) {
         $shortcut.WindowStyle = $windowStyleMaximized
     }
-    $shortcut.Save()
+
+    if ($PSCmdlet.ShouldProcess($shortcutPath, "Create shortcut")) {
+        $shortcut.Save()
+    }
 
     if ($RunAsAdministrator) {
         Set-ShortcutRunAsAdministrator $shortcutPath
