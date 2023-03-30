@@ -21,7 +21,6 @@ function Set-Theme {
     Set-ItemProperty $path "AppsUseLightTheme" $lightTheme
 
     if ($RestartExplorer) {
-        Import-Module easypeasy
         Stop-Explorer
     }
 
