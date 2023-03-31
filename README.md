@@ -1,32 +1,19 @@
 # >_  easy𝓅ea𝓈y
 *Productivity boost for PowerShell*
 
-The *easypeasy* PowerShell module provides a set of utility functions and aliases to simplify and automate common tasks in Windows environments. It includes functions to work with
-- system paths
-- environment variables
-- shortcuts
-- scheduled tasks
-- light and dark themes
+The *easypeasy* PowerShell module provides a set of utility functions and aliases to simplify and automate common tasks in Windows environments:
+- manage locations on the system path
+- manage environment variables
+- create start menu shortcuts
+- create scheduled tasks
+- switch between light and dark themes
+- create timestamps
+- show disk usage
+- verify administrator privileges
 
 ## Functionality
-### Light/Dark Theme operations
 
-#### Switch-Theme
-
-*Alias: `theme`*
-
-Switches between light and dark theme.
-
-#### Set-Theme
-
-Activates the specified theme (light/dark).
-
-### Administrator operations
-
-#### Assert-Administrator
-Verifies that the current user is an administrator.
-
-### System PATH operations
+### Manage locations on the system path
 
 #### Get-SystemPath
 
@@ -36,7 +23,7 @@ Returns the current system PATH locations.
 
 #### Add-SystemPathLocation
 
-Permanently adds a new location to the system PATH for the current user or the local machine.
+Permanently adds a new location to the system PATH.
 
 *Example*:
 ```powershell
@@ -51,24 +38,23 @@ Removes a location from the system PATH.
 
 Backs up the current system PATH environment variable to a file.
 
-### Environment variable operations
+### Manage environment variables
 
 #### Get-EnvironmentVariable
 
 *Alias: `getenv`*
 
-Retrieves the value of the specified environment variable.
+Retrieves the value of an environment variable.
 
 #### Set-EnvironmentVariable
 
 *Alias: `setenv`*
 
-Permanently sets the value of the specified environment variable for the current user or the local machine.
+Permanently sets the value of an environment variable.
 
 ```powershell
-Set-EnvironmentVariable -User -Name "MY_VAR" -Value "my value"
+setenv -User JAVA_HOME "C:\Java\jdk"
 ```
-
 
 #### Remove-EnvironmentVariable
 
@@ -76,11 +62,11 @@ Set-EnvironmentVariable -User -Name "MY_VAR" -Value "my value"
 
 Removes the specified environment variable.
 
-### Start Menu operations
+### Create start menu shortcuts
 
 #### New-StartMenuShortcut
 
-Creates a new shortcut in the Start Menu.
+Creates a shortcut to start an application in the Start Menu.
 
 *Example:*
 ```powershell
@@ -89,25 +75,37 @@ New-StartMenuShortcut -AppName "MyApp" -Executable "C:\Program Files\MyApp\MyApp
 
 #### New-PowershellStartMenuShortcut
 
-Creates a new PowerShell script shortcut in the Start Menu.
-
-#### Get-StartMenuProgramsPath
-
-Returns the path to the Start Menu Programs folder.
+Creates a shortcut to run a PowerShell script in the Start Menu.
 
 #### New-StartMenuProgramsFolder
 
 Creates a new folder in the Start Menu Programs folder.
 
+#### Get-StartMenuProgramsPath
+
+Returns the path to the Start Menu Programs folder.
+
 #### Set-ShortcutRunAsAdministrator
 
 Modifies a shortcut to always run as administrator.
 
-### System startup operations
+### Create scheduled tasks
 
 #### Register-LogonTask
 
 Registers a task to run at user logon.
+
+### Switch between light and dark themes
+
+#### Switch-Theme
+
+*Alias: `theme`*
+
+Switches between light and dark theme.
+
+#### Set-Theme
+
+Activates the specified theme (light/dark).
 
 ### Utilities
 
@@ -116,6 +114,9 @@ Registers a task to run at user logon.
 *Alias: `time`*
 
 Returns the current timestamp in a simple format.
+
+#### Assert-Administrator
+Verifies that the current user is an administrator.
 
 #### Get-Usage
 
