@@ -1,4 +1,5 @@
 . "$PSScriptRoot\timestamp.ps1"
+. "$PSScriptRoot\administrator.ps1"
 . "$PSScriptRoot\volume.ps1"
 . "$PSScriptRoot\environment.ps1"
 . "$PSScriptRoot\explorer.ps1"

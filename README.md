@@ -21,6 +21,10 @@ Switches between light and dark theme.
 
 Activates the specified theme (light/dark).
 
+### Administrator operations
+
+#### Assert-Administrator
+Verifies that the current user is an administrator.
 
 ### System PATH operations
 
