@@ -56,7 +56,7 @@ function local:Add-PathLocation {
   
     foreach ($oldLocation in $oldLocations) {
         if ($oldLocation.TrimEnd("\") -ieq $Location.TrimEnd("\")) {
-            return $Path
+            Write-Error "Path already contains location: '$Location'" -ErrorAction Stop
         }
     }
 
@@ -68,8 +68,9 @@ function local:Add-PathLocation {
     .SYNOPSIS
         Adds a location to a semicolon-separated path.
     .DESCRIPTION
-        Permanently adds the specified location to the specified semicolon-separated path, 
-        if the path does not contain it already, and returns the path.
+        Permanently adds the specified location to the specified semicolon-separated path and returns the path. 
+        If the path already contains the location, 
+        an error is reported and the execution is stopped.
     .PARAMETER Path
         Semiocolon separated path to add the location to.
     .PARAMETER Location
@@ -77,6 +78,8 @@ function local:Add-PathLocation {
     .PARAMETER First
         If specified, the location is added to the beginning of the path. 
         Otherwise, it is added to the end.
+    .OUTPUT 
+        Modified path.
     .EXAMPLE
         Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -First
     .EXAMPLE
@@ -96,9 +99,15 @@ function local:Remove-PathLocation {
         [string] $Location
     )
   
-    return $Path -split ";" `
+    $newPath = $Path -split ";" `
     | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
     | Join-String -Separator ";"
+
+    if ($newPath -eq $Path) {
+        Write-Error "Location not found in path: '$Location'" -ErrorAction Stop
+    }
+
+    return $newPath
 
     <#
     .SYNOPSIS
@@ -203,6 +212,10 @@ function local:Set-SystemPath {
         [switch] $User
     )
 
+    if ($Machine) {
+        Assert-Administrator
+    }
+
     Backup-SystemPath
 
     $context = `
@@ -255,19 +268,24 @@ function Add-SystemPathLocation {
         [switch] $User
     )
 
-    $context = `
-        if ($User) { @{ User = $true } } `
-        else { @{ Machine = $true } } 
-
-    $params = @{
-        Path = Add-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -First:$First
-    }
+    try {
+        $context = `
+            if ($User) { @{ User = $true } } `
+            else { @{ Machine = $true } } 
     
-    if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
-        Set-SystemPath @context @params
+        $params = @{
+            Path = Add-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -First:$First
+        }
         
-        # enable new location immediately
-        $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First:$First 
+        if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
+            Set-SystemPath @context @params
+            
+            # enable new location immediately
+            $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First:$First 
+        }
+    }
+    catch {
+        Write-Error $_.Exception.Message -ErrorAction Stop
     }
 
     <#
@@ -308,18 +326,24 @@ function Remove-SystemPathLocation {
         [Parameter(Mandatory = $true, ParameterSetName = "User")]
         [switch] $User
     )
-    $context = `
-        if ($User) { @{ User = $true } } `
-        else { @{ Machine = $true } } 
 
-    $params = @{
-        Path = Remove-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location
+    try {
+        $context = `
+            if ($User) { @{ User = $true } } `
+            else { @{ Machine = $true } } 
+
+        $params = @{
+            Path = Remove-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location
+        }
+
+        if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
+            Set-SystemPath @context @params
+            # disable new location immediately
+            $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location 
+        }
     }
-
-    if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
-        Set-SystemPath @context @params
-        # disable new location immediately
-        $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location 
+    catch { 
+        Write-Error $_.Exception.Message -ErrorAction Stop
     }
 
     <#
