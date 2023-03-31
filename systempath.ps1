@@ -49,7 +49,7 @@ function local:Add-PathLocation {
         [string] $Location,
 
         [Parameter(Mandatory = $true)]
-        [bool] $First
+        [bool] $Front
     )
 
     $oldLocations = $Path -split ";"
@@ -62,7 +62,7 @@ function local:Add-PathLocation {
 
     $pathWithoutSemicolon = $Path.TrimEnd(";")
 
-    return $First ? "$Location;$pathWithoutSemicolon" : "$pathWithoutSemicolon;$Location"
+    return $Front ? "$Location;$pathWithoutSemicolon" : "$pathWithoutSemicolon;$Location"
 
     <#
     .SYNOPSIS
@@ -75,13 +75,13 @@ function local:Add-PathLocation {
         Semiocolon separated path to add the location to.
     .PARAMETER Location
         Folder location to add to the path.
-    .PARAMETER First
+    .PARAMETER Front
         If specified, the location is added to the beginning of the path. 
         Otherwise, it is added to the end.
     .OUTPUT 
         Modified path.
     .EXAMPLE
-        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -First
+        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -Front
     .EXAMPLE
         Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
     #>
@@ -258,8 +258,8 @@ function Add-SystemPathLocation {
         [string] $Location,
 
         [Parameter(Mandatory = $false)]
-        [Alias("Prepend", "Front")]
-        [switch] $First,
+        [Alias("Prepend", "First", "Start")]
+        [switch] $Front,
 
         [Parameter(Mandatory = $false, ParameterSetName = "Machine")]
         [switch] $Machine,
@@ -274,14 +274,14 @@ function Add-SystemPathLocation {
             else { @{ Machine = $true } } 
     
         $params = @{
-            Path = Add-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -First:$First
+            Path = Add-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -Front:$Front
         }
         
         if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
             Set-SystemPath @context @params
             
             # enable new location immediately
-            $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First:$First 
+            $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -Front:$Front 
         }
     }
     catch {
@@ -299,7 +299,7 @@ function Add-SystemPathLocation {
         If specified, the system path for the local machine is used.
     .PARAMETER User
         If specified, the system path for the current user is used.
-    .PARAMETER First
+    .PARAMETER Front
         If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin"
@@ -308,7 +308,7 @@ function Add-SystemPathLocation {
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
     .EXAMPLE
-        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -First
+        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -Front
     #>
 }
 
