@@ -26,7 +26,7 @@ function Get-EnvironmentVariable() {
     }
 
     if (! $value) {
-        Write-Error "Environment variable '$Name' not found."
+        Write-Error "Environment variable '$Name' not found." -ErrorAction Stop
     }
 
     return $value
@@ -88,17 +88,25 @@ function Set-EnvironmentVariable() {
         [switch] $User
     )
 
-    if ($User) {
-        $environment = [System.EnvironmentVariableTarget]::User
-        $envType = "User"
+    try {
+        if ($User) {
+            $environment = [System.EnvironmentVariableTarget]::User
+            $envType = "User"
+        }
+        # Machine is the default
+        else {
+            Assert-Administrator
+            $environment = [System.EnvironmentVariableTarget]::Machine
+            $envType = "Machine"
+        }
+    
+        if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
+            [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
+        }
+    
     }
-    else {
-        $environment = [System.EnvironmentVariableTarget]::Machine
-        $envType = "Machine"
-    }
-
-    if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
-        [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
+    catch {
+        Write-Error "$($_.Exception.Message) Trying to set a machine environment variable." -ErrorAction Stop
     }
 
     <#
@@ -144,17 +152,24 @@ function Remove-EnvironmentVariable() {
         [switch] $User
     )
 
-    if ($User) {
-        $environment = [System.EnvironmentVariableTarget]::User
-        $envType = "User"
+    try {
+        if ($User) {
+            $environment = [System.EnvironmentVariableTarget]::User
+            $envType = "User"
+        }
+        # Machine is default
+        else {
+            Assert-Administrator
+            $environment = [System.EnvironmentVariableTarget]::Machine
+            $envType = "Machine"
+        }
+    
+        if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
+            [Environment]::SetEnvironmentVariable($Name, $null, $environment)
+        }
     }
-    else {
-        $environment = [System.EnvironmentVariableTarget]::Machine
-        $envType = "Machine"
-    }
-
-    if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
-        [Environment]::SetEnvironmentVariable($Name, $null, $environment)
+    catch {
+        Write-Error "$($_.Exception.Message) Trying to remove a machine environment variable." -ErrorAction Stop
     }
 
     <#
