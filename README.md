@@ -129,6 +129,14 @@ Gets disk usage information for the specified path.
 
 Returns the path to the current user's "My Documents" folder.
 
+## Installation from PowerShell Gallery
+
+To install the *easypeasy* module from the PowerShell Gallery, run the following command in PowerShell:
+
+```powershell
+Install-Module easypeasy
+```
+
 ## Manual Installation
 
 To install the *easypeasy* module, follow these steps:
