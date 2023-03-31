@@ -236,7 +236,6 @@ function local:Set-SystemPath {
     #>
 }
 
-
 function Add-SystemPathLocation {
 
     [CmdletBinding(SupportsShouldProcess)]
