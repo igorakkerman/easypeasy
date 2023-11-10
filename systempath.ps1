@@ -167,7 +167,7 @@ function Get-SystemPath {
     }
 
     return $Join ? $path  : 
-        ($path -split ";" | ForEach-Object { [SystemPathLocation]::new($_) }) 
+        ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($_) } }) 
 
     <#
     .SYNOPSIS
