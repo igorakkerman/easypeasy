@@ -3,7 +3,7 @@ $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
 function Set-Theme {
     [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory = $true)]
         [ValidateSet("light", "dark")]
         [string] $Theme,
 
@@ -53,9 +53,18 @@ function Set-Theme {
 function Switch-Theme {
     [CmdletBinding(SupportsShouldProcess)]
     param(
+        [Parameter(Position = 0, Mandatory = $false)]
+        [ValidateSet("light", "dark")]
+        [string] $Theme,
+
         [Parameter(Mandatory = $false)]
         [switch] $RestartExplorer = $false
     )
+
+    if ($Theme) {
+        Set-Theme -Theme $Theme -RestartExplorer:$RestartExplorer
+        return
+    }
 
     switch ($light = (Get-ItemPropertyValue $path "SystemUsesLightTheme")) {
         0 { Set-Theme light -RestartExplorer:$RestartExplorer }
@@ -69,6 +78,10 @@ function Switch-Theme {
 
     .DESCRIPTION
         Switches the Windows theme from light to dark or dark to light.
+
+    .PARAMETER Theme
+        If provided, specifies the theme to set. Valid values are "light" or "dark".
+        Otherwise, switches the theme from light to dark or dark to light.
 
     .PARAMETER RestartExplorer
         If specified, Explorer is restarted after switching the theme.
@@ -84,4 +97,4 @@ function Switch-Theme {
     #>
 }
 
-New-Alias -Name theme -Value Switch-Theme
+New-Alias -Name theme -Value Switch-Theme -Force

@@ -103,6 +103,15 @@ Registers a task to run at user logon.
 
 Switches between light and dark theme.
 
+*Example:*
+```powershell
+# use dark theme
+theme dark
+
+# switch theme from light to dark or vice versa
+theme
+```
+
 #### Set-Theme
 
 Activates the specified theme (light/dark).
@@ -159,5 +168,4 @@ Please contribute to the *easypeasy* module. Issues and pull requests are very w
 The *easypeasy* module is licensed under the MIT License. See the LICENSE file for details.
 
 ## Acknowledgments
-Thanks to everyone supporting and contributing to *easypeasy*
-and to ChatGPT for writing most of this documentation 😁🦥
+Thanks to everyone supporting and contributing to *easypeasy*.
