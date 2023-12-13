@@ -10,11 +10,23 @@ function Register-LogonTask {
 
     $action = New-ScheduledTaskAction -Execute $Executable -Argument $Argument
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User "${env:\USERDOMAIN}\${env:USERNAME}"
-    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan)
+    $settings = New-ScheduledTaskSettingsSet `
+        -StartWhenAvailable `
+        -AllowStartIfOnBatteries `
+        -DontStopIfGoingOnBatteries `
+        -ExecutionTimeLimit (New-TimeSpan)
 
-    $task = New-ScheduledTask -Trigger $trigger -Action $action -Settings $settings
+    $task = New-ScheduledTask `
+        -Trigger $trigger `
+        -Action $action `
+        -Settings $settings
 
-    Register-ScheduledTask -TaskName $Name -TaskPath $Path -InputObject $task -Force:$Force | Out-Null
+    Register-ScheduledTask `
+        -TaskName $Name `
+        -TaskPath $Path `
+        -InputObject $task `
+        -Force:$Force `
+    | Out-Null
 
     <#
    .SYNOPSIS
