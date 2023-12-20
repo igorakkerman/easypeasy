@@ -199,6 +199,6 @@ function Remove-EnvironmentVariable() {
     #>
 }
 
-New-Alias -Name getenv -Value Get-EnvironmentVariable
-New-Alias -Name setenv -Value Set-EnvironmentVariable
-New-Alias -Name rmenv -Value Remove-EnvironmentVariable
+New-Alias -Name getenv -Value Get-EnvironmentVariable -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name setenv -Value Set-EnvironmentVariable -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name rmenv -Value Remove-EnvironmentVariable -ErrorAction SilentlyContinue | Out-Null

@@ -97,4 +97,4 @@ function Switch-Theme {
     #>
 }
 
-New-Alias -Name theme -Value Switch-Theme -Force
+New-Alias -Name theme -Value Switch-Theme -ErrorAction SilentlyContinue | Out-Null

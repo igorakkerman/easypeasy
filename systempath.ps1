@@ -196,7 +196,7 @@ function Get-SystemPath {
     #>
 }
 
-New-Alias -Name path -Value Get-SystemPath
+New-Alias -Name path -Value Get-SystemPath -ErrorAction SilentlyContinue | Out-Null
 
 function local:Set-SystemPath {
 

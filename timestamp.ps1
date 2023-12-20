@@ -20,4 +20,4 @@ function Get-Timestamp {
     #>
 }
 
-New-Alias -Name time -Value Get-Timestamp
+New-Alias -Name time -Value Get-Timestamp -ErrorAction SilentlyContinue | Out-Null

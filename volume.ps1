@@ -14,4 +14,4 @@ function Get-Usage {
     | Format-Table -Property Name, "Sum (MB)", Sum -AutoSize
 }
 
-New-Alias du Get-Usage
+New-Alias du Get-Usage -ErrorAction SilentlyContinue | Out-Null

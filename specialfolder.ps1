@@ -35,5 +35,5 @@ function Get-DesktopFolder {
     #>
 }
 
-New-Alias -Name docs -Value Get-MyDocumentsFolder
-New-Alias -Name desktop -Value Get-MyDocumentsFolder
+New-Alias -Name docs -Value Get-MyDocumentsFolder -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name desktop -Value Get-MyDocumentsFolder -ErrorAction SilentlyContinue | Out-Null

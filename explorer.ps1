@@ -19,4 +19,4 @@ function Stop-Explorer {
 
 }
 
-New-Alias -Name sx -Value Stop-Explorer
+New-Alias -Name sx -Value Stop-Explorer -ErrorAction SilentlyContinue | Out-Null
