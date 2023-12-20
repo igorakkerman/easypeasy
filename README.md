@@ -139,6 +139,12 @@ Gets disk usage information for the specified path.
 
 Returns the path to the current user's "My Documents" folder.
 
+#### Get-DesktopFolder
+
+*Alias: `desktop`*
+
+Returns the path to the current user's Desktop folder.
+
 ## Installation from PowerShell Gallery
 
 To install the *easypeasy* module from the PowerShell Gallery, run the following command in PowerShell:

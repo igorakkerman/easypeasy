@@ -17,4 +17,23 @@ function Get-MyDocumentsFolder {
     #>
 }
 
+function Get-DesktopFolder {
+    [CmdletBinding()]
+    Param()
+    
+    return [Environment]::GetFolderPath("Desktop")
+
+    <#
+    .SYNOPSIS
+        Returns the path to the user's Desktop folder.
+
+    .DESCRIPTION
+        Returns the path to the user's Desktop folder.
+
+    .ALIASES
+        desktop
+    #>
+}
+
 New-Alias -Name docs -Value Get-MyDocumentsFolder
+New-Alias -Name desktop -Value Get-MyDocumentsFolder
