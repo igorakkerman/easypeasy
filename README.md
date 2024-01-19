@@ -1,5 +1,5 @@
 # >_  easy𝓅ea𝓈y
-*Productivity boost for PowerShell*
+*Productivity boost for Windows using PowerShell*
 
 The *easypeasy* PowerShell module provides a set of utility functions and aliases to simplify and automate common tasks in Windows environments:
 - manage locations on the system path
