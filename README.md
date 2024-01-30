@@ -146,12 +146,16 @@ Windows Explorer windows don't handle the registry change (https://github.com/ig
 > Switch-Theme -RestartExplorer
 ```
 
-#### Switch to dark theme
+#### Switch to specific theme
 
 ```powershell
 > theme dark
 > Switch-Theme dark
 > Set-Theme dark
+
+> theme light
+> Switch-Theme light
+> Set-Theme light
 ```
 
 ### Utilities
