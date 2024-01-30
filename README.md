@@ -100,7 +100,7 @@ C:\Java\jdk-21
 
 ## Start Menu Shortcuts
 
-### create a shortcut for MyApp in the Start Menu for all users 🅰️
+### Create a shortcut for MyApp in the Start Menu for all users 🅰️
 The shortcut will be created as `MyApp` in the `MyApp` programs folder.
 The argument `-Debug` will be passed to the executable.
 The shortcut will be created with the "Run as administrator" option.
