@@ -199,7 +199,8 @@ C:\easypeasy\administrator.ps1 0,000      374,00
 C:\easypeasy\easypeasy.psm1    0,000      349,00
 ```
 
-## Installation from PowerShell Gallery
+## Installation
+### Installation from PowerShell Gallery
 
 To install the *easypeasy* module from the PowerShell Gallery, run the following command in PowerShell:
 
@@ -207,7 +208,7 @@ To install the *easypeasy* module from the PowerShell Gallery, run the following
 Install-Module easypeasy
 ```
 
-## Manual Installation
+### Manual Installation
 
 To install the *easypeasy* module, follow these steps:
 
