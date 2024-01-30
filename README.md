@@ -129,7 +129,8 @@ Register-LogonTask `
     -Force
 ```
 
-### Utilities
+### Dark Mode
+
 #### Switch between light and dark theme
 
 ```powershell
@@ -152,6 +153,8 @@ Windows Explorer windows don't handle the registry change (https://github.com/ig
 > Switch-Theme dark
 > Set-Theme dark
 ```
+
+### Utilities
 
 #### Quick timestamp creation
 
