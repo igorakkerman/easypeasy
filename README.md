@@ -1,7 +1,7 @@
 # >_  easy𝓅ea𝓈y
 *Productivity boost for Windows using PowerShell*
 
-The *easypeasy* PowerShell module provides a set of utility functions and aliases to simplify and automate common tasks in Windows environments:
+The *easypeasy* PowerShell module simplifies and automates common tasks in Windows environments:
 - manage locations on the system path
 - manage environment variables
 - create start menu shortcuts
@@ -11,139 +11,183 @@ The *easypeasy* PowerShell module provides a set of utility functions and aliase
 - show disk usage
 - verify administrator privileges
 
-## Functionality
+___
+🅰️ = requires Administrator privileges
 
-### Manage locations on the system path
-
-#### Get-SystemPath
-
-*Alias: `path`*
-
-Returns the current system PATH locations.
-
-#### Add-SystemPathLocation
-
-Permanently adds a new location to the system PATH.
-
-*Example*:
+## System PATH
 ```powershell
-Add-SystemPathLocation -Machine "C:\Program Files\MyApp" -Front
+# show the full effective system PATH
+
+> path  # or Get-SystemPath
+
+Location
+--------
+C:\Program Files\PowerShell\7
+C:\Program Files\Microsoft VS Code\bin
+C:\Python
+C:\Windows\system32
+C:\Windows
+...
+
+
+# show all occurrences of "Windows" in the system PATH
+
+> path | where Location -like "*Windows*"
+
+Location
+--------
+C:\Windows\system32
+C:\Windows
+...
+
+
+# add MyApp to the machine's system PATH 🅰️
+
+> Add-SystemPathLocation "C:\Program Files\MyApp"
+> Add-SystemPathLocation -Machine "C:\Program Files\MyApp"
+
+
+# add MyApp to the user's system PATH
+
+> Add-SystemPathLocation -User "C:\Program Files\MyApp"
+
+
+# add MyApp to the front of the machine's system PATH 🅰️
+
+> Add-SystemPathLocation "C:\Program Files\MyApp" -Front
+
+
+# remove every occurrence of MyApp from the machine's system PATH 🅰️
+
+> Remove-SystemPathLocation "C:\Program Files\MyApp"
+
+
+# back up the current system PATH environment variable to a file in the temp folder
+
+> Backup-SystemPath
 ```
 
-#### Remove-SystemPathLocation
-
-Removes a location from the system PATH.
-
-#### Backup-SystemPath
-
-Backs up the current system PATH environment variable to a file.
-
-### Manage environment variables
-
-#### Get-EnvironmentVariable
-
-*Alias: `getenv`*
-
-Retrieves the value of an environment variable.
-
-#### Set-EnvironmentVariable
-
-*Alias: `setenv`*
-
-Permanently sets the value of an environment variable.
+## Environment Variables
 
 ```powershell
-setenv -User JAVA_HOME "C:\Java\jdk"
+# get the value of JAVA_HOME in the user scope
+
+> getenv -User JAVA_HOME
+> Get-EnvironmentVariable -User JAVA_HOME
+
+C:\Java\jdk-21
+
+
+# permanently set the value of JAVA_HOME in the machine scope 🅰️
+
+> setenv -User JAVA_HOME "C:\Java\jdk-21"
+> Set-EnvironmentVariable -User JAVA_HOME "C:\Java\jdk-21"
+
+
+# permanently remove JAVA_HOME from the machine scope 🅰️
+
+> rmenv -Machine JAVA_HOME
+> Remove-EnvironmentVariable -Machine JAVA_HOME
 ```
 
-#### Remove-EnvironmentVariable
+## Start Menu Shortcuts
 
-*Alias: `rmenv`*
-
-Removes the specified environment variable.
-
-### Create start menu shortcuts
-
-#### New-StartMenuShortcut
-
-Creates a shortcut to start an application in the Start Menu.
-
-*Example:*
 ```powershell
-New-StartMenuShortcut -AppName "MyApp" -Executable "C:\Program Files\MyApp\MyApp.exe" -Arguments "-Debug"
+# create a shortcut for MyApp in the Start Menu for all users 🅰️
+# The shortcut will be created as "MyApp" in the "MyApp" programs folder.
+# The argument "-Debug" will be passed to the executable.
+# The shortcut will be created with the "Run as administrator" option.
+
+> New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" -Arguments "-Debug" -RunAsAdministrator
+
+
+# add shortcut to a PowerShell command to start menu
+
+> New-PowershellStartMenuShortcut -AppName "Kill Node.js" -Command "Stop-Process -Name node -Force"
+
+> New-PowershellStartMenuShortcut -AppName "Run System Update" -Command "C:\Scripts\system-update.ps1" -Maximized -KeepOpen -RunAsAdministrator
 ```
 
-#### New-PowershellStartMenuShortcut
+## Start an application at logon 🅰️
 
-Creates a shortcut to run a PowerShell script in the Start Menu.
-
-#### New-StartMenuProgramsFolder
-
-Creates a new folder in the Start Menu Programs folder.
-
-#### Get-StartMenuProgramsPath
-
-Returns the path to the Start Menu Programs folder.
-
-#### Set-ShortcutRunAsAdministrator
-
-Modifies a shortcut to always run as administrator.
-
-### Create scheduled tasks
-
-#### Register-LogonTask
-
-Registers a task to run at user logon.
-
-### Switch between light and dark themes
-
-#### Switch-Theme
-
-*Alias: `theme`*
-
-Switches between light and dark theme.
-
-*Example:*
 ```powershell
-# use dark theme
-theme dark
+# Autostart Process Explorer at Logon
+# equivalent to checking menu item "Options > Run At Logon"
 
-# switch theme from light to dark or vice versa
-theme
+Register-LogonTask `
+    -Name "Process Explorer-${env:\USERDOMAIN}-${env:USERNAME}" `
+    -Executable "$env:LOCALAPPDATA\Microsoft\WindowsApps\procexp.exe" `
+    -Argument "/t" `
+    -Force
 ```
 
-#### Set-Theme
+## Dark Mode
 
-Activates the specified theme (light/dark).
+```powershell
+# switch between light and dark theme
+> theme
+> Switch-Theme
 
-### Utilities
 
-#### Get-Timestamp
+# restart Windows Explorer when switching theme
+# Windows Explorer windows don't handle the registry change
+# https://github.com/igorakkerman/easypeasy/issues/10
 
-*Alias: `time`*
+> theme -RestartExplorer
+> Switch-Theme -RestartExplorer
 
-Returns the current timestamp in a simple format.
 
-#### Assert-Administrator
-Verifies that the current user is an administrator.
+# switch to dark theme
 
-#### Get-Usage
+> theme dark
+> Switch-Theme dark
+> Set-Theme dark
+```
 
-*Alias: `du`*
+## Utilities
 
-Gets disk usage information for the specified path.
+```powershell
+# quick timestamp creation
 
-#### Get-MyDocumentsFolder
+> time
+> Get-Timestamp
 
-*Alias: `docs`*
+2024-01-01_20.15.00
 
-Returns the path to the current user's "My Documents" folder.
+> & .\system-update.ps1 > "$env:TEMP\system-update-$(time).log"
 
-#### Get-DesktopFolder
 
-*Alias: `desktop`*
+# Verify that the current user is an administrator
 
-Returns the path to the current user's Desktop folder.
+> Assert-Administrator
+Assert-Administrator: This operation requires administrator privileges.
+
+
+# output the disk usage for the current folder
+
+> Get-Usage
+> du
+
+Name                           Sum (MB)      Sum
+----                           --------      ---
+C:\easypeasy\systempath.ps1    0,011    11297,00
+C:\easypeasy\startmenu.ps1     0,006     5961,00
+C:\easypeasy\environment.ps1   0,006     5873,00
+C:\easypeasy\easypeasy.psd1    0,005     5748,00
+C:\easypeasy\README.md         0,005     5243,00
+C:\easypeasy\theme.ps1         0,003     2692,00
+C:\easypeasy\task.ps1          0,001     1497,00
+C:\easypeasy\specialfolder.ps1 0,001     1299,00
+C:\easypeasy\.vscode           0,001     1116,00
+C:\easypeasy\LICENSE           0,001     1070,00
+C:\easypeasy\shortcut.ps1      0,001      991,00
+C:\easypeasy\volume.ps1        0,001      628,00
+C:\easypeasy\timestamp.ps1     0,001      541,00
+C:\easypeasy\explorer.ps1      0,000      481,00
+C:\easypeasy\.github           0,000      432,00
+C:\easypeasy\administrator.ps1 0,000      374,00
+C:\easypeasy\easypeasy.psm1    0,000      349,00
+```
 
 ## Installation from PowerShell Gallery
 
