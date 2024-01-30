@@ -76,27 +76,45 @@ C:\Windows
 
 ### Environment Variables
 
-#### Get the value of a variable in the user scope
+#### Get the value of a variable
+
+in a specific scope (effective, machine or user) \
+default: effective in current shell
 
 ```powershell
+> getenv -Effective JAVA_HOME
+> Get-EnvironmentVariable -Effective JAVA_HOME
+
+> getenv -Machine JAVA_HOME
+> Get-EnvironmentVariable -Machine JAVA_HOME
+
 > getenv -User JAVA_HOME
 > Get-EnvironmentVariable -User JAVA_HOME
 
 C:\Java\jdk-21
 ```
 
-#### Permanently set the value of a variable in the machine scope 🅰️
-
+#### Permanently set the value of a variable 
+in a specific scope (machine 🅰️ or user) \
+default: machine scope
 ```powershell
+> setenv -Machine JAVA_HOME "C:\Java\jdk-21"
+> Set-EnvironmentVariable -Machine JAVA_HOME "C:\Java\jdk-21"
+
 > setenv -User JAVA_HOME "C:\Java\jdk-21"
 > Set-EnvironmentVariable -User JAVA_HOME "C:\Java\jdk-21"
 ```
 
-#### Permanently remove a variable from the machine scope 🅰️
+#### Permanently remove a variable
+from a specific scope (machine 🅰️ or user) \
+default: machine scope
 
 ```powershell
 > rmenv -Machine JAVA_HOME
 > Remove-EnvironmentVariable -Machine JAVA_HOME
+
+> rmenv -User JAVA_HOME
+> Remove-EnvironmentVariable -User JAVA_HOME
 ```
 
 ### Start Menu Shortcuts
