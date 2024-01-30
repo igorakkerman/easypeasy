@@ -15,9 +15,10 @@ ___
 🅰️ = requires Administrator privileges
 
 ## System PATH
-### show the full effective system PATH
+### Show the full effective system PATH
 ```powershell
-> path  # or Get-SystemPath
+> path
+> Get-SystemPath
 
 Location
 --------
