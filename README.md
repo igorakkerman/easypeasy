@@ -15,9 +15,8 @@ ___
 🅰️ = requires Administrator privileges
 
 ## System PATH
+### show the full effective system PATH
 ```powershell
-# show the full effective system PATH
-
 > path  # or Get-SystemPath
 
 Location
@@ -28,10 +27,11 @@ C:\Python
 C:\Windows\system32
 C:\Windows
 ...
+```
 
+### Show all occurrences of a string in the system PATH
 
-# show all occurrences of "Windows" in the system PATH
-
+```powershell
 > path | where Location -like "*Windows*"
 
 Location
@@ -39,81 +39,87 @@ Location
 C:\Windows\system32
 C:\Windows
 ...
+```
 
+### Add a folder to the machine's system PATH 🅰️
 
-# add MyApp to the machine's system PATH 🅰️
-
+```powershell
 > Add-SystemPathLocation "C:\Program Files\MyApp"
 > Add-SystemPathLocation -Machine "C:\Program Files\MyApp"
+```
 
+### Add a folder to the user's system PATH
 
-# add MyApp to the user's system PATH
-
+```powershell
 > Add-SystemPathLocation -User "C:\Program Files\MyApp"
+```
 
+### Add a folder to the front of the machine's system PATH 🅰️
 
-# add MyApp to the front of the machine's system PATH 🅰️
-
+```powershell
 > Add-SystemPathLocation "C:\Program Files\MyApp" -Front
+```
 
+### Remove every occurrence of a folder from the machine's system PATH 🅰️
 
-# remove every occurrence of MyApp from the machine's system PATH 🅰️
-
+```powershell
 > Remove-SystemPathLocation "C:\Program Files\MyApp"
+```
 
+### Back up the current system PATH environment variable to a file in the temp folder
 
-# back up the current system PATH environment variable to a file in the temp folder
-
+```powershell
 > Backup-SystemPath
 ```
 
 ## Environment Variables
 
-```powershell
-# get the value of JAVA_HOME in the user scope
+### Get the value of a variable in the user scope
 
+```powershell
 > getenv -User JAVA_HOME
 > Get-EnvironmentVariable -User JAVA_HOME
 
 C:\Java\jdk-21
+```
 
+### Permanently set the value of a variable in the machine scope 🅰️
 
-# permanently set the value of JAVA_HOME in the machine scope 🅰️
-
+```powershell
 > setenv -User JAVA_HOME "C:\Java\jdk-21"
 > Set-EnvironmentVariable -User JAVA_HOME "C:\Java\jdk-21"
+```
 
+### Permanently remove a variable from the machine scope 🅰️
 
-# permanently remove JAVA_HOME from the machine scope 🅰️
-
+```powershell
 > rmenv -Machine JAVA_HOME
 > Remove-EnvironmentVariable -Machine JAVA_HOME
 ```
 
 ## Start Menu Shortcuts
 
+### create a shortcut for MyApp in the Start Menu for all users 🅰️
+The shortcut will be created as `MyApp` in the `MyApp` programs folder.
+The argument `-Debug` will be passed to the executable.
+The shortcut will be created with the "Run as administrator" option.
 ```powershell
-# create a shortcut for MyApp in the Start Menu for all users 🅰️
-# The shortcut will be created as "MyApp" in the "MyApp" programs folder.
-# The argument "-Debug" will be passed to the executable.
-# The shortcut will be created with the "Run as administrator" option.
-
 > New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" -Arguments "-Debug" -RunAsAdministrator
+```
 
+### Add shortcut to a PowerShell command to the start menu
 
-# add shortcut to a PowerShell command to start menu
-
+```powershell
 > New-PowershellStartMenuShortcut -AppName "Kill Node.js" -Command "Stop-Process -Name node -Force"
 
 > New-PowershellStartMenuShortcut -AppName "Run System Update" -Command "C:\Scripts\system-update.ps1" -Maximized -KeepOpen -RunAsAdministrator
 ```
 
-## Start an application at logon 🅰️
+## Start an application at logon 
 
+### Autostart Process Explorer at Logon 🅰️
+equivalent to checking menu item *Options > Run At Logon*
 ```powershell
-# Autostart Process Explorer at Logon
-# equivalent to checking menu item "Options > Run At Logon"
-
 Register-LogonTask `
     -Name "Process Explorer-${env:\USERDOMAIN}-${env:USERNAME}" `
     -Executable "$env:LOCALAPPDATA\Microsoft\WindowsApps\procexp.exe" `
@@ -121,33 +127,33 @@ Register-LogonTask `
     -Force
 ```
 
-## Dark Mode
+## Utilities
+### Switch between light and dark theme
 
 ```powershell
-# switch between light and dark theme
 > theme
 > Switch-Theme
+```
 
+### Restart Windows Explorer when switching theme
+Windows Explorer windows don't handle the registry change (https://github.com/igorakkerman/easypeasy/issues/10)
 
-# restart Windows Explorer when switching theme
-# Windows Explorer windows don't handle the registry change
-# https://github.com/igorakkerman/easypeasy/issues/10
-
+```powershell
 > theme -RestartExplorer
 > Switch-Theme -RestartExplorer
+```
 
+### Switch to dark theme
 
-# switch to dark theme
-
+```powershell
 > theme dark
 > Switch-Theme dark
 > Set-Theme dark
 ```
 
-## Utilities
+### Quick timestamp creation
 
 ```powershell
-# quick timestamp creation
 
 > time
 > Get-Timestamp
@@ -155,16 +161,18 @@ Register-LogonTask `
 2024-01-01_20.15.00
 
 > & .\system-update.ps1 > "$env:TEMP\system-update-$(time).log"
+```
 
+### Verify that the current user is an administrator
 
-# Verify that the current user is an administrator
-
+```powershell
 > Assert-Administrator
 Assert-Administrator: This operation requires administrator privileges.
+```
 
+### Output the disk usage for the current folder
 
-# output the disk usage for the current folder
-
+```powershell
 > Get-Usage
 > du
 
