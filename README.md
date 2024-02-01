@@ -112,9 +112,12 @@ The shortcut will be created with the "Run as administrator" option.
 ```powershell
 > New-PowershellStartMenuShortcut -AppName "Kill Node.js" -Command "Stop-Process -Name node -Force"
 > New-PowershellStartMenuShortcut -AppName "Run System Update" `
-       -Command "C:\Scripts\system-update.ps1" `
-       -Maximized -KeepOpen -RunAsAdministrator
+       -Script "C:\Scripts\system-update.ps1" `
+       -Maximized -KeepOpen -Admin
 ```
+
+`-Script` is an alias for `-Command` that can be used for expressiveness. \
+`-Admin` is an alias for `-RunAsAdministrator` that can be used for conciseness.
 
 ### Start an application at logon 
 
