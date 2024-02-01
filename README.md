@@ -16,10 +16,13 @@ ___
 🅰️ = requires Administrator privileges
 
 ### System PATH
-#### Show the full effective system PATH
+#### List the folders in the system PATH
+
+in a specific scope (machine or user) \
+**default**: **effective** in current shell
+
 ```powershell
 > path
-> Get-SystemPath
 
 Location
 --------
@@ -31,7 +34,7 @@ C:\Windows
 ...
 ```
 
-#### Show all occurrences of a string in the system PATH
+`path` is an alias for `Get-SystemPath`, which you should use in scripts.
 
 ```powershell
 > path | where Location -like "*Windows*"
@@ -43,32 +46,20 @@ C:\Windows
 ...
 ```
 
-#### Add a folder to the machine's system PATH 🅰️
+#### Add or remove a folder to/from the system PATH permanently
+
+in a specific scope (machine 🅰️ or user) \
+**default**: **machine** scope
 
 ```powershell
 > Add-SystemPathLocation "C:\Program Files\MyApp"
-> Add-SystemPathLocation -Machine "C:\Program Files\MyApp"
-```
-
-#### Add a folder to the user's system PATH
-
-```powershell
 > Add-SystemPathLocation -User "C:\Program Files\MyApp"
+> Add-SystemPathLocation -Front "C:\Program Files\MyApp" # this folder will be searched first
+
+> Remove-SystemPathLocation "C:\Program Files\MyApp" # removes every occurrence of this path
 ```
 
-#### Add a folder to the front of the machine's system PATH 🅰️
-
-```powershell
-> Add-SystemPathLocation "C:\Program Files\MyApp" -Front
-```
-
-#### Remove every occurrence of a folder from the machine's system PATH 🅰️
-
-```powershell
-> Remove-SystemPathLocation "C:\Program Files\MyApp"
-```
-
-#### Back up the current system PATH environment variable to a file in the temp folder
+#### Back up the effective system PATH environment variable to a file in the temp folder
 
 ```powershell
 > Backup-SystemPath
@@ -79,43 +70,31 @@ C:\Windows
 #### Get the value of a variable
 
 in a specific scope (effective, machine or user) \
-default: effective in current shell
+**default**: **effective** in current shell
 
 ```powershell
-> getenv -Effective JAVA_HOME
-> Get-EnvironmentVariable -Effective JAVA_HOME
-
+> getenv JAVA_HOME
 > getenv -Machine JAVA_HOME
-> Get-EnvironmentVariable -Machine JAVA_HOME
-
 > getenv -User JAVA_HOME
-> Get-EnvironmentVariable -User JAVA_HOME
 
 C:\Java\jdk-21
 ```
 
-#### Permanently set the value of a variable 
+`getenv` is an alias for `Get-EnvironmentVariable`, which you should use in scripts.
+
+
+#### Set the value of a variable or remove it permanently 
 in a specific scope (machine 🅰️ or user) \
-default: machine scope
+**default**: **machine** scope
 ```powershell
-> setenv -Machine JAVA_HOME "C:\Java\jdk-21"
-> Set-EnvironmentVariable -Machine JAVA_HOME "C:\Java\jdk-21"
-
+> setenv JAVA_HOME "C:\Java\jdk-21"
 > setenv -User JAVA_HOME "C:\Java\jdk-21"
-> Set-EnvironmentVariable -User JAVA_HOME "C:\Java\jdk-21"
-```
 
-#### Permanently remove a variable
-from a specific scope (machine 🅰️ or user) \
-default: machine scope
-
-```powershell
-> rmenv -Machine JAVA_HOME
-> Remove-EnvironmentVariable -Machine JAVA_HOME
-
+> rmenv JAVA_HOME
 > rmenv -User JAVA_HOME
-> Remove-EnvironmentVariable -User JAVA_HOME
 ```
+
+`setenv` and `rmenv` are aliases for `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` respectively, which you should use in scripts.
 
 ### Start Menu Shortcuts
 
@@ -124,21 +103,22 @@ The shortcut will be created as `MyApp` in the `MyApp` programs folder.
 The argument `-Debug` will be passed to the executable.
 The shortcut will be created with the "Run as administrator" option.
 ```powershell
-> New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" -Arguments "-Debug" -RunAsAdministrator
+> New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
+        -Arguments "-Debug" -RunAsAdministrator
 ```
 
 #### Add shortcut to a PowerShell command to the start menu
 
 ```powershell
 > New-PowershellStartMenuShortcut -AppName "Kill Node.js" -Command "Stop-Process -Name node -Force"
-
-> New-PowershellStartMenuShortcut -AppName "Run System Update" -Command "C:\Scripts\system-update.ps1" -Maximized -KeepOpen -RunAsAdministrator
+> New-PowershellStartMenuShortcut -AppName "Run System Update" `
+       -Command "C:\Scripts\system-update.ps1" `
+       -Maximized -KeepOpen -RunAsAdministrator
 ```
 
 ### Start an application at logon 
 
-#### Autostart Process Explorer at Logon 🅰️
-equivalent to checking menu item *Options > Run At Logon*
+equivalent to checking [Process Explorer](https://learn.microsoft.com/de-de/sysinternals/downloads/process-explorer)'s menu item *Options > Run At Logon* 🅰️
 ```powershell
 Register-LogonTask `
     -Name "Process Explorer-${env:\USERDOMAIN}-${env:USERNAME}" `
@@ -153,27 +133,22 @@ Register-LogonTask `
 
 ```powershell
 > theme
-> Switch-Theme
 ```
+
+`theme` is an alias for `Switch-Theme`, which you should use in scripts.
 
 #### Restart Windows Explorer when switching theme
 Windows Explorer windows don't handle the registry change (https://github.com/igorakkerman/easypeasy/issues/10)
 
 ```powershell
 > theme -RestartExplorer
-> Switch-Theme -RestartExplorer
 ```
 
-#### Switch to specific theme
+`theme` is an alias for `Switch-Theme`, which you should use in scripts.
 
 ```powershell
 > theme dark
-> Switch-Theme dark
-> Set-Theme dark
-
 > theme light
-> Switch-Theme light
-> Set-Theme light
 ```
 
 ### Utilities
@@ -183,12 +158,13 @@ Windows Explorer windows don't handle the registry change (https://github.com/ig
 ```powershell
 
 > time
-> Get-Timestamp
 
 2024-01-01_20.15.00
 
 > & .\system-update.ps1 > "$env:TEMP\system-update-$(time).log"
 ```
+
+`time` is an alias for `Get-Timestamp`, which you should use in scripts.
 
 #### Verify that the current user is an administrator
 
