@@ -222,8 +222,6 @@ To install the *easypeasy* module, follow these steps:
 
 1. Copy the *easypeasy* module folder to one of the paths listed in the output of the previous command, e.g. the user's module path: `$HOME\Documents\WindowsPowerShell\Modules\`
 
-1. Add `Import-Module easypeasy` to your profile, e.g. `$HOME\Documents\PowerShell\Microsoft.PowerShell_profile.ps1`
-
 1. Open a new PowerShell session or reload your profile to make the module available. You can check if the module is available by running: `Get-Module -ListAvailable`
 
 ## Contributing
