@@ -102,8 +102,9 @@ function Set-EnvironmentVariable() {
     
         if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
             [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
+            # take effect in current shell
+            Set-Item -Path env:${Name} -Value $Value
         }
-    
     }
     catch {
         Write-Error "$($_.Exception.Message) Trying to set a machine environment variable." -ErrorAction Stop
@@ -166,6 +167,8 @@ function Remove-EnvironmentVariable() {
     
         if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
             [Environment]::SetEnvironmentVariable($Name, $null, $environment)
+            # take effect in current shell
+            Set-Item -Path env:${Name} -Value ""
         }
     }
     catch {
