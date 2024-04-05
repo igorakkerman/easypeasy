@@ -4,7 +4,7 @@
     RootModule           = 'easypeasy.psm1'
 
     # Version number of this module.
-    ModuleVersion        = '1.3.0'
+    ModuleVersion        = '1.3.4'
 
     # Supported PSEditions
     CompatiblePSEditions = @(
@@ -21,7 +21,7 @@
     # CompanyName = 'Unknown'
 
     # Copyright statement for this module
-    Copyright            = 'Copyright (c) 2023 Igor Akkerman. MIT License.'
+    Copyright            = 'Copyright (c) 2024 Igor Akkerman. MIT License.'
 
     # Description of the functionality provided by this module
     Description          = 'Collection of utility functions and aliases to simplify and automate common tasks in Windows environments.'
