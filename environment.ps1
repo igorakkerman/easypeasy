@@ -103,7 +103,6 @@ function Set-EnvironmentVariable() {
         if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
             [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
         }
-    
     }
     catch {
         Write-Error "$($_.Exception.Message) Trying to set a machine environment variable." -ErrorAction Stop
