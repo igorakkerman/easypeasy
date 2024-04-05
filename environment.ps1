@@ -167,6 +167,8 @@ function Remove-EnvironmentVariable() {
     
         if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
             [Environment]::SetEnvironmentVariable($Name, $null, $environment)
+            # take effect in current shell
+            Set-Item -Path env:${Name} -Value ""
         }
     }
     catch {
