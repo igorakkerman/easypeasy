@@ -26,7 +26,7 @@ function Get-EnvironmentVariable() {
     }
 
     if (! $value) {
-        Write-Error "Environment variable '$Name' not found." -ErrorAction Stop
+        Write-Error "Environment variable '$Name' not found."
     }
 
     return $value
