@@ -110,7 +110,7 @@ function Set-EnvironmentVariable() {
         }
     }
     catch {
-        Write-Error "$($_.Exception.Message) Trying to set a machine environment variable." -ErrorAction Stop
+        Write-Error "$($_.Exception.Message) Trying to set a machine environment variable."
     }
 
     <#
@@ -178,7 +178,7 @@ function Remove-EnvironmentVariable() {
         }
     }
     catch {
-        Write-Error "$($_.Exception.Message) Trying to remove a machine environment variable." -ErrorAction Stop
+        Write-Error "$($_.Exception.Message) Trying to remove a machine environment variable."
     }
 
     <#
