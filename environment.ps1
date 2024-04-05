@@ -26,7 +26,7 @@ function Get-EnvironmentVariable() {
     }
 
     if (! $value) {
-        Write-Error "Environment variable '$Name' not found." -ErrorAction Stop
+        Write-Error "Environment variable '$Name' not found."
     }
 
     return $value
@@ -105,7 +105,7 @@ function Set-EnvironmentVariable() {
         }
     }
     catch {
-        Write-Error "$($_.Exception.Message) Trying to set a machine environment variable." -ErrorAction Stop
+        Write-Error "$($_.Exception.Message) Trying to set a machine environment variable."
     }
 
     <#
@@ -168,7 +168,7 @@ function Remove-EnvironmentVariable() {
         }
     }
     catch {
-        Write-Error "$($_.Exception.Message) Trying to remove a machine environment variable." -ErrorAction Stop
+        Write-Error "$($_.Exception.Message) Trying to remove a machine environment variable."
     }
 
     <#

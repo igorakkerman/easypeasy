@@ -104,7 +104,7 @@ function local:Remove-PathLocation {
     | Join-String -Separator ";"
 
     if ($newPath -eq $Path) {
-        Write-Error "Location not found in path: '$Location'" -ErrorAction Stop
+        Write-Error "Location not found in path: '$Location'"
     }
 
     return $newPath
@@ -333,7 +333,7 @@ function Remove-SystemPathLocation {
             else { @{ Machine = $true } } 
 
         $params = @{
-            Path = Remove-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location
+            Path = Remove-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -ErrorAction Stop
         }
 
         if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
