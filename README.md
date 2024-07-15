@@ -103,14 +103,20 @@ The shortcut will be created as `MyApp` in the `MyApp` programs folder.
 The argument `-Debug` will be passed to the executable.
 The shortcut will be created with the "Run as administrator" option.
 ```powershell
-> New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
-        -Arguments "-Debug" -RunAsAdministrator
+> New-StartMenuShortcut `
+        -AppName MyApp `
+        -Executable "C:\Program Files\MyApp\MyApp.exe" `
+        -Arguments "-Debug" `
+        -RunAsAdministrator
 ```
 
 #### Add shortcut to a PowerShell command to the start menu
 
 ```powershell
-> New-PowershellStartMenuShortcut -AppName "Kill Node.js" -Command "Stop-Process -Name node -Force"
+> New-PowershellStartMenuShortcut `
+       -AppName "Kill Node.js" ` 
+       -Command "Stop-Process -Name node -Force"
+
 > New-PowershellStartMenuShortcut -AppName "Run System Update" `
        -Script "C:\Scripts\system-update.ps1" `
        -Maximized -KeepOpen -Admin
@@ -159,7 +165,6 @@ Windows Explorer windows don't handle the registry change (https://github.com/ig
 #### Quick timestamp creation
 
 ```powershell
-
 > time
 
 2024-01-01_20.15.00
