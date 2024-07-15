@@ -107,6 +107,7 @@ The shortcut will be created with the "Run as administrator" option.
         -AppName MyApp `
         -Executable "C:\Program Files\MyApp\MyApp.exe" `
         -Arguments "-Debug" `
+        -Icon "C:\Program Files\MyApp\MyBeautifulIcon.ico" `
         -RunAsAdministrator
 ```
 
