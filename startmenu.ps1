@@ -30,10 +30,12 @@ function New-StartMenuProgramsFolder {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
-        [string] $AppName
+        [Alias("AppName")] # DEPRECATED!
+        [Alias("Folder", "Group")]
+        [string] $Name
     )
 
-    $shortcutFolderName = "$allUsersProgramsPath\$AppName"
+    $shortcutFolderName = "$allUsersProgramsPath\$Name"
     if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
         New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
     }    
@@ -46,8 +48,8 @@ function New-StartMenuProgramsFolder {
     .DESCRIPTION
         Creates a new folder in the All Users Start Menu Programs folder.
 
-    .PARAMETER AppName
-        The name of the application. This will be used as the name of the folder in the Start Menu > Programs folder.
+    .PARAMETER Name
+        The name of the folder in the Start Menu > Programs folder.
 
     .OUTPUTS
         string - Path to the newly created folder in the All Users Start Menu Programs folder.
@@ -58,7 +60,8 @@ function New-StartMenuShortcut {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $false)]
-        [string] $AppName,
+        [Alias("App", "AppName")]
+        [string] $Name,
 
         [Parameter(Mandatory = $true)]
         [string] $Executable,
@@ -96,8 +99,11 @@ function New-StartMenuShortcut {
     .DESCRIPTION
         Creates a new shortcut in the All Users Start Menu Programs folder.
 
-    .PARAMETER AppName
-        The name of the application. This will be used as the name of the folder in the Start Menu > Programs folder.
+    .PARAMETER Name
+        The name of the application. This will be used as the name of the shortcut in the Start Menu > Programs folder.
+
+    .PARAMETER Folder
+        The name of the folder in the Start Menu > Programs folder. Default: $Name
 
     .PARAMETER Executable
         The path to the executable.
@@ -121,12 +127,12 @@ function New-PowershellStartMenuShortcut {
         [string] $Command,
 
         [Parameter(Mandatory = $true)]
-        [Alias("App")]
-        [string] $AppName,
+        [Alias("App", "AppName")]
+        [string] $Name,
 
         [Parameter(Mandatory = $false)]
-        [Alias("FolderName", "Folder")]
-        [string] $GroupName,
+        [Alias("Group", "GroupName")]
+        [string] $Folder,
 
         [Parameter(Mandatory = $false)]
         [Alias("Administrator", "Admin", "Elevate")]
@@ -143,8 +149,8 @@ function New-PowershellStartMenuShortcut {
         [switch] $KeepOpen = $false
     )
 
-    $shortcutFolder = if ($GroupName -ne "") {
-        New-StartMenuProgramsFolder -AppName $GroupName
+    $shortcutFolder = if ($Group) {
+        New-StartMenuProgramsFolder -Name $Group
     }
     else {
         Get-StartMenuProgramsPath
