@@ -62,6 +62,10 @@ function New-StartMenuShortcut {
         [Parameter(Mandatory = $false)]
         [Alias("App", "AppName")]
         [string] $Name,
+        
+        [Parameter(Mandatory = $false)]
+        [Alias("Group")]
+        [string] $Folder,
 
         [Parameter(Mandatory = $true)]
         [string] $Executable,
@@ -77,7 +81,9 @@ function New-StartMenuShortcut {
     # infer the app name
     $shortcutAppName = if ($AppName) { $AppName } else { ((Get-Item $Executable).BaseName) }
 
-    $shortcutFolder = New-StartMenuProgramsFolder -AppName $shortcutAppName
+    $folderName = if ($Folder) { $Folder } else { $shortcutAppName }
+
+    $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName
     $shortcutPath = "$shortcutFolder\$shortcutAppName.lnk"
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $Executable
