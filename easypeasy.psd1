@@ -84,6 +84,7 @@
         'Get-StartMenuProgramsPath',
         'New-StartMenuProgramsFolder',
         'Register-LogonTask',
+        'Get-Theme',
         'Set-Theme',
         'Switch-Theme'
     )

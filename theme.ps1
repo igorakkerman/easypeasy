@@ -1,5 +1,30 @@
 $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
 
+function Get-Theme {
+    [CmdletBinding()]
+    param()
+
+    switch ($light = (Get-ItemPropertyValue $path "SystemUsesLightTheme")) {
+        0 { "dark" }
+        1 { "light" }
+        default { throw "unexpected value in SystemUsesLightTheme '$light'" }
+    }
+}
+
+<#
+    .SYNOPSIS
+        Returns the current Windows theme.
+
+    .DESCRIPTION
+        Returns the current Windows theme as either "light" or "dark".
+
+    .OUTPUTS string - either "light" or "dark" according to the current Windows theme
+
+    .EXAMPLE
+        Write-Host "Windows is using $(Get-Theme) mode."
+    #>
+
+
 function Set-Theme {
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -66,10 +91,10 @@ function Switch-Theme {
         return
     }
 
-    switch ($light = (Get-ItemPropertyValue $path "SystemUsesLightTheme")) {
-        0 { Set-Theme light -RestartExplorer:$RestartExplorer }
-        1 { Set-Theme dark -RestartExplorer:$RestartExplorer }
-        default { throw "unexpected value in SystemUsesLightTheme '$light'" }
+    switch ($theme = Get-Theme) {
+        "dark" { Set-Theme light -RestartExplorer:$RestartExplorer }
+        "light" { Set-Theme dark -RestartExplorer:$RestartExplorer }
+        default { throw "unexpected value from Get-Theme '$theme'" }
     }
 
     <#
