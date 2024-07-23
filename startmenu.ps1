@@ -168,7 +168,7 @@ function New-PowershellStartMenuShortcut {
     }
     $arguments += "-Command `"$Command`""
 
-    $shortcutPath = "$shortcutFolder\$AppName.lnk"
+    $shortcutPath = "$shortcutFolder\$Name.lnk"
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = "pwsh"
     $shortcut.Arguments = $arguments -join ' '
