@@ -78,13 +78,13 @@ function New-StartMenuShortcut {
         [string] $IconLocation
     )
 
-    # infer the app name
-    $shortcutAppName = if ($AppName) { $AppName } else { ((Get-Item $Executable).BaseName) }
+    # infer the shortcut name
+    $shortcutName = if ($Name) { $Name } else { ((Get-Item $Executable).BaseName) }
 
-    $folderName = if ($Folder) { $Folder } else { $shortcutAppName }
+    $folderName = if ($Folder) { $Folder } else { $shortcutName }
 
     $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName
-    $shortcutPath = "$shortcutFolder\$shortcutAppName.lnk"
+    $shortcutPath = "$shortcutFolder\$shortcutName.lnk"
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $Executable
     $shortcut.Arguments = $Arguments
@@ -199,8 +199,8 @@ function New-PowershellStartMenuShortcut {
     .PARAMETER Command
         The PowerShell command to run.
 
-    .PARAMETER AppName
-        The name of the application. This will be used as the name of the shortcut in the Start Menu > Programs folder.
+    .PARAMETER Name
+        The name of the shortcut in the Start Menu > Programs folder.
 
     .PARAMETER GroupName
         The name of the group to create the shortcut in. If not specified, the shortcut will be created in the Start Menu > Programs folder.
