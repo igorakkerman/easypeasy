@@ -74,8 +74,8 @@ function New-StartMenuShortcut {
         [string] $Arguments,
 
         [Parameter(Mandatory = $false)]
-        [Alias("Icon")]
-        [string] $IconLocation
+        [Alias("IconLocation")]
+        [string] $Icon
     )
 
     # infer the shortcut name
@@ -88,8 +88,8 @@ function New-StartMenuShortcut {
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $Executable
     $shortcut.Arguments = $Arguments
-    If ($IconLocation) {
-        $shortcut.IconLocation = "$IconLocation,0"
+    If ($Icon) {
+        $shortcut.IconLocation = "$Icon,0"
     }
     
     if ($PSCmdlet.ShouldProcess($shortcutPath, "Create shortcut")) {
@@ -117,7 +117,7 @@ function New-StartMenuShortcut {
     .PARAMETER Arguments
         The arguments to pass to the executable.
 
-    .PARAMETER IconLocation
+    .PARAMETER Icon
         The path to the icon file to use for the shortcut.
 
     .OUTPUTS
