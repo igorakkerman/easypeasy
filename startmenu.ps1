@@ -152,7 +152,11 @@ function New-PowershellStartMenuShortcut {
 
         [Parameter(Mandatory = $false)]
         [Alias("NoExit")]
-        [switch] $KeepOpen = $false
+        [switch] $KeepOpen = $false,
+
+        [Parameter(Mandatory = $false)]
+        [Alias("IconLocation")]
+        [string] $Icon
     )
 
     $shortcutFolder = if ($Group) {
@@ -177,6 +181,10 @@ function New-PowershellStartMenuShortcut {
     }
     if ($Maximized) {
         $shortcut.WindowStyle = $windowStyleMaximized
+    }
+
+    If ($Icon) {
+        $shortcut.IconLocation = "$Icon,0"
     }
 
     if ($PSCmdlet.ShouldProcess($shortcutPath, "Create shortcut")) {
@@ -216,6 +224,9 @@ function New-PowershellStartMenuShortcut {
 
     .PARAMETER KeepOpen
         Whether to keep the PowerShell window open after the command has finished running.
+
+    .PARAMETER Icon
+        The path to the icon file to use for the shortcut.
 
     .OUTPUTS
         string - Path to the newly created shortcut in the All Users Start Menu Programs folder.
