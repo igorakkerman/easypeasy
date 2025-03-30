@@ -301,6 +301,8 @@ function Add-SystemPathLocation {
         If specified, the system path for the current user is used.
     .PARAMETER Front
         If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
+    .ALIAS
+        addpath
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -357,6 +359,10 @@ function Remove-SystemPathLocation {
         If specified, the system path for the local machine is used.
     .PARAMETER User
         If specified, the system path for the current user is used.
+    .ALIAS
+        rmpath
+    .ALIAS
+        removepath
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -365,3 +371,7 @@ function Remove-SystemPathLocation {
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
     #>
 }
+
+New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name removepath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
