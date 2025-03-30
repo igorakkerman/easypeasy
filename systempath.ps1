@@ -185,14 +185,14 @@ function Get-SystemPath {
         If specified, the effective system path is returned. The effective system path is the current user path with the local machine path appended to it.
     .PARAMETER Join
         If specified, the system path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
+    .ALIAS
+        path
     .EXAMPLE
         Get-SystemPath
     .EXAMPLE
         Get-SystemPath -Machine
     .EXAMPLE
         Get-SystemPath -User -Join
-    .ALIAS
-        path
     #>
 }
 
