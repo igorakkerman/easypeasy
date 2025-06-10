@@ -147,15 +147,6 @@ Register-LogonTask `
 
 `theme` is an alias for `Switch-Theme`, which you should use in scripts.
 
-#### Restart Windows Explorer when switching theme
-Windows Explorer windows don't handle the registry change (https://github.com/igorakkerman/easypeasy/issues/10)
-
-```powershell
-> theme -RestartExplorer
-```
-
-`theme` is an alias for `Switch-Theme`, which you should use in scripts.
-
 ```powershell
 > theme dark
 > theme light
