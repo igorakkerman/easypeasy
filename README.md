@@ -190,7 +190,7 @@ C:\easypeasy\theme.ps1         0,003     2692,00
 C:\easypeasy\task.ps1          0,001     1497,00
 C:\easypeasy\specialfolder.ps1 0,001     1299,00
 C:\easypeasy\.vscode           0,001     1116,00
-C:\easypeasy\LICENSE           0,001     1070,00
+C:\easypeasy\LICENSE.txt       0,001     1070,00
 C:\easypeasy\shortcut.ps1      0,001      991,00
 C:\easypeasy\volume.ps1        0,001      628,00
 C:\easypeasy\timestamp.ps1     0,001      541,00
@@ -225,7 +225,22 @@ To install the *easypeasy* module, follow these steps:
 Please contribute to the *easypeasy* module. Issues and pull requests are very welcome. Thank you!
 
 ## License
-The *easypeasy* module is licensed under the MIT License. See the LICENSE file for details.
+The *easypeasy* module is licensed under the Apache License, Version 2.0. See the `LICENSE.txt` file for details.
+
+   Copyright 2025 Igor Akkerman
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
 
 ## Acknowledgments
 Thanks to everyone supporting and contributing to *easypeasy*.
