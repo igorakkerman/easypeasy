@@ -48,6 +48,10 @@ function Set-Theme {
         Set-ItemProperty -Path $path -Name "AppsUseLightTheme" -Value $lightThemeValue
 
         Send-ThemeChangeBroadcast
+
+        # workaround hack to change taskbar color on all screens
+        Set-ItemProperty -Path $path -Name "SystemUsesLightTheme" -Value {if ($lightThemeValue -eq 1) { 0 } else { 1 }}
+        Set-ItemProperty -Path $path -Name "SystemUsesLightTheme" -Value $lightThemeValue
     }
 
     <#
