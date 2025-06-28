@@ -38,14 +38,14 @@ function Set-Theme {
     )
 
     switch ($Theme) {
-        "light" { $lightTheme = 1 }
-        "dark" { $lightTheme = 0 }
+        "light" { $lightThemeValue = 1 }
+        "dark" { $lightThemeValue = 0 }
         default { throw "unexpected theme '$Theme'" }
     }
 
     if ($PSCmdlet.ShouldProcess("Windows theme", "Set value to '$Theme'")) { 
-        Set-ItemProperty -Path $path -Name "SystemUsesLightTheme" -Value $lightTheme
-        Set-ItemProperty -Path $path -Name "AppsUseLightTheme" -Value $lightTheme
+        Set-ItemProperty -Path $path -Name "SystemUsesLightTheme" -Value $lightThemeValue
+        Set-ItemProperty -Path $path -Name "AppsUseLightTheme" -Value $lightThemeValue
 
         Send-ThemeChangeBroadcast
     }
