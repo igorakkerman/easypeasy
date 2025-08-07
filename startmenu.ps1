@@ -183,7 +183,7 @@ function New-PowershellStartMenuShortcut {
         $shortcut.WindowStyle = $windowStyleMaximized
     }
 
-    If ($Icon) {
+    if ($Icon) {
         $shortcut.IconLocation = "$Icon,0"
     }
 
