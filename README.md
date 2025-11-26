@@ -1,4 +1,7 @@
-# >_  easy𝓅ea𝓈y
+# <img src="logo.png" alt="easypeasy logo" width="64" /> easy𝓅ea𝓈y
+
+
+
 **Productivity boost for Windows using PowerShell**
 
 The *easypeasy* PowerShell module simplifies and automates common tasks in Windows environments:
