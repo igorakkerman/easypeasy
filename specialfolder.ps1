@@ -1,9 +1,4 @@
 function Get-ProgramFilesFolder {
-    [CmdletBinding()]
-    Param()
-    
-    return [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::ProgramFiles)
-
     <#
     .SYNOPSIS
         Returns the path to the Program Files folder.
@@ -14,14 +9,13 @@ function Get-ProgramFilesFolder {
     .ALIASES
         progs
     #>
-}
-function Get-MyDocumentsFolder {
+
     [CmdletBinding()]
     Param()
     
-    $wshShell = New-Object -ComObject WScript.Shell
-    return $wshShell.SpecialFolders("MyDocuments")
-
+    return [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::ProgramFiles)
+}
+function Get-MyDocumentsFolder {
     <#
     .SYNOPSIS
         Returns the path to the My Documents folder.
@@ -32,14 +26,15 @@ function Get-MyDocumentsFolder {
     .ALIASES
         docs
     #>
-}
 
-function Get-DesktopFolder {
     [CmdletBinding()]
     Param()
     
-    return [Environment]::GetFolderPath("Desktop")
+    $wshShell = New-Object -ComObject WScript.Shell
+    return $wshShell.SpecialFolders("MyDocuments")
+}
 
+function Get-DesktopFolder {
     <#
     .SYNOPSIS
         Returns the path to the user's Desktop folder.
@@ -50,6 +45,11 @@ function Get-DesktopFolder {
     .ALIASES
         desktop
     #>
+
+    [CmdletBinding()]
+    Param()
+    
+    return [Environment]::GetFolderPath("Desktop")
 }
 
 New-Alias -Name programs -Value Get-ProgramFilesFolder -ErrorAction SilentlyContinue | Out-Null

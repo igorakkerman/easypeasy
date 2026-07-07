@@ -17,6 +17,15 @@ class SystemPathLocation {
 }
 
 function Backup-SystemPath {
+    <# 
+    .SYNOPSIS
+        Backs up the system path to a file in the temp folder.
+    .DESCRIPTION
+        Backs up the system path to a file in the temp folder.
+    .EXAMPLE
+        Backup-SystemPath
+    #>
+
     
     [CmdletBinding(SupportsShouldProcess)]
     param ()
@@ -26,18 +35,31 @@ function Backup-SystemPath {
     if ($PSCmdlet.ShouldProcess($backupFile, "Backup system path")) {
         $env:PATH > $backupFile
     }
-
-    <# 
-    .SYNOPSIS
-        Backs up the system path to a file in the temp folder.
-    .DESCRIPTION
-        Backs up the system path to a file in the temp folder.
-    .EXAMPLE
-        Backup-SystemPath
-    #>    
 }
 
 function local:Add-PathLocation {
+    <#
+    .SYNOPSIS
+        Adds a location to a semicolon-separated path.
+    .DESCRIPTION
+        Permanently adds the specified location to the specified semicolon-separated path and returns the path. 
+        If the path already contains the location, 
+        an error is reported and the execution is stopped.
+    .PARAMETER Path
+        Semiocolon separated path to add the location to.
+    .PARAMETER Location
+        Folder location to add to the path.
+    .PARAMETER Front
+        If specified, the location is added to the beginning of the path. 
+        Otherwise, it is added to the end.
+    .OUTPUT 
+        Modified path.
+    .EXAMPLE
+        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -Front
+    .EXAMPLE
+        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
+    #>
+
 
     [CmdletBinding()]
     param (
@@ -63,52 +85,9 @@ function local:Add-PathLocation {
     $pathWithoutSemicolon = $Path.TrimEnd(";")
 
     return $Front ? "$Location;$pathWithoutSemicolon" : "$pathWithoutSemicolon;$Location"
-
-    <#
-    .SYNOPSIS
-        Adds a location to a semicolon-separated path.
-    .DESCRIPTION
-        Permanently adds the specified location to the specified semicolon-separated path and returns the path. 
-        If the path already contains the location, 
-        an error is reported and the execution is stopped.
-    .PARAMETER Path
-        Semiocolon separated path to add the location to.
-    .PARAMETER Location
-        Folder location to add to the path.
-    .PARAMETER Front
-        If specified, the location is added to the beginning of the path. 
-        Otherwise, it is added to the end.
-    .OUTPUT 
-        Modified path.
-    .EXAMPLE
-        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -Front
-    .EXAMPLE
-        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
-    #>
 }
 
 function local:Remove-PathLocation {
-
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true)]
-        [string] $Path,
-
-        [Parameter(Mandatory = $true)]
-        [Alias("Folder")]
-        [string] $Location
-    )
-  
-    $newPath = $Path -split ";" `
-    | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
-    | Join-String -Separator ";"
-
-    if ($newPath -eq $Path) {
-        Write-Error "Location not found in path: '$Location'"
-    }
-
-    return $newPath
-
     <#
     .SYNOPSIS
         Removes a location from a semicolon-separated path and returns the path.
@@ -132,9 +111,56 @@ function local:Remove-PathLocation {
         $newPath = Remove-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
         # -> "C:\Windows;C:\Windows\System32"
     #>
+
+
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Path,
+
+        [Parameter(Mandatory = $true)]
+        [Alias("Folder")]
+        [string] $Location
+    )
+  
+    $newPath = $Path -split ";" `
+    | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
+    | Join-String -Separator ";"
+
+    if ($newPath -eq $Path) {
+        Write-Error "Location not found in path: '$Location'"
+    }
+
+    return $newPath
 }
 
 function Get-SystemPath {
+    <#
+    .SYNOPSIS
+        Retrieves the system path.
+    .DESCRIPTION
+        Retrieves the system path, either for the current user, for the local machine 
+        or the system path in effect in the current context. 
+        The path is returned as an array of SystemPathLocation objects by default.
+        If the -Join switch is specified, the path is returned as a semicolon-separated string.
+    .PARAMETER Machine
+        If specified, the system path for the local machine is returned.
+    .PARAMETER User
+        If specified, the system path for the current user is returned.
+    .PARAMETER Effective
+        Default; if specified, the effective system path is returned. The effective system path is the current user path with the local machine path appended to it.
+    .PARAMETER Join
+        If specified, the system path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
+    .ALIAS
+        path
+    .EXAMPLE
+        Get-SystemPath
+    .EXAMPLE
+        Get-SystemPath -Machine
+    .EXAMPLE
+        Get-SystemPath -User -Join
+    #>
+
 
     [CmdletBinding()]
     param (
@@ -168,37 +194,30 @@ function Get-SystemPath {
 
     return $Join ? $path  : 
         ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($_) } }) 
-
-    <#
-    .SYNOPSIS
-        Retrieves the system path.
-    .DESCRIPTION
-        Retrieves the system path, either for the current user, for the local machine 
-        or the system path in effect in the current context. 
-        The path is returned as an array of SystemPathLocation objects by default.
-        If the -Join switch is specified, the path is returned as a semicolon-separated string.
-    .PARAMETER Machine
-        If specified, the system path for the local machine is returned.
-    .PARAMETER User
-        If specified, the system path for the current user is returned.
-    .PARAMETER Effective
-        Default; if specified, the effective system path is returned. The effective system path is the current user path with the local machine path appended to it.
-    .PARAMETER Join
-        If specified, the system path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
-    .ALIAS
-        path
-    .EXAMPLE
-        Get-SystemPath
-    .EXAMPLE
-        Get-SystemPath -Machine
-    .EXAMPLE
-        Get-SystemPath -User -Join
-    #>
 }
 
 New-Alias -Name path -Value Get-SystemPath -ErrorAction SilentlyContinue | Out-Null
 
 function local:Set-SystemPath {
+    <#
+    .SYNOPSIS
+        Modifies the system path.
+    .DESCRIPTION
+        Sets the system path to the specified path, either for the current user or for the local machine. 
+    .PARAMETER Path
+        Semiocolon separated path to set.
+    .PARAMETER Machine
+        If specified, the system path for the local machine is used.
+    .PARAMETER User
+        If specified, the system path for the current user is used.
+    .EXAMPLE
+        Set-SystemPath -Path "C:\Windows;C:\Windows\System32"
+    .EXAMPLE
+        Set-SystemPath -Path "C:\Windows;C:\Windows\System32" -Machine
+    .EXAMPLE
+        Set-SystemPath -Path "C:\Windows;C:\Windows\System32" -User
+    #>
+
 
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -228,28 +247,34 @@ function local:Set-SystemPath {
     }
 
     Set-EnvironmentVariable @context @params
+}
 
+function Add-SystemPathLocation {
     <#
     .SYNOPSIS
-        Modifies the system path.
+        Adds a location to the system path.
     .DESCRIPTION
-        Sets the system path to the specified path, either for the current user or for the local machine. 
-    .PARAMETER Path
-        Semiocolon separated path to set.
+        Adds the specified location to the system path, either for the current user or for the local machine, if the path does not contain it. 
+    .PARAMETER Location
+        Folder location to add to the system path.
     .PARAMETER Machine
         If specified, the system path for the local machine is used.
     .PARAMETER User
         If specified, the system path for the current user is used.
+    .PARAMETER Front
+        If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
+    .ALIAS
+        addpath
     .EXAMPLE
-        Set-SystemPath -Path "C:\Windows;C:\Windows\System32"
+        Add-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
-        Set-SystemPath -Path "C:\Windows;C:\Windows\System32" -Machine
+        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -Machine
     .EXAMPLE
-        Set-SystemPath -Path "C:\Windows;C:\Windows\System32" -User
+        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
+    .EXAMPLE
+        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -Front
     #>
-}
 
-function Add-SystemPathLocation {
 
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -287,34 +312,32 @@ function Add-SystemPathLocation {
     catch {
         Write-Error $_.Exception.Message -ErrorAction Stop
     }
+}
 
+function Remove-SystemPathLocation {
     <#
     .SYNOPSIS
-        Adds a location to the system path.
+        Removes a location from the system path.
     .DESCRIPTION
-        Adds the specified location to the system path, either for the current user or for the local machine, if the path does not contain it. 
+        Removes the specified location from the system path, either for the current user or for the local machine, if the path contains it. 
     .PARAMETER Location
-        Folder location to add to the system path.
+        Folder location to remove from the system path.
     .PARAMETER Machine
         If specified, the system path for the local machine is used.
     .PARAMETER User
         If specified, the system path for the current user is used.
-    .PARAMETER Front
-        If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
     .ALIAS
-        addpath
+        rmpath
+    .ALIAS
+        removepath
     .EXAMPLE
-        Add-SystemPathLocation -Location "C:\Program Files\Git\bin"
+        Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
-        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -Machine
+        Remove-SystemPathLocation -Location "C:\Program Files\Git\bin" -Machine
     .EXAMPLE
-        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
-    .EXAMPLE
-        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -Front
+        Remove-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
     #>
-}
 
-function Remove-SystemPathLocation {
 
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -348,29 +371,6 @@ function Remove-SystemPathLocation {
     catch { 
         Write-Error $_.Exception.Message -ErrorAction Stop
     }
-
-    <#
-    .SYNOPSIS
-        Removes a location from the system path.
-    .DESCRIPTION
-        Removes the specified location from the system path, either for the current user or for the local machine, if the path contains it. 
-    .PARAMETER Location
-        Folder location to remove from the system path.
-    .PARAMETER Machine
-        If specified, the system path for the local machine is used.
-    .PARAMETER User
-        If specified, the system path for the current user is used.
-    .ALIAS
-        rmpath
-    .ALIAS
-        removepath
-    .EXAMPLE
-        Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
-    .EXAMPLE
-        Remove-SystemPathLocation -Location "C:\Program Files\Git\bin" -Machine
-    .EXAMPLE
-        Remove-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
-    #>
 }
 
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null

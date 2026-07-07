@@ -1,17 +1,7 @@
 $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
 
 function Get-Theme {
-    [CmdletBinding()]
-    param()
-
-    switch ($light = (Get-ItemPropertyValue $path "SystemUsesLightTheme")) {
-        0 { "dark" }
-        1 { "light" }
-        default { throw "unexpected value in SystemUsesLightTheme '$light'" }
-    }
-}
-
-<#
+    <#
     .SYNOPSIS
         Returns the current Windows theme.
 
@@ -24,8 +14,34 @@ function Get-Theme {
         Write-Host "Windows is using $(Get-Theme) mode."
     #>
 
+    [CmdletBinding()]
+    param()
+
+    switch ($light = (Get-ItemPropertyValue $path "SystemUsesLightTheme")) {
+        0 { "dark" }
+        1 { "light" }
+        default { throw "unexpected value in SystemUsesLightTheme '$light'" }
+    }
+}
 
 function Set-Theme {
+    <#
+    .SYNOPSIS
+        Sets the Windows theme to either light or dark.
+
+    .DESCRIPTION
+        Sets the Windows theme to either light or dark.
+
+    .PARAMETER Theme
+        The theme to set. Valid values are "light" or "dark".
+
+    .EXAMPLE
+        Set-Theme -Theme dark
+
+    .EXAMPLE
+        Set-Theme -Theme light
+    #>
+
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
@@ -43,7 +59,7 @@ function Set-Theme {
         default { throw "unexpected theme '$Theme'" }
     }
 
-    if ($PSCmdlet.ShouldProcess("Windows theme", "Set value to '$Theme'")) { 
+    if ($PSCmdlet.ShouldProcess("Windows theme", "Set value to '$Theme'")) {
         Set-ItemProperty -Path $path -Name "SystemUsesLightTheme" -Value $lightThemeValue
         Set-ItemProperty -Path $path -Name "AppsUseLightTheme" -Value $lightThemeValue
 
@@ -53,26 +69,27 @@ function Set-Theme {
         Set-ItemProperty -Path $path -Name "SystemUsesLightTheme" -Value {if ($lightThemeValue -eq 1) { 0 } else { 1 }}
         Set-ItemProperty -Path $path -Name "SystemUsesLightTheme" -Value $lightThemeValue
     }
-
-    <#
-    .SYNOPSIS
-        Sets the Windows theme to either light or dark.
-
-    .DESCRIPTION
-        Sets the Windows theme to either light or dark.
-
-    .PARAMETER Theme
-        The theme to set. Valid values are "light" or "dark".
-
-    .EXAMPLE
-        Set-Theme -Theme dark
-
-    .EXAMPLE
-        Set-Theme -Theme light
-    #>
 }
 
 function Switch-Theme {
+    <#
+    .SYNOPSIS
+        Switches the Windows theme between light and dark.
+
+    .DESCRIPTION
+        Switches the Windows theme from light to dark or dark to light.
+
+    .PARAMETER Theme
+        If provided, specifies the theme to set. Valid values are "light" or "dark".
+        Otherwise, switches the theme from light to dark or dark to light.
+
+    .ALIAS
+        theme
+
+    .EXAMPLE
+        Switch-Theme
+    #>
+
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $false)]
@@ -94,29 +111,21 @@ function Switch-Theme {
         "light" { Set-Theme -Theme dark }
         default { throw "unexpected value from Get-Theme '$theme'" }
     }
-
-    <#
-    .SYNOPSIS
-        Switches the Windows theme between light and dark.
-
-    .DESCRIPTION
-        Switches the Windows theme from light to dark or dark to light.
-
-    .PARAMETER Theme
-        If provided, specifies the theme to set. Valid values are "light" or "dark".
-        Otherwise, switches the theme from light to dark or dark to light.
-
-    .ALIAS
-        theme
-
-    .EXAMPLE
-        Switch-Theme
-    #>
 }
 
 New-Alias -Name theme -Value Switch-Theme -ErrorAction SilentlyContinue | Out-Null
 
 function local:Send-ThemeChangeBroadcast {
+    <#
+    .SYNOPSIS
+        Broadcasts the theme/color change to all processes.
+    .DESCRIPTION
+        Broadcasts the theme/color change to all processes, so they can adapt to the updated theme.
+        Some processes such as Windows Explorer don't react to a registry change alone.
+    .EXAMPLE
+        Send-ThemeChangeBroadcast
+    #>
+
     if (-not ("win32.nativemethods" -As [type])) {
         Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @"
 
@@ -157,12 +166,3 @@ function local:Send-ThemeChangeBroadcast {
         )
     )
 }
-<#
-    .SYNOPSIS
-        Broadcasts the theme/color change to all processes.
-    .DESCRIPTION
-        Broadcasts the theme/color change to all processes, so they can adapt to the updated theme.
-        Some processes such as Windows Explorer don't react to a registry change alone. 
-    .EXAMPLE
-        Send-ThemeChangeBroadcast
-    #>

@@ -9,11 +9,6 @@ $windowStyleMaximized = 3
 $windowStyleMinimized = 7
 
 function Get-StartMenuProgramsPath {
-    [CmdletBinding()]
-    param ()
-
-    return $allUsersProgramsPath
-
     <#
     .SYNOPSIS
         Returns the path to Start Menu > Programs.
@@ -24,23 +19,14 @@ function Get-StartMenuProgramsPath {
     .OUTPUTS
         string - Path to the All Users Start Menu Programs folder.
     #>
+
+    [CmdletBinding()]
+    param ()
+
+    return $allUsersProgramsPath
 }
 
 function New-StartMenuProgramsFolder {
-    [CmdletBinding(SupportsShouldProcess)]
-    param (
-        [Parameter(Mandatory = $true)]
-        [Alias("AppName")] # DEPRECATED!
-        [Alias("Folder", "Group")]
-        [string] $Name
-    )
-
-    $shortcutFolderName = "$allUsersProgramsPath\$Name"
-    if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
-        New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
-    }    
-    return $shortcutFolderName
-
     <#
     .SYNOPSIS
         Creates a new folder in Start Menu > Programs.
@@ -54,9 +40,49 @@ function New-StartMenuProgramsFolder {
     .OUTPUTS
         string - Path to the newly created folder in the All Users Start Menu Programs folder.
     #>
+
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory = $true)]
+        [Alias("AppName")] # DEPRECATED!
+        [Alias("Folder", "Group")]
+        [string] $Name
+    )
+
+    $shortcutFolderName = "$allUsersProgramsPath\$Name"
+    if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
+        New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
+    }    
+    return $shortcutFolderName
 }
 
 function New-StartMenuShortcut {
+    <#
+    .SYNOPSIS
+        Creates a new shortcut in Start Menu > Programs.
+
+    .DESCRIPTION
+        Creates a new shortcut in the All Users Start Menu Programs folder.
+
+    .PARAMETER Name
+        The name of the application. This will be used as the name of the shortcut in the Start Menu > Programs folder.
+
+    .PARAMETER Folder
+        The name of the folder in the Start Menu > Programs folder. Default: $Name
+
+    .PARAMETER Executable
+        The path to the executable.
+
+    .PARAMETER Arguments
+        The arguments to pass to the executable.
+
+    .PARAMETER Icon
+        The path to the icon file to use for the shortcut.
+
+    .OUTPUTS
+        string - Path to the newly created shortcut in the All Users Start Menu Programs folder.
+    #>
+
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $false)]
@@ -97,25 +123,36 @@ function New-StartMenuShortcut {
     }
 
     return $shortcutPath
+}
 
+function New-PowershellStartMenuShortcut {
     <#
     .SYNOPSIS
-        Creates a new shortcut in Start Menu > Programs.
+        Creates a new shortcut that runs a PowerShell command in Start Menu > Programs.
 
     .DESCRIPTION
-        Creates a new shortcut in the All Users Start Menu Programs folder.
+        Creates a new shortcut that runs a PowerShell command in the All Users Start Menu Programs folder.
+
+    .PARAMETER Command
+        The PowerShell command to run.
 
     .PARAMETER Name
-        The name of the application. This will be used as the name of the shortcut in the Start Menu > Programs folder.
+        The name of the shortcut in the Start Menu > Programs folder.
 
-    .PARAMETER Folder
-        The name of the folder in the Start Menu > Programs folder. Default: $Name
+    .PARAMETER GroupName
+        The name of the group to create the shortcut in. If not specified, the shortcut will be created in the Start Menu > Programs folder.
 
-    .PARAMETER Executable
-        The path to the executable.
+    .PARAMETER RunAsAdministrator
+        Whether to run the PowerShell command as an administrator.
 
-    .PARAMETER Arguments
-        The arguments to pass to the executable.
+    .PARAMETER Visible
+        Whether to show the PowerShell window when the shortcut is run.
+
+    .PARAMETER Maximized
+        Whether to maximize the PowerShell window when the shortcut is run.
+
+    .PARAMETER KeepOpen
+        Whether to keep the PowerShell window open after the command has finished running.
 
     .PARAMETER Icon
         The path to the icon file to use for the shortcut.
@@ -123,9 +160,7 @@ function New-StartMenuShortcut {
     .OUTPUTS
         string - Path to the newly created shortcut in the All Users Start Menu Programs folder.
     #>
-}
 
-function New-PowershellStartMenuShortcut {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
@@ -196,39 +231,4 @@ function New-PowershellStartMenuShortcut {
     }
 
     return $shortcutPath
-
-    <#
-    .SYNOPSIS
-        Creates a new shortcut that runs a PowerShell command in Start Menu > Programs.
-
-    .DESCRIPTION
-        Creates a new shortcut that runs a PowerShell command in the All Users Start Menu Programs folder.
-
-    .PARAMETER Command
-        The PowerShell command to run.
-
-    .PARAMETER Name
-        The name of the shortcut in the Start Menu > Programs folder.
-
-    .PARAMETER GroupName
-        The name of the group to create the shortcut in. If not specified, the shortcut will be created in the Start Menu > Programs folder.
-
-    .PARAMETER RunAsAdministrator
-        Whether to run the PowerShell command as an administrator.
-
-    .PARAMETER Visible
-        Whether to show the PowerShell window when the shortcut is run.
-
-    .PARAMETER Maximized
-        Whether to maximize the PowerShell window when the shortcut is run.
-
-    .PARAMETER KeepOpen
-        Whether to keep the PowerShell window open after the command has finished running.
-
-    .PARAMETER Icon
-        The path to the icon file to use for the shortcut.
-
-    .OUTPUTS
-        string - Path to the newly created shortcut in the All Users Start Menu Programs folder.
-    #>
 }

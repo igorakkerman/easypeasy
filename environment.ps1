@@ -1,36 +1,4 @@
 function Get-EnvironmentVariable() {
-    [CmdletBinding()]
-    param(
-        [Parameter(Position = 0, Mandatory = $true)]
-        [string] $Name,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
-        [switch] $Machine,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
-        [switch] $User,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "Effective")]
-        [switch] $Effective
-    )
-
-    $value = 
-    if ($Machine) {
-        [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::Machine)
-    }
-    elseif ($User) {
-        [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)        
-    }
-    else {
-        (Get-Item env:$Name -ErrorAction SilentlyContinue)?.Value
-    }
-
-    if (! $value) {
-        Write-Error "Environment variable '$Name' not found."
-    }
-
-    return $value
-
     <#
     .SYNOPSIS
         Returns the value of an environment variable.
@@ -70,9 +38,70 @@ function Get-EnvironmentVariable() {
     .EXAMPLE
         Get-EnvironmentVariable -Name "TEMP" -User
     #>
+
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string] $Name,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Effective")]
+        [switch] $Effective
+    )
+
+    $value = 
+    if ($Machine) {
+        [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::Machine)
+    }
+    elseif ($User) {
+        [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)        
+    }
+    else {
+        (Get-Item env:$Name -ErrorAction SilentlyContinue)?.Value
+    }
+
+    if (! $value) {
+        Write-Error "Environment variable '$Name' not found."
+    }
+
+    return $value
 }
 
 function Set-EnvironmentVariable() {
+    <#
+    .SYNOPSIS
+        Sets the value of an environment variable.
+
+    .DESCRIPTION
+        Sets the value of the specified environment variable, 
+        either in the machine environment or the user environment.
+
+    .PARAMETER Name
+        The name of the environment variable.
+
+    .PARAMETER Value
+        The value to set the environment variable to.
+
+    .PARAMETER Machine
+        If specified, the environment variable is set in the machine environment.
+
+    .PARAMETER User
+        If specified, the environment variable is set in the user environment.
+
+    .ALIAS setenv
+
+    .EXAMPLE
+        Set-EnvironmentVariable -Name "JAVA_HOME" -Value "C:\Java\JDK" -Machine
+
+    .EXAMPLE
+        Set-EnvironmentVariable -Name "GOPATH" -Value "C:\Go\GOPATH" -User
+    #>
+
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
@@ -107,38 +136,35 @@ function Set-EnvironmentVariable() {
     catch {
         Write-Error "$($_.Exception.Message) Trying to set a machine environment variable."
     }
+}
 
+function Remove-EnvironmentVariable() {
     <#
     .SYNOPSIS
-        Sets the value of an environment variable.
+        Removes an environment variable.
 
     .DESCRIPTION
-        Sets the value of the specified environment variable, 
-        either in the machine environment or the user environment.
+        Removes the specified environment variable, 
+        either from the machine environment or the user environment.
 
     .PARAMETER Name
         The name of the environment variable.
 
-    .PARAMETER Value
-        The value to set the environment variable to.
-
     .PARAMETER Machine
-        If specified, the environment variable is set in the machine environment.
+        If specified, the environment variable is removed from the machine environment.
 
     .PARAMETER User
-        If specified, the environment variable is set in the user environment.
+        If specified, the environment variable is removed from the user environment.
 
-    .ALIAS setenv
-
-    .EXAMPLE
-        Set-EnvironmentVariable -Name "JAVA_HOME" -Value "C:\Java\JDK" -Machine
+    .ALIAS rmenv
 
     .EXAMPLE
-        Set-EnvironmentVariable -Name "GOPATH" -Value "C:\Go\GOPATH" -User
+        Remove-EnvironmentVariable -Name "JAVA_HOME" -Machine
+
+    .EXAMPLE
+        Remove-EnvironmentVariable -Name "GOPATH" -User
     #>
-}
 
-function Remove-EnvironmentVariable() {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = "true")]
@@ -170,32 +196,6 @@ function Remove-EnvironmentVariable() {
     catch {
         Write-Error "$($_.Exception.Message) Trying to remove a machine environment variable."
     }
-
-    <#
-    .SYNOPSIS
-        Removes an environment variable.
-
-    .DESCRIPTION
-        Removes the specified environment variable, 
-        either from the machine environment or the user environment.
-
-    .PARAMETER Name
-        The name of the environment variable.
-
-    .PARAMETER Machine
-        If specified, the environment variable is removed from the machine environment.
-
-    .PARAMETER User
-        If specified, the environment variable is removed from the user environment.
-
-    .ALIAS rmenv
-
-    .EXAMPLE
-        Remove-EnvironmentVariable -Name "JAVA_HOME" -Machine
-
-    .EXAMPLE
-        Remove-EnvironmentVariable -Name "GOPATH" -User
-    #>
 }
 
 New-Alias -Name getenv -Value Get-EnvironmentVariable -ErrorAction SilentlyContinue | Out-Null

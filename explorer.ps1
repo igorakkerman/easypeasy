@@ -1,11 +1,4 @@
 function Stop-Explorer {
-    [CmdletBinding(SupportsShouldProcess)]
-    Param()
-
-    if ($PSCmdlet.ShouldProcess("Windows Explorer", "Stop all instances")) {
-        Stop-Process -ProcessName explorer
-    }
-
     <#
     .SYNOPSIS
         Restarts Windows Explorer.
@@ -17,6 +10,12 @@ function Stop-Explorer {
         sx
     #>
 
+    [CmdletBinding(SupportsShouldProcess)]
+    Param()
+
+    if ($PSCmdlet.ShouldProcess("Windows Explorer", "Stop all instances")) {
+        Stop-Process -ProcessName explorer
+    }
 }
 
 New-Alias -Name sx -Value Stop-Explorer -ErrorAction SilentlyContinue | Out-Null
