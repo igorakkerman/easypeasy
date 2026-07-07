@@ -10,8 +10,8 @@ function Get-Timestamp {
         Note that the format may change in the future
         and should not be relied upon.
 
-    .ALIASES
-        time
+    .NOTES
+        Alias: time
     #>
 
     [CmdletBinding()]

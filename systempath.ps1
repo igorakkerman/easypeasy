@@ -52,7 +52,7 @@ function local:Add-PathLocation {
     .PARAMETER Front
         If specified, the location is added to the beginning of the path. 
         Otherwise, it is added to the end.
-    .OUTPUT 
+    .OUTPUTS
         Modified path.
     .EXAMPLE
         Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -Front
@@ -98,7 +98,7 @@ function local:Remove-PathLocation {
     .PARAMETER Location
         Folder location to remove from the path. 
         Trailing backslashes on the location argument and within the path are ignored.
-    .RETURN
+    .OUTPUTS
         The path with the location removed.
     .EXAMPLE
         $newPath = Remove-PathLocation -Path "C:\Windows;C:\Program Files\Git\bin\" -Location "C:\Program Files\Git\bin"
@@ -151,8 +151,8 @@ function Get-SystemPath {
         Default; if specified, the effective system path is returned. The effective system path is the current user path with the local machine path appended to it.
     .PARAMETER Join
         If specified, the system path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
-    .ALIAS
-        path
+    .NOTES
+        Alias: path
     .EXAMPLE
         Get-SystemPath
     .EXAMPLE
@@ -263,8 +263,8 @@ function Add-SystemPathLocation {
         If specified, the system path for the current user is used.
     .PARAMETER Front
         If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
-    .ALIAS
-        addpath
+    .NOTES
+        Alias: addpath
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -326,10 +326,8 @@ function Remove-SystemPathLocation {
         If specified, the system path for the local machine is used.
     .PARAMETER User
         If specified, the system path for the current user is used.
-    .ALIAS
-        rmpath
-    .ALIAS
-        removepath
+    .NOTES
+        Alias: rmpath, removepath
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE

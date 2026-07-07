@@ -21,7 +21,8 @@ function Get-EnvironmentVariable() {
 
     .OUTPUTS string - The value of the environment variable.
 
-    .ALIAS getenv
+    .NOTES
+        Alias: getenv
 
     .EXAMPLE
         Get-EnvironmentVariable "TEMP"
@@ -93,7 +94,8 @@ function Set-EnvironmentVariable() {
     .PARAMETER User
         If specified, the environment variable is set in the user environment.
 
-    .ALIAS setenv
+    .NOTES
+        Alias: setenv
 
     .EXAMPLE
         Set-EnvironmentVariable -Name "JAVA_HOME" -Value "C:\Java\JDK" -Machine
@@ -156,7 +158,8 @@ function Remove-EnvironmentVariable() {
     .PARAMETER User
         If specified, the environment variable is removed from the user environment.
 
-    .ALIAS rmenv
+    .NOTES
+        Alias: rmenv
 
     .EXAMPLE
         Remove-EnvironmentVariable -Name "JAVA_HOME" -Machine

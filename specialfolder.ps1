@@ -6,8 +6,8 @@ function Get-ProgramFilesFolder {
     .DESCRIPTION
         Returns the path to the Program Files folder.
 
-    .ALIASES
-        progs
+    .NOTES
+        Alias: programs
     #>
 
     [CmdletBinding()]
@@ -23,8 +23,8 @@ function Get-MyDocumentsFolder {
     .DESCRIPTION
         Returns the path to the My Documents folder.
 
-    .ALIASES
-        docs
+    .NOTES
+        Alias: docs
     #>
 
     [CmdletBinding()]
@@ -42,8 +42,8 @@ function Get-DesktopFolder {
     .DESCRIPTION
         Returns the path to the user's Desktop folder.
 
-    .ALIASES
-        desktop
+    .NOTES
+        Alias: desktop
     #>
 
     [CmdletBinding()]

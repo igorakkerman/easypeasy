@@ -6,8 +6,8 @@ function Stop-Explorer {
     .DESCRIPTION
         Stops the Windows Explorer process, which (generally) triggers a restart.
 
-    .ALIASES
-        sx
+    .NOTES
+        Alias: sx
     #>
 
     [CmdletBinding(SupportsShouldProcess)]

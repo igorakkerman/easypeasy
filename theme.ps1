@@ -83,8 +83,8 @@ function Switch-Theme {
         If provided, specifies the theme to set. Valid values are "light" or "dark".
         Otherwise, switches the theme from light to dark or dark to light.
 
-    .ALIAS
-        theme
+    .NOTES
+        Alias: theme
 
     .EXAMPLE
         Switch-Theme
