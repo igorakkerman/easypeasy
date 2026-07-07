@@ -31,3 +31,15 @@ function Set-ShortcutRunAsAdministrator {
         This function is based on the answer at https://stackoverflow.com/a/29002207/2562544.
     #>
 }
+
+function Get-ShortcutIconLocation {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Path
+    )
+
+    $wshShell = New-Object -ComObject WScript.Shell
+    $shortcut = $wshShell.CreateShortcut($Path)
+ 
+    return $shortcut.IconLocation
+}
