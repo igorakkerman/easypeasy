@@ -33,6 +33,23 @@ function Set-ShortcutRunAsAdministrator {
 }
 
 function Get-ShortcutIconLocation {
+    <#
+    .SYNOPSIS
+        Returns the icon location of a shortcut.
+
+    .DESCRIPTION
+        Returns the icon location of the specified shortcut.
+
+    .PARAMETER Path
+        The path to the shortcut to read the icon location from.
+
+    .OUTPUTS
+        string - The icon location of the shortcut.
+
+    .EXAMPLE
+        Get-ShortcutIconLocation -Path "C:\Users\UserName\Desktop\MyShortcut.lnk"
+    #>
+
     param (
         [Parameter(Mandatory = $true)]
         [string] $Path
