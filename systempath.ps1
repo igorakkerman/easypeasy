@@ -182,7 +182,7 @@ function Get-SystemPath {
     .PARAMETER User
         If specified, the system path for the current user is returned.
     .PARAMETER Effective
-        If specified, the effective system path is returned. The effective system path is the current user path with the local machine path appended to it.
+        Default; if specified, the effective system path is returned. The effective system path is the current user path with the local machine path appended to it.
     .PARAMETER Join
         If specified, the system path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
     .ALIAS
@@ -340,7 +340,8 @@ function Remove-SystemPathLocation {
 
         if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
             Set-SystemPath @context @params
-            # disable new location immediately
+            # disable location immediately
+            # TODO: remove only if not present in the other context 
             $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location 
         }
     }
