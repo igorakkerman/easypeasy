@@ -139,8 +139,8 @@ function New-PowershellStartMenuShortcut {
     .PARAMETER Name
         The name of the shortcut in the Start Menu > Programs folder.
 
-    .PARAMETER GroupName
-        The name of the group to create the shortcut in. If not specified, the shortcut will be created in the Start Menu > Programs folder.
+    .PARAMETER Folder
+        The name of the folder in Start Menu > Programs to create the shortcut in. If not specified, the shortcut is created directly in Start Menu > Programs.
 
     .PARAMETER RunAsAdministrator
         Whether to run the PowerShell command as an administrator.
