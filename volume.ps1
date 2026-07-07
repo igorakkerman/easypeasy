@@ -15,6 +15,9 @@ function Get-Usage {
 
     .EXAMPLE
         Get-Usage -Location "C:\Program Files"
+
+    .NOTES
+        Alias: du
     #>
 
     [CmdletBinding()]
