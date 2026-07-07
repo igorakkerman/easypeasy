@@ -1,4 +1,22 @@
 function Get-Usage {
+    <#
+    .SYNOPSIS
+        Returns the disk usage of the child items of a folder.
+
+    .DESCRIPTION
+        Returns the disk usage of each child item of the specified folder,
+        sorted by size in descending order.
+
+    .PARAMETER Location
+        The folder whose child items to measure. Default: the current location.
+
+    .EXAMPLE
+        Get-Usage
+
+    .EXAMPLE
+        Get-Usage -Location "C:\Program Files"
+    #>
+
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
