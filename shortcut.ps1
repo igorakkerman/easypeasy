@@ -50,6 +50,7 @@ function Get-ShortcutIconLocation {
         Get-ShortcutIconLocation -Path "C:\Users\UserName\Desktop\MyShortcut.lnk"
     #>
 
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string] $Path
