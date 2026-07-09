@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.1 - 2026-07-09
+
+- Add a Pester test suite covering every command.
+- Run the tests in CI on every push and pull request.
+
 ## 1.7.0 - 2026-07-08
 
 ### Added
