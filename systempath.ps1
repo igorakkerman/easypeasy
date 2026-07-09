@@ -310,7 +310,7 @@ function Add-SystemPathLocation {
         }
     }
     catch {
-        Write-Error $_.Exception.Message -ErrorAction Stop
+        Write-Error $_.Exception.Message
     }
 }
 
@@ -367,7 +367,7 @@ function Remove-SystemPathLocation {
         }
     }
     catch { 
-        Write-Error $_.Exception.Message -ErrorAction Stop
+        Write-Error $_.Exception.Message
     }
 }
 
