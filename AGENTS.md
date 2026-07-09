@@ -23,11 +23,21 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Developing
 
-No build step and no automated test suite. Iterate by importing the module from source:
+No build step. Iterate by importing the module from source:
 
 ```powershell
 Import-Module .\easypeasy.psd1 -Force
 ```
+
+### Testing
+
+Tests are Pester v5 specs in `tests/`, one file per command (`tests/<Command>.Tests.ps1`). They assert observable behavior and mock side effects — registry, scheduled tasks, file/registry writes, and even module-internal helpers — with `Mock -ModuleName easypeasy`. State-changing functions are also checked under `-WhatIf`. Run:
+
+```powershell
+Invoke-Pester -Path ./tests -Output Detailed
+```
+
+Needs Pester 6.0.0 (Windows ships 3.x); install with `Install-Module Pester -MinimumVersion 6.0.0 -Scope CurrentUser -Force -SkipPublisherCheck`. CI runs the suite on every push and pull request (`.github/workflows/test.yaml`).
 
 Lint with PSScriptAnalyzer (config in `.vscode/analyzersettings.psd1`):
 
