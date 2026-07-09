@@ -1,0 +1,23 @@
+name: Test
+
+on:
+    push:
+    pull_request:
+
+jobs:
+    pester:
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install Pester
+              shell: pwsh
+              run: Install-Module Pester -MinimumVersion 6.0.0 -Scope CurrentUser -Force -SkipPublisherCheck
+            - name: Run Pester
+              shell: pwsh
+              run: |
+                  Import-Module Pester -MinimumVersion 6.0.0
+                  $config = New-PesterConfiguration
+                  $config.Run.Path = './tests'
+                  $config.Run.Exit = $true
+                  $config.Output.Verbosity = 'Detailed'
+                  Invoke-Pester -Configuration $config
