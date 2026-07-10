@@ -39,8 +39,10 @@ C:\Windows
 
 `path` is an alias for `Get-SystemPath`, which you should use in scripts.
 
+#### Find a folder in the system PATH
+
 ```powershell
-> path | where Location -like "*Windows*"
+> path *Windows*
 
 Location
 --------
@@ -48,6 +50,8 @@ C:\Windows\system32
 C:\Windows
 ...
 ```
+
+`*Windows*` is the `-Filter` parameter, which you should name explicitly in scripts.
 
 #### Add or remove a folder to/from the system PATH permanently
 

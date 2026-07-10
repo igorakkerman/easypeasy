@@ -31,6 +31,51 @@ Describe 'Get-SystemPath' {
         }
     }
 
+    Context '-Filter' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        It 'returns only locations matching the wildcard' {
+            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin;C:\Users\me\bin'
+
+            (Get-SystemPath -Filter '*\Git\*').Location |
+                Should -Be @('C:\Program Files\Git\bin')
+        }
+
+        It 'accepts the filter positionally' {
+            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+
+            (Get-SystemPath '*Git*').Location |
+                Should -Be @('C:\Program Files\Git\bin')
+        }
+
+        It 'matches case-insensitively' {
+            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+
+            (Get-SystemPath -Filter '*git*').Location |
+                Should -Be @('C:\Program Files\Git\bin')
+        }
+
+        It 'ignores trailing backslashes on both sides' {
+            $env:PATH = 'C:\Tools\'
+
+            (Get-SystemPath -Filter 'C:\Tools').Location | Should -Be @('C:\Tools\')
+        }
+
+        It 'returns the matches joined when -Join is used' {
+            $env:PATH = 'C:\A;C:\B;C:\Bin'
+
+            Get-SystemPath -Filter 'C:\B*' -Join | Should -Be 'C:\B;C:\Bin'
+        }
+
+        It 'returns nothing when no location matches' {
+            $env:PATH = 'C:\A;C:\B'
+
+            Get-SystemPath -Filter '*nomatch*' | Should -BeNullOrEmpty
+        }
+    }
+
     Context 'machine and user scopes read the Path environment variable' {
 
         It 'reads the machine Path via Get-EnvironmentVariable' {

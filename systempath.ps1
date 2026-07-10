@@ -143,6 +143,7 @@ function Get-SystemPath {
         or the system path in effect in the current context. 
         The path is returned as an array of SystemPathLocation objects by default.
         If the -Join switch is specified, the path is returned as a semicolon-separated string.
+        If the -Filter parameter is specified, only locations matching the wildcard pattern are returned.
     .PARAMETER Machine
         If specified, the system path for the local machine is returned.
     .PARAMETER User
@@ -151,6 +152,8 @@ function Get-SystemPath {
         Default; if specified, the effective system path is returned. The effective system path is the current user path with the local machine path appended to it.
     .PARAMETER Join
         If specified, the system path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
+    .PARAMETER Filter
+        Wildcard pattern, positional; only locations matching it are returned. Matching is case-insensitive and ignores trailing backslashes.
     .NOTES
         Alias: path
     .EXAMPLE
@@ -159,6 +162,10 @@ function Get-SystemPath {
         Get-SystemPath -Machine
     .EXAMPLE
         Get-SystemPath -User -Join
+    .EXAMPLE
+    Get-SystemPath -Filter "*\Git\*"
+    .EXAMPLE
+    Get-SystemPath *Git*
     #>
 
 
@@ -174,7 +181,10 @@ function Get-SystemPath {
         [switch] $Effective,
 
         [Parameter(Mandatory = $false)]
-        [switch] $Join
+        [switch] $Join,
+
+        [Parameter(Mandatory = $false, Position = 0)]
+        [string] $Filter
     )
 
     $params = @{
@@ -192,8 +202,15 @@ function Get-SystemPath {
         $path = $env:PATH
     }
 
-    return $Join ? $path  : 
-        ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($_) } }) 
+    if (-not $Filter) {
+        return $Join ? $path  :
+            ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($_) } })
+    }
+
+    $locations = $path -split ";" | Where-Object { $_ -and $_.TrimEnd("\") -ilike $Filter.TrimEnd("\") }
+
+    return $Join ? ($locations -join ";") :
+        ($locations | ForEach-Object { [SystemPathLocation]::new($_) })
 }
 
 New-Alias -Name path -Value Get-SystemPath -ErrorAction SilentlyContinue | Out-Null
