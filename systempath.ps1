@@ -388,6 +388,113 @@ function Remove-SystemPathLocation {
     }
 }
 
+function Get-SystemPathLocation {
+    <#
+    .SYNOPSIS
+        Finds a location on the system path.
+    .DESCRIPTION
+        Returns the locations on the system path that match the specified location or wildcard pattern,
+        either for the current user, for the local machine or the system path in effect in the current context.
+        Each result carries the matched location and the scope it was found in (Machine, User or Effective).
+        Matching is case-insensitive and ignores trailing backslashes. Nothing is returned when no location matches.
+    .PARAMETER Location
+        Exact folder location to look for, positional.
+    .PARAMETER Filter
+        Wildcard pattern to match locations against, as an alternative to an exact location.
+    .PARAMETER Machine
+        If specified, the system path for the local machine is searched.
+    .PARAMETER User
+        If specified, the system path for the current user is searched.
+    .OUTPUTS
+        For each match, an object with a Location and a Scope property.
+    .EXAMPLE
+        Get-SystemPathLocation "C:\Program Files\Git\bin"
+    .EXAMPLE
+        Get-SystemPathLocation -Filter "*\Git\*" -Machine
+    #>
+
+
+    [CmdletBinding(DefaultParameterSetName = "Location")]
+    param (
+        [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "Location")]
+        [Alias("Folder")]
+        [string] $Location,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Filter")]
+        [string] $Filter,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $User
+    )
+
+    if ($Machine -and $User) {
+        Write-Error "Specify only one of -Machine and -User." -ErrorAction Stop
+    }
+
+    $scope = if ($Machine) { "Machine" } elseif ($User) { "User" } else { "Effective" }
+
+    $context = `
+        if ($Machine) { @{ Machine = $true } } `
+        elseif ($User) { @{ User = $true } } `
+        else { @{} }
+
+    $isMatch = `
+        if ($PSCmdlet.ParameterSetName -eq "Filter") { { $_.Location.TrimEnd("\") -ilike $Filter.TrimEnd("\") } } `
+        else { { $_.Location.TrimEnd("\") -ieq $Location.TrimEnd("\") } }
+
+    Get-SystemPath @context `
+    | Where-Object $isMatch `
+    | ForEach-Object { [PSCustomObject]@{ Location = $_.Location; Scope = $scope } }
+}
+
+function Test-SystemPathLocation {
+    <#
+    .SYNOPSIS
+        Tests whether a location is on the system path.
+    .DESCRIPTION
+        Returns $true if a location matching the specified location or wildcard pattern is present on the system path,
+        either for the current user, for the local machine or the system path in effect in the current context.
+        Matching is case-insensitive and ignores trailing backslashes.
+    .PARAMETER Location
+        Exact folder location to look for, positional.
+    .PARAMETER Filter
+        Wildcard pattern to match locations against, as an alternative to an exact location.
+    .PARAMETER Machine
+        If specified, the system path for the local machine is searched.
+    .PARAMETER User
+        If specified, the system path for the current user is searched.
+    .OUTPUTS
+        Boolean indicating whether a matching location is present.
+    .EXAMPLE
+        Test-SystemPathLocation "C:\Program Files\Git\bin"
+    .EXAMPLE
+        Test-SystemPathLocation -Filter "*\Git\*" -User
+    #>
+
+
+    [CmdletBinding(DefaultParameterSetName = "Location")]
+    [OutputType([bool])]
+    param (
+        [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "Location")]
+        [Alias("Folder")]
+        [string] $Location,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Filter")]
+        [string] $Filter,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $User
+    )
+
+    return @(Get-SystemPathLocation @PSBoundParameters).Count -gt 0
+}
+
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name removepath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null

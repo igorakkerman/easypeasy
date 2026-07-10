@@ -53,6 +53,32 @@ C:\Windows
 
 `*Windows*` is the `-Filter` parameter, which you should name explicitly in scripts.
 
+#### Find a folder on the system PATH and the scope it lives in
+
+```powershell
+> Get-SystemPathLocation "C:\Windows"
+> Get-SystemPathLocation -Filter "*\Git\*"
+> Get-SystemPathLocation -Filter "*\Git\*" -User
+
+Location    Scope
+--------    -----
+C:\Windows  Effective
+```
+
+Both commands accept an exact `-Location` (positional) or a `-Filter` wildcard, and the scope switches `-Machine` and `-User`.
+
+#### Test whether a folder is on the system PATH
+
+in a specific scope (machine or user) \
+**default**: **effective** in current shell
+
+```powershell
+> Test-SystemPathLocation "C:\Program Files\Git\bin"
+> Test-SystemPathLocation -Filter "*\Git\*" -Machine
+
+True
+```
+
 #### Add or remove a folder to/from the system PATH permanently
 
 in a specific scope (machine 🅰️ or user) \

@@ -74,6 +74,8 @@
         'Get-SystemPath',
         'Add-SystemPathLocation',
         'Remove-SystemPathLocation',
+        'Get-SystemPathLocation',
+        'Test-SystemPathLocation',
         'Backup-SystemPath',
         'Get-EnvironmentVariable',
         'Set-EnvironmentVariable',
