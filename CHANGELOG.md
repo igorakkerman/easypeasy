@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.0 - 2026-07-10
+
+### Added
+- **`Get-SystemPathLocation`** — finds a location on the system PATH and reports its scope (machine, user, or effective). Accepts an exact `-Location` (positional) or a `-Filter` wildcard, plus the `-Machine` / `-User` scope switches.
+- **`Test-SystemPathLocation`** — returns `$true`/`$false` for whether a location is on the system PATH, with the same `-Location` / `-Filter` and scope options.
+- **`-Filter`** parameter on **`Get-SystemPath`** — filters the PATH locations by wildcard. Positional, so `path *Git*` works.
+
 ## 1.7.1 - 2026-07-09
 
 - Add a Pester test suite covering every command.
