@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.0 - 2026-07-12
+
+### Changed
+- **`Add-SystemPathLocation` is now idempotent** — adding a location that is already on the PATH no longer reports an error; the path is left unchanged. This supersedes the duplicate-error behavior from 1.8.0 (issue #1), so `-ErrorAction Stop` no longer aborts on an already-present location.
+
+### Added
+- **`-Front` promotes an existing location** — `Add-SystemPathLocation -Front` (alias `-First`) moves an already-present location to the beginning of the PATH instead of leaving it in place.
+
 ## 1.8.0 - 2026-07-10
 
 ### Added
