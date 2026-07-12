@@ -44,6 +44,11 @@ Describe 'Add-SystemPathLocation' {
                 Should -Not -Throw
         }
 
+        It 'warns that the location is already present' {
+            Add-SystemPathLocation -Location 'C:\Exists' -User -WarningVariable warning -WarningAction SilentlyContinue
+            $warning | Should -Match 'already on the system path'
+        }
+
         It 'does not persist when the location is already present' {
             Add-SystemPathLocation -Location 'C:\Exists' -User
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly

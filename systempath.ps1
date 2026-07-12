@@ -311,7 +311,7 @@ function Add-SystemPathLocation {
         Adds a location to the system path.
     .DESCRIPTION
         Adds the specified location to the system path, either for the current user or for the local machine.
-        Adding is idempotent: if the location is already present, the path is left unchanged and no error is reported.
+        Adding is idempotent: if the location is already present, the path is left unchanged and a warning is reported.
         If the location is already present and -Front is specified, it is moved to the beginning of the path.
     .PARAMETER Location
         Folder location to add to the system path.
@@ -359,14 +359,17 @@ function Add-SystemPathLocation {
     $currentPath = Get-SystemPath @context -Join
     $newPath = Add-PathLocation -Path $currentPath -Location $Location -Front:$Front
 
-    # idempotent: only persist when the path actually changed
-    if ($newPath -ne $currentPath) {
-        if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
-            Set-SystemPath @context -Path $newPath
+    # idempotent: nothing changed means the location is already present
+    if ($newPath -eq $currentPath) {
+        Write-Warning "Location is already on the system path: '$Location'"
+        return
+    }
 
-            # enable new location immediately
-            $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -Front:$Front
-        }
+    if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
+        Set-SystemPath @context -Path $newPath
+
+        # enable new location immediately
+        $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -Front:$Front
     }
 }
 
