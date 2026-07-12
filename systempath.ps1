@@ -141,6 +141,38 @@ function local:Remove-PathLocation {
     return $newPath
 }
 
+function local:Remove-DuplicatePathLocation {
+    <#
+    .SYNOPSIS
+        Removes duplicate locations from a semicolon-separated path.
+    .DESCRIPTION
+        Returns the path with duplicate locations removed, keeping the first occurrence of each location.
+        Comparison is case-insensitive and ignores trailing backslashes. Empty locations are dropped.
+    .PARAMETER Path
+        Semicolon-separated path to deduplicate.
+    .OUTPUTS
+        The path with duplicate locations removed.
+    .EXAMPLE
+        Remove-DuplicatePathLocation -Path "C:\A;C:\B;C:\a\"
+        # -> "C:\A;C:\B"
+    #>
+
+
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string] $Path
+    )
+
+    $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    $unique = $Path -split ";" `
+    | Where-Object { $_ -and $seen.Add($_.TrimEnd("\")) }
+
+    return $unique -join ";"
+}
+
 function Get-SystemPath {
     <#
     .SYNOPSIS
@@ -398,7 +430,111 @@ function Remove-SystemPathLocation {
             }
         }
     }
-    catch { 
+    catch {
+        Write-Error $_.Exception.Message
+    }
+}
+
+function Remove-DuplicateSystemPathLocations {
+    <#
+    .SYNOPSIS
+        Removes duplicate locations from the system path.
+    .DESCRIPTION
+        Removes duplicate locations from the system path, for the local machine, for the current user, or both combined.
+        Within a scope, only the first occurrence of each location is kept.
+        When both scopes are cleaned (the default, when neither -Machine nor -User is specified), a location present on
+        both scopes is kept on only one: the machine path by default, or the user path if -KeepUser is specified.
+        Removing duplicates is idempotent: if there are no duplicates, the path is left unchanged.
+    .PARAMETER Machine
+        If specified, only the local machine system path is cleaned.
+    .PARAMETER User
+        If specified, only the current user system path is cleaned.
+    .PARAMETER KeepMachine
+        Default. When cleaning both scopes, a location present on both is kept on the machine path and removed from the user path.
+    .PARAMETER KeepUser
+        When cleaning both scopes, a location present on both is kept on the user path and removed from the machine path.
+    .NOTES
+        Alias: deduppath
+    .EXAMPLE
+        Remove-DuplicateSystemPathLocations
+    .EXAMPLE
+        Remove-DuplicateSystemPathLocations -Machine
+    .EXAMPLE
+        Remove-DuplicateSystemPathLocations -KeepUser
+    #>
+
+
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory = $false)]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $User,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $KeepMachine,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $KeepUser
+    )
+
+    try {
+        if ($KeepMachine -and $KeepUser) {
+            Write-Error "Specify only one of -KeepMachine and -KeepUser." -ErrorAction Stop
+        }
+
+        $changed = $false
+
+        # clean both scopes when neither (or both) scope switches are given
+        if ($Machine -eq $User) {
+            $machinePath = Get-SystemPath -Machine -Join
+            $userPath = Get-SystemPath -User -Join
+
+            $machineDeduped = Remove-DuplicatePathLocation -Path $machinePath
+            $userDeduped = Remove-DuplicatePathLocation -Path $userPath
+
+            # cross-scope: drop from the non-kept scope every location present in the kept scope
+            if ($KeepUser) {
+                foreach ($location in ($userDeduped -split ";")) {
+                    if ($location) { $machineDeduped = Remove-PathLocation -Path $machineDeduped -Location $location }
+                }
+            }
+            else {
+                foreach ($location in ($machineDeduped -split ";")) {
+                    if ($location) { $userDeduped = Remove-PathLocation -Path $userDeduped -Location $location }
+                }
+            }
+
+            if ($machineDeduped -ne $machinePath -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system path")) {
+                Set-SystemPath -Machine -Path $machineDeduped
+                $changed = $true
+            }
+
+            if ($userDeduped -ne $userPath -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system path")) {
+                Set-SystemPath -User -Path $userDeduped
+                $changed = $true
+            }
+        }
+        else {
+            $context = if ($Machine) { @{ Machine = $true } } else { @{ User = $true } }
+            $scope = if ($Machine) { "machine" } else { "user" }
+
+            $currentPath = Get-SystemPath @context -Join
+            $deduped = Remove-DuplicatePathLocation -Path $currentPath
+
+            if ($deduped -ne $currentPath -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system path")) {
+                Set-SystemPath @context -Path $deduped
+                $changed = $true
+            }
+        }
+
+        # keep the current process path free of duplicates too
+        if ($changed) {
+            $env:PATH = Remove-DuplicatePathLocation -Path "$env:PATH"
+        }
+    }
+    catch {
         Write-Error $_.Exception.Message
     }
 }
@@ -513,3 +649,4 @@ function Test-SystemPathLocation {
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name removepath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name deduppath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue | Out-Null

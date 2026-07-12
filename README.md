@@ -92,6 +92,22 @@ in a specific scope (machine 🅰️ or user) \
 > Remove-SystemPathLocation "C:\Program Files\MyApp" # removes every occurrence of this path
 ```
 
+#### Remove duplicate folders from the system PATH
+
+in a specific scope (machine 🅰️ or user), or both combined \
+**default**: **both**, keeping a cross-scope duplicate on the machine PATH
+
+```powershell
+> Remove-DuplicateSystemPathLocations                # both scopes; keeps machine on overlap
+> Remove-DuplicateSystemPathLocations -KeepMachine   # both scopes; keeps machine on overlap (explicit)
+> Remove-DuplicateSystemPathLocations -KeepUser      # both scopes; keeps user on overlap
+> Remove-DuplicateSystemPathLocations -Machine       # machine PATH only
+> Remove-DuplicateSystemPathLocations -User          # user PATH only
+> deduppath                                          # alias
+```
+
+Within a scope, the first occurrence of each folder is kept.
+
 #### Back up the effective system PATH environment variable to a file in the temp folder
 
 ```powershell
