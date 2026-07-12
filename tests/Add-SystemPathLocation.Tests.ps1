@@ -28,7 +28,7 @@ Describe 'Add-SystemPathLocation' {
         }
     }
 
-    Context 'error handling honours -ErrorAction (issue #1)' {
+    Context 'idempotent when the location is already present' {
 
         BeforeEach {
             $script:originalPath = $env:PATH
@@ -39,19 +39,38 @@ Describe 'Add-SystemPathLocation' {
 
         AfterEach { $env:PATH = $originalPath }
 
-        It 'stays silent with -ErrorAction SilentlyContinue' {
-            { Add-SystemPathLocation -Location 'C:\Exists' -User -ErrorAction SilentlyContinue } |
+        It 'does not throw, even with -ErrorAction Stop' {
+            { Add-SystemPathLocation -Location 'C:\Exists' -User -ErrorAction Stop } |
                 Should -Not -Throw
         }
 
-        It 'throws with -ErrorAction Stop' {
-            { Add-SystemPathLocation -Location 'C:\Exists' -User -ErrorAction Stop } |
-                Should -Throw '*already contains*'
+        It 'does not persist when the location is already present' {
+            Add-SystemPathLocation -Location 'C:\Exists' -User
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+    }
+
+    Context 'moving an existing location to the front with -Front' {
+
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            # Real Add-PathLocation runs; the location is already present in the middle.
+            Mock -ModuleName easypeasy Get-SystemPath { 'C:\A;C:\Exists;C:\B' }
+            Mock -ModuleName easypeasy Set-SystemPath { }
         }
 
-        It 'does not persist when the location is already present' {
-            Add-SystemPathLocation -Location 'C:\Exists' -User -ErrorAction SilentlyContinue
-            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'persists the location moved to the front' {
+            Add-SystemPathLocation -Location 'C:\Exists' -Front -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Path -eq 'C:\Exists;C:\A;C:\B' -and $User }
+        }
+
+        It 'does not throw for an existing location' {
+            { Add-SystemPathLocation -Location 'C:\Exists' -Front -User -ErrorAction Stop } |
+                Should -Not -Throw
         }
     }
 }

@@ -42,16 +42,19 @@ function local:Add-PathLocation {
     .SYNOPSIS
         Adds a location to a semicolon-separated path.
     .DESCRIPTION
-        Permanently adds the specified location to the specified semicolon-separated path and returns the path. 
-        If the path already contains the location, 
-        an error is reported and the execution is stopped.
+        Permanently adds the specified location to the specified semicolon-separated path and returns the path.
+        Adding is idempotent: if the path already contains the location and -Front is not specified,
+        the path is returned unchanged.
+        If the path already contains the location and -Front is specified,
+        the existing location is moved to the beginning of the path.
     .PARAMETER Path
         Semiocolon separated path to add the location to.
     .PARAMETER Location
         Folder location to add to the path.
     .PARAMETER Front
-        If specified, the location is added to the beginning of the path. 
+        If specified, the location is added to the beginning of the path.
         Otherwise, it is added to the end.
+        If the location already exists, -Front moves it to the beginning.
     .OUTPUTS
         Modified path.
     .EXAMPLE
@@ -75,11 +78,18 @@ function local:Add-PathLocation {
     )
 
     $oldLocations = $Path -split ";"
-  
-    foreach ($oldLocation in $oldLocations) {
-        if ($oldLocation.TrimEnd("\") -ieq $Location.TrimEnd("\")) {
-            Write-Error "Path already contains location: '$Location'" -ErrorAction Stop
+
+    $alreadyPresent = $oldLocations | Where-Object { $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
+
+    if ($alreadyPresent) {
+        if (-not $Front) {
+            # idempotent: the location is already present, leave the path unchanged
+            return $Path
         }
+
+        # move the existing location to the front
+        $remaining = Remove-PathLocation -Path $Path -Location $Location
+        return $remaining ? "$Location;$remaining" : $Location
     }
 
     $pathWithoutSemicolon = $Path.TrimEnd(";")
@@ -271,7 +281,9 @@ function Add-SystemPathLocation {
     .SYNOPSIS
         Adds a location to the system path.
     .DESCRIPTION
-        Adds the specified location to the system path, either for the current user or for the local machine, if the path does not contain it. 
+        Adds the specified location to the system path, either for the current user or for the local machine.
+        Adding is idempotent: if the location is already present, the path is left unchanged and no error is reported.
+        If the location is already present and -Front is specified, it is moved to the beginning of the path.
     .PARAMETER Location
         Folder location to add to the system path.
     .PARAMETER Machine
@@ -280,6 +292,7 @@ function Add-SystemPathLocation {
         If specified, the system path for the current user is used.
     .PARAMETER Front
         If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
+        If the location is already present, -Front moves it to the beginning.
     .NOTES
         Alias: addpath
     .EXAMPLE
@@ -313,17 +326,19 @@ function Add-SystemPathLocation {
     try {
         $context = `
             if ($User) { @{ User = $true } } `
-            else { @{ Machine = $true } } 
-    
-        $params = @{
-            Path = Add-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -Front:$Front
-        }
-        
-        if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
-            Set-SystemPath @context @params
-            
-            # enable new location immediately
-            $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -Front:$Front 
+            else { @{ Machine = $true } }
+
+        $currentPath = Get-SystemPath @context -Join
+        $newPath = Add-PathLocation -Path $currentPath -Location $Location -Front:$Front
+
+        # idempotent: only persist when the path actually changed
+        if ($newPath -ne $currentPath) {
+            if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
+                Set-SystemPath @context -Path $newPath
+
+                # enable new location immediately
+                $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -Front:$Front
+            }
         }
     }
     catch {
