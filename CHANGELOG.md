@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.1 - 2026-07-12
+
+### Changed
+- **`Remove-SystemPathLocation` is now idempotent** — removing a location that is not on the PATH no longer reports an error; the path is left unchanged. This supersedes the not-found-error behavior from 1.8.0 (issue #1), so `-ErrorAction Stop` no longer aborts on an absent location. Mirrors the idempotent `Add-SystemPathLocation` behavior from 1.9.0.
+
 ## 1.9.0 - 2026-07-12
 
 ### Changed

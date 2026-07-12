@@ -4,7 +4,7 @@
     RootModule           = 'easypeasy.psm1'
 
     # Version number of this module.
-    ModuleVersion        = '1.9.0'
+    ModuleVersion        = '1.9.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @(
