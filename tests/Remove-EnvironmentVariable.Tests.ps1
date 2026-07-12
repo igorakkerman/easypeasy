@@ -26,7 +26,7 @@ Describe 'Remove-EnvironmentVariable' {
             Mock -ModuleName easypeasy Assert-Administrator { throw 'admin required' }
 
             { Remove-EnvironmentVariable -Name EASYPEASY_TEST -ErrorAction Stop } |
-                Should -Throw '*machine environment variable*'
+                Should -Throw '*admin required*'
         }
     }
 }

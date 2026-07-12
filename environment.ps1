@@ -119,24 +119,19 @@ function Set-EnvironmentVariable() {
         [switch] $User
     )
 
-    try {
-        if ($User) {
-            $environment = [System.EnvironmentVariableTarget]::User
-            $envType = "User"
-        }
-        # Machine is the default
-        else {
-            Assert-Administrator
-            $environment = [System.EnvironmentVariableTarget]::Machine
-            $envType = "Machine"
-        }
-    
-        if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
-            [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
-        }
+    if ($User) {
+        $environment = [System.EnvironmentVariableTarget]::User
+        $envType = "User"
     }
-    catch {
-        Write-Error "$($_.Exception.Message) Trying to set a machine environment variable."
+    # Machine is the default
+    else {
+        Assert-Administrator
+        $environment = [System.EnvironmentVariableTarget]::Machine
+        $envType = "Machine"
+    }
+
+    if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
+        [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
     }
 }
 
@@ -180,24 +175,19 @@ function Remove-EnvironmentVariable() {
         [switch] $User
     )
 
-    try {
-        if ($User) {
-            $environment = [System.EnvironmentVariableTarget]::User
-            $envType = "User"
-        }
-        # Machine is default
-        else {
-            Assert-Administrator
-            $environment = [System.EnvironmentVariableTarget]::Machine
-            $envType = "Machine"
-        }
-    
-        if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
-            [Environment]::SetEnvironmentVariable($Name, $null, $environment)
-        }
+    if ($User) {
+        $environment = [System.EnvironmentVariableTarget]::User
+        $envType = "User"
     }
-    catch {
-        Write-Error "$($_.Exception.Message) Trying to remove a machine environment variable."
+    # Machine is default
+    else {
+        Assert-Administrator
+        $environment = [System.EnvironmentVariableTarget]::Machine
+        $envType = "Machine"
+    }
+
+    if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
+        [Environment]::SetEnvironmentVariable($Name, $null, $environment)
     }
 }
 

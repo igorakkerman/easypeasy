@@ -25,7 +25,7 @@ Describe 'Set-EnvironmentVariable' {
             Mock -ModuleName easypeasy Assert-Administrator { throw 'admin required' }
 
             { Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '42' -ErrorAction Stop } |
-                Should -Throw '*machine environment variable*'
+                Should -Throw '*admin required*'
         }
     }
 }
