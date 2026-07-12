@@ -108,6 +108,16 @@ in a specific scope (machine 🅰️ or user), or both combined \
 
 Within a scope, the first occurrence of each folder is kept.
 
+#### Move a folder between the machine and user system PATH 🅰️
+
+```powershell
+> Move-SystemPathLocation "C:\Program Files\Git\bin" -ToUser     # machine -> user
+> Move-SystemPathLocation "C:\Program Files\Git\bin" -ToMachine  # user -> machine
+> movepath "C:\Program Files\Git\bin" -ToUser                    # alias
+```
+
+The folder is removed from the source PATH and added to the target PATH.
+
 #### Back up the effective system PATH environment variable to a file in the temp folder
 
 ```powershell

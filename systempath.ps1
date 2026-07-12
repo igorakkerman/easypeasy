@@ -352,26 +352,21 @@ function Add-SystemPathLocation {
         [switch] $User
     )
 
-    try {
-        $context = `
-            if ($User) { @{ User = $true } } `
-            else { @{ Machine = $true } }
+    $context = `
+        if ($User) { @{ User = $true } } `
+        else { @{ Machine = $true } }
 
-        $currentPath = Get-SystemPath @context -Join
-        $newPath = Add-PathLocation -Path $currentPath -Location $Location -Front:$Front
+    $currentPath = Get-SystemPath @context -Join
+    $newPath = Add-PathLocation -Path $currentPath -Location $Location -Front:$Front
 
-        # idempotent: only persist when the path actually changed
-        if ($newPath -ne $currentPath) {
-            if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
-                Set-SystemPath @context -Path $newPath
+    # idempotent: only persist when the path actually changed
+    if ($newPath -ne $currentPath) {
+        if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
+            Set-SystemPath @context -Path $newPath
 
-                # enable new location immediately
-                $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -Front:$Front
-            }
+            # enable new location immediately
+            $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -Front:$Front
         }
-    }
-    catch {
-        Write-Error $_.Exception.Message
     }
 }
 
@@ -412,26 +407,21 @@ function Remove-SystemPathLocation {
         [switch] $User
     )
 
-    try {
-        $context = `
-            if ($User) { @{ User = $true } } `
-            else { @{ Machine = $true } } 
+    $context = `
+        if ($User) { @{ User = $true } } `
+        else { @{ Machine = $true } }
 
-        $currentPath = Get-SystemPath @context -Join
-        $newPath = Remove-PathLocation -Path $currentPath -Location $Location
+    $currentPath = Get-SystemPath @context -Join
+    $newPath = Remove-PathLocation -Path $currentPath -Location $Location
 
-        # idempotent: only persist when the path actually changed
-        if ($newPath -ne $currentPath) {
-            if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
-                Set-SystemPath @context -Path $newPath
-                # disable location immediately
-                # TODO: remove only if not present in the other context
-                $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location
-            }
+    # idempotent: only persist when the path actually changed
+    if ($newPath -ne $currentPath) {
+        if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
+            Set-SystemPath @context -Path $newPath
+            # disable location immediately
+            # TODO: remove only if not present in the other context
+            $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location
         }
-    }
-    catch {
-        Write-Error $_.Exception.Message
     }
 }
 
@@ -479,63 +469,133 @@ function Remove-DuplicateSystemPathLocations {
         [switch] $KeepUser
     )
 
-    try {
-        if ($KeepMachine -and $KeepUser) {
-            Write-Error "Specify only one of -KeepMachine and -KeepUser." -ErrorAction Stop
-        }
+    if ($KeepMachine -and $KeepUser) {
+        Write-Error "Specify only one of -KeepMachine and -KeepUser." -ErrorAction Stop
+    }
 
-        $changed = $false
+    $changed = $false
 
-        # clean both scopes when neither (or both) scope switches are given
-        if ($Machine -eq $User) {
-            $machinePath = Get-SystemPath -Machine -Join
-            $userPath = Get-SystemPath -User -Join
+    # clean both scopes when neither (or both) scope switches are given
+    if ($Machine -eq $User) {
+        $machinePath = Get-SystemPath -Machine -Join
+        $userPath = Get-SystemPath -User -Join
 
-            $machineDeduped = Remove-DuplicatePathLocation -Path $machinePath
-            $userDeduped = Remove-DuplicatePathLocation -Path $userPath
+        $machineDeduped = Remove-DuplicatePathLocation -Path $machinePath
+        $userDeduped = Remove-DuplicatePathLocation -Path $userPath
 
-            # cross-scope: drop from the non-kept scope every location present in the kept scope
-            if ($KeepUser) {
-                foreach ($location in ($userDeduped -split ";")) {
-                    if ($location) { $machineDeduped = Remove-PathLocation -Path $machineDeduped -Location $location }
-                }
-            }
-            else {
-                foreach ($location in ($machineDeduped -split ";")) {
-                    if ($location) { $userDeduped = Remove-PathLocation -Path $userDeduped -Location $location }
-                }
-            }
-
-            if ($machineDeduped -ne $machinePath -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system path")) {
-                Set-SystemPath -Machine -Path $machineDeduped
-                $changed = $true
-            }
-
-            if ($userDeduped -ne $userPath -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system path")) {
-                Set-SystemPath -User -Path $userDeduped
-                $changed = $true
+        # cross-scope: drop from the non-kept scope every location present in the kept scope
+        if ($KeepUser) {
+            foreach ($location in ($userDeduped -split ";")) {
+                if ($location) { $machineDeduped = Remove-PathLocation -Path $machineDeduped -Location $location }
             }
         }
         else {
-            $context = if ($Machine) { @{ Machine = $true } } else { @{ User = $true } }
-            $scope = if ($Machine) { "machine" } else { "user" }
-
-            $currentPath = Get-SystemPath @context -Join
-            $deduped = Remove-DuplicatePathLocation -Path $currentPath
-
-            if ($deduped -ne $currentPath -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system path")) {
-                Set-SystemPath @context -Path $deduped
-                $changed = $true
+            foreach ($location in ($machineDeduped -split ";")) {
+                if ($location) { $userDeduped = Remove-PathLocation -Path $userDeduped -Location $location }
             }
         }
 
-        # keep the current process path free of duplicates too
-        if ($changed) {
-            $env:PATH = Remove-DuplicatePathLocation -Path "$env:PATH"
+        if ($machineDeduped -ne $machinePath -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system path")) {
+            Set-SystemPath -Machine -Path $machineDeduped
+            $changed = $true
+        }
+
+        if ($userDeduped -ne $userPath -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system path")) {
+            Set-SystemPath -User -Path $userDeduped
+            $changed = $true
         }
     }
-    catch {
-        Write-Error $_.Exception.Message
+    else {
+        $context = if ($Machine) { @{ Machine = $true } } else { @{ User = $true } }
+        $scope = if ($Machine) { "machine" } else { "user" }
+
+        $currentPath = Get-SystemPath @context -Join
+        $deduped = Remove-DuplicatePathLocation -Path $currentPath
+
+        if ($deduped -ne $currentPath -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system path")) {
+            Set-SystemPath @context -Path $deduped
+            $changed = $true
+        }
+    }
+
+    # keep the current process path free of duplicates too
+    if ($changed) {
+        $env:PATH = Remove-DuplicatePathLocation -Path "$env:PATH"
+    }
+}
+
+function Move-SystemPathLocation {
+    <#
+    .SYNOPSIS
+        Moves a location between the machine and user system paths.
+    .DESCRIPTION
+        Moves the specified location from the machine system path to the user system path (-ToUser),
+        or from the user system path to the machine system path (-ToMachine).
+        The location is removed from the source path and added to the target path.
+        If the location is not on the source path - whether it is already on the target path or on neither -
+        nothing is moved and a warning is reported.
+        Moving to or from the machine path requires administrator privileges.
+    .PARAMETER Location
+        Folder location to move, positional.
+    .PARAMETER ToUser
+        Move the location from the machine system path to the user system path.
+    .PARAMETER ToMachine
+        Move the location from the user system path to the machine system path.
+    .NOTES
+        Alias: movepath
+    .EXAMPLE
+        Move-SystemPathLocation "C:\Program Files\Git\bin" -ToUser
+    .EXAMPLE
+        Move-SystemPathLocation "C:\Program Files\Git\bin" -ToMachine
+    #>
+
+
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Position = 0, Mandatory = $true)]
+        [Alias("Folder")]
+        [string] $Location,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "ToUser")]
+        [switch] $ToUser,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "ToMachine")]
+        [switch] $ToMachine
+    )
+
+    if ($ToUser) {
+        $source = @{ Machine = $true }; $sourceName = "machine"
+        $target = @{ User = $true }; $targetName = "user"
+    }
+    else {
+        $source = @{ User = $true }; $sourceName = "user"
+        $target = @{ Machine = $true }; $targetName = "machine"
+    }
+
+    $sourcePath = Get-SystemPath @source -Join
+    $newSource = Remove-PathLocation -Path $sourcePath -Location $Location
+
+    # not on the source path: nothing to move
+    if ($newSource -eq $sourcePath) {
+        $onTarget = (Get-SystemPath @target -Join) -split ";" `
+        | Where-Object { $_ -and $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
+
+        $reason = $onTarget ? "it is already on the $targetName path" : "it is not on the $sourceName path"
+        Write-Warning "Nothing to move; $($reason): '$Location'"
+        return
+    }
+
+    $targetPath = Get-SystemPath @target -Join
+    $newTarget = Add-PathLocation -Path $targetPath -Location $Location -Front:$false
+
+    if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system path")) {
+        return
+    }
+
+    Set-SystemPath @source -Path $newSource
+
+    if ($newTarget -ne $targetPath) {
+        Set-SystemPath @target -Path $newTarget
     }
 }
 
@@ -650,3 +710,4 @@ New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyConti
 New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name removepath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name deduppath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name movepath -Value Move-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
