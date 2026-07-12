@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.1 - 2026-07-13
+
+### Changed
+- **`Remove-SystemPathLocation`** now reports a warning when the location is not on the system PATH (previously a silent no-op), matching the warning `Add-SystemPathLocation` reports for an already-present location.
+
 ## 1.10.0 - 2026-07-13
 
 ### Added
