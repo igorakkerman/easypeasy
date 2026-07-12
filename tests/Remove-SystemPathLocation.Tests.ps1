@@ -28,7 +28,7 @@ Describe 'Remove-SystemPathLocation' {
         }
     }
 
-    Context 'error handling honours -ErrorAction (issue #1)' {
+    Context 'idempotent when the location is absent' {
 
         BeforeEach {
             $script:originalPath = $env:PATH
@@ -39,18 +39,13 @@ Describe 'Remove-SystemPathLocation' {
 
         AfterEach { $env:PATH = $originalPath }
 
-        It 'stays silent with -ErrorAction SilentlyContinue' {
-            { Remove-SystemPathLocation -Location 'C:\Gone' -User -ErrorAction SilentlyContinue } |
+        It 'does not throw, even with -ErrorAction Stop' {
+            { Remove-SystemPathLocation -Location 'C:\Gone' -User -ErrorAction Stop } |
                 Should -Not -Throw
         }
 
-        It 'throws with -ErrorAction Stop' {
-            { Remove-SystemPathLocation -Location 'C:\Gone' -User -ErrorAction Stop } |
-                Should -Throw '*not found*'
-        }
-
         It 'does not persist when the location is absent' {
-            Remove-SystemPathLocation -Location 'C:\Gone' -User -ErrorAction SilentlyContinue
+            Remove-SystemPathLocation -Location 'C:\Gone' -User
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
     }

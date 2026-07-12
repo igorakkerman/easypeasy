@@ -102,11 +102,12 @@ function local:Remove-PathLocation {
     .SYNOPSIS
         Removes a location from a semicolon-separated path and returns the path.
     .DESCRIPTION
-        Removes each occurence of location from the specified semicolon-separated path, if the path contains it.
+        Removes each occurence of location from the specified semicolon-separated path.
+        Removing is idempotent: if the path does not contain the location, the path is returned unchanged.
     .PARAMETER Path
         Semiocolon separated path to remove the location from.
     .PARAMETER Location
-        Folder location to remove from the path. 
+        Folder location to remove from the path.
         Trailing backslashes on the location argument and within the path are ignored.
     .OUTPUTS
         The path with the location removed.
@@ -136,10 +137,6 @@ function local:Remove-PathLocation {
     $newPath = $Path -split ";" `
     | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
     | Join-String -Separator ";"
-
-    if ($newPath -eq $Path) {
-        Write-Error "Location not found in path: '$Location'"
-    }
 
     return $newPath
 }
@@ -351,7 +348,8 @@ function Remove-SystemPathLocation {
     .SYNOPSIS
         Removes a location from the system path.
     .DESCRIPTION
-        Removes the specified location from the system path, either for the current user or for the local machine, if the path contains it. 
+        Removes the specified location from the system path, either for the current user or for the local machine.
+        Removing is idempotent: if the location is not present, the path is left unchanged and no error is reported.
     .PARAMETER Location
         Folder location to remove from the system path.
     .PARAMETER Machine
@@ -387,15 +385,17 @@ function Remove-SystemPathLocation {
             if ($User) { @{ User = $true } } `
             else { @{ Machine = $true } } 
 
-        $params = @{
-            Path = Remove-PathLocation -Path (Get-SystemPath @context -Join) -Location $Location -ErrorAction Stop
-        }
+        $currentPath = Get-SystemPath @context -Join
+        $newPath = Remove-PathLocation -Path $currentPath -Location $Location
 
-        if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
-            Set-SystemPath @context @params
-            # disable location immediately
-            # TODO: remove only if not present in the other context 
-            $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location 
+        # idempotent: only persist when the path actually changed
+        if ($newPath -ne $currentPath) {
+            if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
+                Set-SystemPath @context -Path $newPath
+                # disable location immediately
+                # TODO: remove only if not present in the other context
+                $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location
+            }
         }
     }
     catch { 
