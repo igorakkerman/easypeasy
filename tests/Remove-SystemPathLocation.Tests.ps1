@@ -44,6 +44,11 @@ Describe 'Remove-SystemPathLocation' {
                 Should -Not -Throw
         }
 
+        It 'warns that the location is not present' {
+            Remove-SystemPathLocation -Location 'C:\Gone' -User -WarningVariable warning -WarningAction SilentlyContinue
+            $warning | Should -Match 'not on the system path'
+        }
+
         It 'does not persist when the location is absent' {
             Remove-SystemPathLocation -Location 'C:\Gone' -User
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly

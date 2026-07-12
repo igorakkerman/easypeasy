@@ -379,7 +379,7 @@ function Remove-SystemPathLocation {
         Removes a location from the system path.
     .DESCRIPTION
         Removes the specified location from the system path, either for the current user or for the local machine.
-        Removing is idempotent: if the location is not present, the path is left unchanged and no error is reported.
+        Removing is idempotent: if the location is not present, the path is left unchanged and a warning is reported.
     .PARAMETER Location
         Folder location to remove from the system path.
     .PARAMETER Machine
@@ -417,14 +417,17 @@ function Remove-SystemPathLocation {
     $currentPath = Get-SystemPath @context -Join
     $newPath = Remove-PathLocation -Path $currentPath -Location $Location
 
-    # idempotent: only persist when the path actually changed
-    if ($newPath -ne $currentPath) {
-        if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
-            Set-SystemPath @context -Path $newPath
-            # disable location immediately
-            # TODO: remove only if not present in the other context
-            $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location
-        }
+    # idempotent: nothing changed means the location is not present
+    if ($newPath -eq $currentPath) {
+        Write-Warning "Location is not on the system path: '$Location'"
+        return
+    }
+
+    if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
+        Set-SystemPath @context -Path $newPath
+        # disable location immediately
+        # TODO: remove only if not present in the other context
+        $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location
     }
 }
 
