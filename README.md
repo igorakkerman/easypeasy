@@ -7,11 +7,12 @@
 The *easypeasy* PowerShell module simplifies and automates common tasks in Windows environments:
 - manage locations on the system path
 - manage environment variables
-- create start menu shortcuts
+- create and remove start menu shortcuts
 - create scheduled tasks
 - switch between light and dark themes
 - create timestamps
 - show disk usage
+- run a command as administrator (sudo)
 - verify administrator privileges
 
 ___
@@ -27,27 +28,29 @@ in a specific scope (machine or user) \
 ```powershell
 > path
 
-Location
---------
-C:\Program Files\PowerShell\7
-C:\Program Files\Microsoft VS Code\bin
-C:\Python
-C:\Windows\system32
-C:\Windows
+Scope   Location
+-----   --------
+Machine C:\Program Files\PowerShell\7
+Machine C:\Program Files\Microsoft VS Code\bin
+Machine C:\Windows\system32
+Machine C:\Windows
+User    C:\Users\me\go\bin
+Process C:\Program Files\PowerShell\7
 ...
 ```
 
-`path` is an alias for `Get-SystemPath`, which you should use in scripts.
+`path` is an alias for `Get-SystemPath`, which you should use in scripts. \
+Each location is tagged with its **scope**: `Machine`, `User`, or `Process` — the last for entries present only in the current shell's PATH and not persisted.
 
 #### Find a folder in the system PATH
 
 ```powershell
 > path *Windows*
 
-Location
---------
-C:\Windows\system32
-C:\Windows
+Scope   Location
+-----   --------
+Machine C:\Windows\system32
+Machine C:\Windows
 ...
 ```
 
@@ -60,12 +63,12 @@ C:\Windows
 > Get-SystemPathLocation -Filter "*\Git\*"
 > Get-SystemPathLocation -Filter "*\Git\*" -User
 
-Location    Scope
---------    -----
-C:\Windows  Effective
+Scope   Location
+-----   --------
+Machine C:\Windows
 ```
 
-Both commands accept an exact `-Location` (positional) or a `-Filter` wildcard, and the scope switches `-Machine` and `-User`.
+Both commands accept an exact `-Location` (positional) or a `-Filter` wildcard, and the scope switches `-Machine` and `-User`. Each result carries the scope it was found in: `Machine`, `User`, or `Process`.
 
 #### Test whether a folder is on the system PATH
 
@@ -85,12 +88,14 @@ in a specific scope (machine 🅰️ or user) \
 **default**: **machine** scope
 
 ```powershell
-> Add-SystemPathLocation "C:\Program Files\MyApp"
-> Add-SystemPathLocation -User "C:\Program Files\MyApp"
-> Add-SystemPathLocation -Front "C:\Program Files\MyApp" # this folder will be searched first
+> addpath "C:\Program Files\MyApp"
+> addpath -User "C:\Program Files\MyApp"
+> addpath -Front "C:\Program Files\MyApp" # this folder will be searched first
 
-> Remove-SystemPathLocation "C:\Program Files\MyApp" # removes every occurrence of this path
+> rmpath "C:\Program Files\MyApp" # removes every occurrence of this path
 ```
+
+`addpath` and `rmpath` are aliases for `Add-SystemPathLocation` and `Remove-SystemPathLocation` respectively, which you should use in scripts.
 
 #### Remove duplicate folders from the system PATH
 
@@ -98,24 +103,24 @@ in a specific scope (machine 🅰️ or user), or both combined \
 **default**: **both**, keeping a cross-scope duplicate on the machine PATH
 
 ```powershell
-> Remove-DuplicateSystemPathLocations                # both scopes; keeps machine on overlap
-> Remove-DuplicateSystemPathLocations -KeepMachine   # both scopes; keeps machine on overlap (explicit)
-> Remove-DuplicateSystemPathLocations -KeepUser      # both scopes; keeps user on overlap
-> Remove-DuplicateSystemPathLocations -Machine       # machine PATH only
-> Remove-DuplicateSystemPathLocations -User          # user PATH only
-> deduppath                                          # alias
+> deduppath                # both scopes; keeps machine on overlap
+> deduppath -KeepMachine   # both scopes; keeps machine on overlap (explicit)
+> deduppath -KeepUser      # both scopes; keeps user on overlap
+> deduppath -Machine       # machine PATH only
+> deduppath -User          # user PATH only
 ```
 
+`deduppath` is an alias for `Remove-DuplicateSystemPathLocations`, which you should use in scripts. \
 Within a scope, the first occurrence of each folder is kept.
 
 #### Move a folder between the machine and user system PATH 🅰️
 
 ```powershell
-> Move-SystemPathLocation "C:\Program Files\Git\bin" -ToUser     # machine -> user
-> Move-SystemPathLocation "C:\Program Files\Git\bin" -ToMachine  # user -> machine
-> movepath "C:\Program Files\Git\bin" -ToUser                    # alias
+> movepath "C:\Program Files\Git\bin" -ToUser     # machine -> user
+> movepath "C:\Program Files\Git\bin" -ToMachine  # user -> machine
 ```
 
+`movepath` is an alias for `Move-SystemPathLocation`, which you should use in scripts. \
 The folder is removed from the source PATH and added to the target PATH.
 
 #### Back up the effective system PATH environment variable to a file in the temp folder
@@ -157,18 +162,35 @@ in a specific scope (machine 🅰️ or user) \
 
 ### Start Menu Shortcuts
 
-#### Create a shortcut for MyApp in the Start Menu for all users 🅰️
+#### Create a shortcut for MyApp in the Start Menu
+
+for all users (**default**) 🅰️ or the current user (`-User`) \
 The shortcut will be created as `MyApp` in the `MyApp` programs folder.
 The argument `-Debug` will be passed to the executable.
-The shortcut will be created with the "Run as administrator" option.
 ```powershell
 > New-StartMenuShortcut `
         -AppName MyApp `
         -Executable "C:\Program Files\MyApp\MyApp.exe" `
         -Arguments "-Debug" `
-        -Icon "C:\Program Files\MyApp\MyBeautifulIcon.ico" `
-        -RunAsAdministrator
+        -Icon "C:\Program Files\MyApp\MyBeautifulIcon.ico"
+
+> New-StartMenuShortcut -User -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"  # current user, no admin
 ```
+
+An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it.
+```powershell
+> New-StartMenuShortcut -Force -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"
+```
+
+#### Remove a Start Menu shortcut
+
+in the all-users (**default**) 🅰️ or the current user's (`-User`) Start Menu
+```powershell
+> Remove-StartMenuShortcut MyApp
+> Remove-StartMenuShortcut -User MyApp
+```
+
+The shortcut's containing folder is removed too when it becomes empty. A terminating error is reported if the shortcut does not exist.
 
 #### Add shortcut to a PowerShell command to the start menu
 
@@ -183,7 +205,8 @@ The shortcut will be created with the "Run as administrator" option.
 ```
 
 `-Script` is an alias for `-Command` that can be used for expressiveness. \
-`-Admin` is an alias for `-RunAsAdministrator` that can be used for conciseness.
+`-Admin` is an alias for `-RunAsAdministrator` that can be used for conciseness. \
+Both accept `-Force` to overwrite an existing shortcut.
 
 ### Start an application at logon 
 
@@ -225,6 +248,17 @@ Register-LogonTask `
 
 `time` is an alias for `Get-Timestamp`, which you should use in scripts.
 
+#### Run a command as administrator (sudo)
+
+Runs the given command in an elevated PowerShell session via the Windows `sudo` command, prompting for confirmation through the User Account Control dialog.
+```powershell
+> sudops addpath -Machine "C:\Tools"
+> sudops setenv -Machine JAVA_HOME "C:\Java\jdk-21"
+> sups Set-Theme dark
+```
+
+`sudops` (and the shorter `sups`) is an alias for `Invoke-Elevated`, which you should use in scripts. Requires the Windows `sudo` feature to be installed and enabled.
+
 #### Verify that the current user is an administrator
 
 ```powershell
@@ -235,7 +269,6 @@ Assert-Administrator: This operation requires administrator privileges.
 #### Output the disk usage for the current folder
 
 ```powershell
-> Get-Usage
 > du
 
 Name                           Sum (MB)      Sum
@@ -258,6 +291,8 @@ C:\easypeasy\.github           0,000      432,00
 C:\easypeasy\administrator.ps1 0,000      374,00
 C:\easypeasy\easypeasy.psm1    0,000      349,00
 ```
+
+`du` is an alias for `Get-Usage`, which you should use in scripts.
 
 ## Installation
 ### Installation from PowerShell Gallery
