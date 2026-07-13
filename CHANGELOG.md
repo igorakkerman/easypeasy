@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.11.0 - 2026-07-13
+
+### Added
+- **Scope on system-path locations** — `Get-SystemPath` and `Get-SystemPathLocation` now tag each location with its scope: `Machine`, `User`, or `Process` (present only on the current shell's path).
+- **Current-user Start Menu support** — `Get-StartMenuProgramsPath`, `New-StartMenuProgramsFolder` and `New-StartMenuShortcut` gain a `-User` switch (and `-AllUsers`, aliases `-Machine` / `-All`). The default stays All Users (machine) for backward compatibility (#8).
+- **`Remove-StartMenuShortcut`** — removes a Start Menu shortcut, and its containing folder when it becomes empty. Reports a terminating error if the shortcut does not exist (#9).
+- **`Invoke-Elevated`** (aliases `sudops`, `sups`) — runs a command as administrator via the Windows `sudo` command, e.g. `sudops addpath -Machine 'C:\Tools'` (#37).
+
+### Changed
+- **`New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` no longer overwrite an existing shortcut silently.** They now report a terminating error when the shortcut already exists; pass `-Force` to overwrite. The previous silent overwrite was unintended behavior (#36).
+- The default scope of the system-path and environment write functions (and the new Start Menu `-User` switch) will change from Machine to User in v2; a deprecation note now documents this.
+
+### Fixed
+- **`New-PowershellStartMenuShortcut -Folder`** now creates the shortcut in the given folder; it was ignored because the code referenced an undefined `$Group` instead of `$Folder`.
+- **`Set-Theme`** taskbar-color workaround wrote a scriptblock literal instead of the toggled 0/1 value.
+
 ## 1.10.1 - 2026-07-13
 
 ### Changed
