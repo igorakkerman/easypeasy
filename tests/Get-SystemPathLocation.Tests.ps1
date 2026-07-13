@@ -8,13 +8,26 @@ Describe 'Get-SystemPathLocation' {
 
         BeforeAll { $script:originalPath = $env:PATH }
         AfterAll { $env:PATH = $script:originalPath }
-        BeforeEach { $env:PATH = 'C:\Windows;C:\Program Files\Git\bin' }
 
-        It 'returns the matching location with Effective scope' {
-            $result = Get-SystemPathLocation 'C:\Program Files\Git\bin'
+        BeforeEach {
+            # persisted scopes are mocked so each location's origin scope is deterministic
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Windows' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Program Files\Git\bin' }
+            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+        }
 
-            $result.Location | Should -Be 'C:\Program Files\Git\bin'
-            $result.Scope | Should -Be 'Effective'
+        It 'reports the origin scope of the matched location' {
+            (Get-SystemPathLocation 'C:\Windows').Scope | Should -Be 'Machine'
+            (Get-SystemPathLocation 'C:\Program Files\Git\bin').Scope | Should -Be 'User'
+        }
+
+        It 'reports Process scope for a session-only location' {
+            $env:PATH = 'C:\Temp\session'
+
+            $result = Get-SystemPathLocation 'C:\Temp\session'
+
+            $result.Location | Should -Be 'C:\Temp\session'
+            $result.Scope | Should -Be 'Process'
         }
 
         It 'matches case-insensitively and ignores trailing backslashes' {
@@ -33,10 +46,8 @@ Describe 'Get-SystemPathLocation' {
         It 'returns every location when the -Filter matches multiple' {
             $env:PATH = 'C:\Program Files\Git\bin;C:\Windows;C:\Git\cmd'
 
-            $result = Get-SystemPathLocation -Filter '*Git*'
-
-            $result.Location | Should -Be @('C:\Program Files\Git\bin', 'C:\Git\cmd')
-            $result.Scope | Should -Be @('Effective', 'Effective')
+            (Get-SystemPathLocation -Filter '*Git*').Location |
+                Should -Be @('C:\Program Files\Git\bin', 'C:\Git\cmd')
         }
     }
 

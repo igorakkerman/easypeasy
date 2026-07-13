@@ -76,6 +76,39 @@ Describe 'Get-SystemPath' {
         }
     }
 
+    Context 'scope tagging (effective)' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\WinDir;C:\Shared' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\me\bin;C:\Shared' }
+        }
+
+        It 'tags each location with its origin scope' {
+            $env:PATH = 'C:\WinDir;C:\Users\me\bin;C:\Temp\session'
+
+            $result = Get-SystemPath
+
+            ($result | Where-Object Location -EQ 'C:\WinDir').Scope | Should -Be 'Machine'
+            ($result | Where-Object Location -EQ 'C:\Users\me\bin').Scope | Should -Be 'User'
+            ($result | Where-Object Location -EQ 'C:\Temp\session').Scope | Should -Be 'Process'
+        }
+
+        It 'tags a single occurrence of a location on both scopes as Machine' {
+            $env:PATH = 'C:\Shared'
+
+            (Get-SystemPath).Scope | Should -Be 'Machine'
+        }
+
+        It 'tags duplicate occurrences of a both-scopes location as Machine then User' {
+            $env:PATH = 'C:\Shared;C:\Shared'
+
+            (Get-SystemPath).Scope | Should -Be @('Machine', 'User')
+        }
+    }
+
     Context 'machine and user scopes read the Path environment variable' {
 
         It 'reads the machine Path via Get-EnvironmentVariable' {

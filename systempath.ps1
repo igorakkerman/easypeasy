@@ -168,26 +168,65 @@ function local:Remove-DuplicatePathLocation {
     return $unique -join ";"
 }
 
+function local:Get-PathScopeCounts {
+    <#
+    .SYNOPSIS
+        Returns how often each location occurs on a persisted scope path.
+    .DESCRIPTION
+        Reads the Path environment variable for the given scope and returns a case-insensitive dictionary
+        mapping each trailing-backslash-trimmed location key to the number of times it occurs. Used to tag
+        the effective path's locations by consuming these counts in order.
+    .PARAMETER Scope
+        The scope to read, either "Machine" or "User".
+    .OUTPUTS
+        A case-insensitive hashtable of location key to occurrence count.
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("Machine", "User")]
+        [string] $Scope
+    )
+
+    # a PowerShell hashtable literal is case-insensitive and yields $null (not an error) for absent keys
+    $counts = @{}
+
+    $context = @{ $Scope = $true }
+    (Get-EnvironmentVariable @context -Name Path -ErrorAction SilentlyContinue) -split ";" `
+    | Where-Object { $_ } `
+    | ForEach-Object {
+        $key = $_.TrimEnd("\")
+        $counts[$key] = [int] $counts[$key] + 1
+    }
+
+    return $counts
+}
+
 function Get-SystemPath {
     <#
     .SYNOPSIS
         Retrieves the system path.
     .DESCRIPTION
-        Retrieves the system path, either for the current user, for the local machine 
-        or the system path in effect in the current context. 
-        The path is returned as an array of SystemPathLocation objects by default.
-        If the -Join switch is specified, the path is returned as a semicolon-separated string.
+        Retrieves the system path, either for the current user, for the local machine
+        or the system path in effect in the current context.
+        The path is returned as an array of SystemPathLocation objects by default, each carrying its Location and Scope.
+        For the effective path (the default) each location is tagged with its origin scope: 'Machine' or 'User' when the
+        location is on the corresponding persisted path, or 'Process' when it is only on the current shell's path.
+        For -Machine or -User every location carries that scope.
+        If the -Join switch is specified, the path is returned as a semicolon-separated string of locations instead.
         If the -Filter parameter is specified, only locations matching the wildcard pattern are returned.
     .PARAMETER Machine
         If specified, the system path for the local machine is returned.
     .PARAMETER User
         If specified, the system path for the current user is returned.
     .PARAMETER Effective
-        Default; if specified, the effective system path is returned. The effective system path is the current user path with the local machine path appended to it.
+        Default; if specified, the effective system path is returned. The effective system path is the path in effect in the current shell.
     .PARAMETER Join
         If specified, the system path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
     .PARAMETER Filter
         Wildcard pattern, positional; only locations matching it are returned. Matching is case-insensitive and ignores trailing backslashes.
+    .OUTPUTS
+        SystemPathLocation objects with a Location and a Scope property, or a semicolon-separated string when -Join is specified.
     .NOTES
         Alias: path
     .EXAMPLE
@@ -219,30 +258,44 @@ function Get-SystemPath {
         [string] $Filter
     )
 
-    $params = @{
-        Name = "Path"
+    $allLocations =
+    if ($Machine) {
+        (Get-EnvironmentVariable -Machine -Name Path) -split ";" `
+        | Where-Object { $_ } `
+        | ForEach-Object { [SystemPathLocation]::new("Machine", $_) }
     }
-
-    if ($Machine -or $User) {
-        $context = `
-            if ($Machine) { @{ Machine = $true } } `
-            elseif ($User) { @{ User = $true } }
-
-        $path = Get-EnvironmentVariable @context @params
+    elseif ($User) {
+        (Get-EnvironmentVariable -User -Name Path) -split ";" `
+        | Where-Object { $_ } `
+        | ForEach-Object { [SystemPathLocation]::new("User", $_) }
     }
     else {
-        $path = $env:PATH
+        # effective: the live shell path, each location tagged with the persisted scope it originates from.
+        # The process path lists machine locations before user locations, so consume the machine occurrences
+        # first, then user; a location on both scopes therefore appears once as Machine and once as User.
+        $machineRemaining = Get-PathScopeCounts -Scope Machine
+        $userRemaining = Get-PathScopeCounts -Scope User
+
+        $env:PATH -split ";" `
+        | Where-Object { $_ } `
+        | ForEach-Object {
+            $key = $_.TrimEnd("\")
+            $scope =
+            if ([int] $machineRemaining[$key] -gt 0) { $machineRemaining[$key]--; "Machine" }
+            elseif ([int] $userRemaining[$key] -gt 0) { $userRemaining[$key]--; "User" }
+            else { "Process" }
+
+            [SystemPathLocation]::new($scope, $_)
+        }
     }
 
-    if (-not $Filter) {
-        return $Join ? $path  :
-        ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($null, $_) } })
-    }
+    $selectedLocations = $Filter `
+        ? ($allLocations | Where-Object { $_.Location.TrimEnd("\") -ilike $Filter.TrimEnd("\") }) `
+        : $allLocations
 
-    $locations = $path -split ";" | Where-Object { $_ -and $_.TrimEnd("\") -ilike $Filter.TrimEnd("\") }
-
-    return $Join ? ($locations -join ";") :
-    ($locations | ForEach-Object { [SystemPathLocation]::new($null, $_) })
+    return $Join `
+        ? (($selectedLocations | ForEach-Object { $_.Location }) -join ";") `
+        : $selectedLocations
 }
 
 New-Alias -Name path -Value Get-SystemPath -ErrorAction SilentlyContinue | Out-Null
@@ -597,7 +650,8 @@ function Get-SystemPathLocation {
     .DESCRIPTION
         Returns the locations on the system path that match the specified location or wildcard pattern,
         either for the current user, for the local machine or the system path in effect in the current context.
-        Each result carries the matched location and the scope it was found in (Machine, User or Effective).
+        Each result carries the matched location and the scope it was found in: 'Machine' or 'User', or - for the
+        effective path - 'Process' when the location is only on the current shell's path.
         Matching is case-insensitive and ignores trailing backslashes. Nothing is returned when no location matches.
     .PARAMETER Location
         Exact folder location to look for, positional.
@@ -634,8 +688,6 @@ function Get-SystemPathLocation {
         Write-Error "Specify only one of -Machine and -User." -ErrorAction Stop
     }
 
-    $scope = if ($Machine) { "Machine" } elseif ($User) { "User" } else { "Effective" }
-
     $context = `
         if ($Machine) { @{ Machine = $true } } `
         elseif ($User) { @{ User = $true } } `
@@ -645,9 +697,8 @@ function Get-SystemPathLocation {
         if ($PSCmdlet.ParameterSetName -eq "Filter") { { $_.Location.TrimEnd("\") -ilike $Filter.TrimEnd("\") } } `
         else { { $_.Location.TrimEnd("\") -ieq $Location.TrimEnd("\") } }
 
-    Get-SystemPath @context `
-    | Where-Object $isMatch `
-    | ForEach-Object { [PSCustomObject]@{ Location = $_.Location; Scope = $scope } }
+    # Get-SystemPath already tags each location with its scope, so reuse that instead of recomputing it here
+    Get-SystemPath @context | Where-Object $isMatch
 }
 
 function Test-SystemPathLocation {
