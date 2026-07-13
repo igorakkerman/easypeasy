@@ -96,6 +96,7 @@ function Set-EnvironmentVariable() {
 
     .NOTES
         Alias: setenv
+        Default scope is Machine for backward compatibility. In v2 the default will change to User.
 
     .EXAMPLE
         Set-EnvironmentVariable -Name "JAVA_HOME" -Value "C:\Java\JDK" -Machine
@@ -155,6 +156,7 @@ function Remove-EnvironmentVariable() {
 
     .NOTES
         Alias: rmenv
+        Default scope is Machine for backward compatibility. In v2 the default will change to User.
 
     .EXAMPLE
         Remove-EnvironmentVariable -Name "JAVA_HOME" -Machine

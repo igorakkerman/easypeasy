@@ -324,6 +324,7 @@ function Add-SystemPathLocation {
         If the location is already present, -Front moves it to the beginning.
     .NOTES
         Alias: addpath
+        Default scope is Machine for backward compatibility. In v2 the default will change to User.
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -388,6 +389,7 @@ function Remove-SystemPathLocation {
         If specified, the system path for the current user is used.
     .NOTES
         Alias: rmpath, removepath
+        Default scope is Machine for backward compatibility. In v2 the default will change to User.
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
