@@ -29,16 +29,30 @@ Describe 'New-StartMenuShortcut' {
     }
 
     It 'forwards -User to New-StartMenuProgramsFolder' {
-        New-StartMenuShortcut -Name 'MyApp' -Executable 'C:\Windows\notepad.exe' -User | Out-Null
+        New-StartMenuShortcut -Name 'UserApp' -Executable 'C:\Windows\notepad.exe' -User | Out-Null
 
         Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
             -ParameterFilter { $User }
     }
 
     It 'does not target the user folder by default' {
-        New-StartMenuShortcut -Name 'MyApp' -Executable 'C:\Windows\notepad.exe' | Out-Null
+        New-StartMenuShortcut -Name 'DefaultApp' -Executable 'C:\Windows\notepad.exe' | Out-Null
 
         Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
             -ParameterFilter { -not $User }
+    }
+
+    It 'fails when the shortcut already exists without -Force' {
+        New-StartMenuShortcut -Name 'Dup' -Executable 'C:\Windows\notepad.exe' | Out-Null
+
+        { New-StartMenuShortcut -Name 'Dup' -Executable 'C:\Windows\notepad.exe' } |
+            Should -Throw '*already exists*'
+    }
+
+    It 'overwrites an existing shortcut with -Force' {
+        New-StartMenuShortcut -Name 'Over' -Executable 'C:\Windows\notepad.exe' | Out-Null
+
+        $path = New-StartMenuShortcut -Name 'Over' -Executable 'C:\Windows\regedit.exe' -Force
+        $wsh.CreateShortcut($path).TargetPath | Should -Be 'C:\Windows\regedit.exe'
     }
 }

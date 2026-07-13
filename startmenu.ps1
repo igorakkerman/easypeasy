@@ -113,6 +113,9 @@ function New-StartMenuShortcut {
     .PARAMETER Icon
         The path to the icon file to use for the shortcut.
 
+    .PARAMETER Force
+        Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
+
     .PARAMETER AllUsers
         Create the shortcut in the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
 
@@ -146,6 +149,9 @@ function New-StartMenuShortcut {
         [Alias("IconLocation")]
         [string] $Icon,
 
+        [Parameter(Mandatory = $false)]
+        [switch] $Force,
+
         [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
@@ -161,6 +167,11 @@ function New-StartMenuShortcut {
 
     $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName -User:$User
     $shortcutPath = "$shortcutFolder\$shortcutName.lnk"
+
+    if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
+        Write-Error "Shortcut already exists: '$shortcutPath'. Use -Force to overwrite." -ErrorAction Stop
+    }
+
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $Executable
     $shortcut.Arguments = $Arguments
@@ -271,6 +282,9 @@ function New-PowershellStartMenuShortcut {
     .PARAMETER Icon
         The path to the icon file to use for the shortcut.
 
+    .PARAMETER Force
+        Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
+
     .OUTPUTS
         string - Path to the newly created shortcut in the All Users Start Menu Programs folder.
     #>
@@ -305,7 +319,10 @@ function New-PowershellStartMenuShortcut {
 
         [Parameter(Mandatory = $false)]
         [Alias("IconLocation")]
-        [string] $Icon
+        [string] $Icon,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $Force
     )
 
     $shortcutFolder = if ($Group) {
@@ -322,6 +339,11 @@ function New-PowershellStartMenuShortcut {
     $arguments += "-Command `"$Command`""
 
     $shortcutPath = "$shortcutFolder\$Name.lnk"
+
+    if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
+        Write-Error "Shortcut already exists: '$shortcutPath'. Use -Force to overwrite." -ErrorAction Stop
+    }
+
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = "pwsh"
     $shortcut.Arguments = $arguments -join ' '

@@ -29,4 +29,18 @@ Describe 'New-PowershellStartMenuShortcut' {
         $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'KeepOpen' -KeepOpen
         $wsh.CreateShortcut($path).Arguments | Should -Match '-NoExit'
     }
+
+    It 'fails when the shortcut already exists without -Force' {
+        New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Dup' | Out-Null
+
+        { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Dup' } |
+            Should -Throw '*already exists*'
+    }
+
+    It 'overwrites an existing shortcut with -Force' {
+        New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Over' | Out-Null
+
+        $path = New-PowershellStartMenuShortcut -Command 'Get-ChildItem' -Name 'Over' -Force
+        $wsh.CreateShortcut($path).Arguments | Should -Match 'Get-ChildItem'
+    }
 }
