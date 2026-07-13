@@ -39,7 +39,6 @@ function Get-EnvironmentVariable() {
     .EXAMPLE
         Get-EnvironmentVariable -Name "TEMP" -User
     #>
-
     [CmdletBinding()]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
@@ -104,7 +103,6 @@ function Set-EnvironmentVariable() {
     .EXAMPLE
         Set-EnvironmentVariable -Name "GOPATH" -Value "C:\Go\GOPATH" -User
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
@@ -164,7 +162,6 @@ function Remove-EnvironmentVariable() {
     .EXAMPLE
         Remove-EnvironmentVariable -Name "GOPATH" -User
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = "true")]

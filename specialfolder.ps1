@@ -9,7 +9,6 @@ function Get-ProgramFilesFolder {
     .NOTES
         Alias: programs
     #>
-
     [CmdletBinding()]
     Param()
     
@@ -26,7 +25,6 @@ function Get-MyDocumentsFolder {
     .NOTES
         Alias: docs
     #>
-
     [CmdletBinding()]
     Param()
     
@@ -45,7 +43,6 @@ function Get-DesktopFolder {
     .NOTES
         Alias: desktop
     #>
-
     [CmdletBinding()]
     Param()
     

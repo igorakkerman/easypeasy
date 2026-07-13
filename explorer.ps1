@@ -9,7 +9,6 @@ function Stop-Explorer {
     .NOTES
         Alias: sx
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     Param()
 

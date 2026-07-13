@@ -25,8 +25,6 @@ function Backup-SystemPath {
     .EXAMPLE
         Backup-SystemPath
     #>
-
-    
     [CmdletBinding(SupportsShouldProcess)]
     param ()
     
@@ -62,8 +60,6 @@ function local:Add-PathLocation {
     .EXAMPLE
         Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
     #>
-
-
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -122,8 +118,6 @@ function local:Remove-PathLocation {
         $newPath = Remove-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
         # -> "C:\Windows;C:\Windows\System32"
     #>
-
-
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -156,8 +150,6 @@ function local:Remove-DuplicatePathLocation {
         Remove-DuplicatePathLocation -Path "C:\A;C:\B;C:\a\"
         # -> "C:\A;C:\B"
     #>
-
-
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -206,8 +198,6 @@ function Get-SystemPath {
     .EXAMPLE
     Get-SystemPath *Git*
     #>
-
-
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
@@ -243,13 +233,13 @@ function Get-SystemPath {
 
     if (-not $Filter) {
         return $Join ? $path  :
-            ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($_) } })
+        ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($_) } })
     }
 
     $locations = $path -split ";" | Where-Object { $_ -and $_.TrimEnd("\") -ilike $Filter.TrimEnd("\") }
 
     return $Join ? ($locations -join ";") :
-        ($locations | ForEach-Object { [SystemPathLocation]::new($_) })
+    ($locations | ForEach-Object { [SystemPathLocation]::new($_) })
 }
 
 New-Alias -Name path -Value Get-SystemPath -ErrorAction SilentlyContinue | Out-Null
@@ -273,8 +263,6 @@ function local:Set-SystemPath {
     .EXAMPLE
         Set-SystemPath -Path "C:\Windows;C:\Windows\System32" -User
     #>
-
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
@@ -334,8 +322,6 @@ function Add-SystemPathLocation {
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -Front
     #>
-
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Position = 0, Mandatory = $true)]
@@ -397,8 +383,6 @@ function Remove-SystemPathLocation {
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
     #>
-
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Position = 0, Mandatory = $true)]
@@ -460,8 +444,6 @@ function Remove-DuplicateSystemPathLocations {
     .EXAMPLE
         Remove-DuplicateSystemPathLocations -KeepUser
     #>
-
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $false)]
@@ -556,8 +538,6 @@ function Move-SystemPathLocation {
     .EXAMPLE
         Move-SystemPathLocation "C:\Program Files\Git\bin" -ToMachine
     #>
-
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Position = 0, Mandatory = $true)]
@@ -631,8 +611,6 @@ function Get-SystemPathLocation {
     .EXAMPLE
         Get-SystemPathLocation -Filter "*\Git\*" -Machine
     #>
-
-
     [CmdletBinding(DefaultParameterSetName = "Location")]
     param (
         [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "Location")]
@@ -692,8 +670,6 @@ function Test-SystemPathLocation {
     .EXAMPLE
         Test-SystemPathLocation -Filter "*\Git\*" -User
     #>
-
-
     [CmdletBinding(DefaultParameterSetName = "Location")]
     [OutputType([bool])]
     param (

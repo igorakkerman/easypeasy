@@ -19,7 +19,6 @@ function Get-Usage {
     .NOTES
         Alias: du
     #>
-
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]

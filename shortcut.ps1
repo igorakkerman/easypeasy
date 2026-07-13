@@ -15,8 +15,6 @@ function Set-ShortcutRunAsAdministrator {
     .NOTES
         This function is based on the answer at https://stackoverflow.com/a/29002207/2562544.
     #>
-
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
@@ -49,7 +47,6 @@ function Get-ShortcutIconLocation {
     .EXAMPLE
         Get-ShortcutIconLocation -Path "C:\Users\UserName\Desktop\MyShortcut.lnk"
     #>
-
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]

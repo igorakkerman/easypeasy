@@ -33,7 +33,6 @@ function Invoke-Elevated {
     .NOTES
         Aliases: sudops, sups
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments = $true)]

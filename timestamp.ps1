@@ -13,7 +13,6 @@ function Get-Timestamp {
     .NOTES
         Alias: time
     #>
-
     [CmdletBinding()]
     Param()
 

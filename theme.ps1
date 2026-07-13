@@ -13,7 +13,6 @@ function Get-Theme {
     .EXAMPLE
         Write-Host "Windows is using $(Get-Theme) mode."
     #>
-
     [CmdletBinding()]
     param()
 
@@ -41,7 +40,6 @@ function Set-Theme {
     .EXAMPLE
         Set-Theme -Theme light
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
@@ -89,7 +87,6 @@ function Switch-Theme {
     .EXAMPLE
         Switch-Theme
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $false)]
@@ -125,7 +122,6 @@ function local:Send-ThemeChangeBroadcast {
     .EXAMPLE
         Send-ThemeChangeBroadcast
     #>
-
     if (-not ("win32.nativemethods" -As [type])) {
         Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @"
 

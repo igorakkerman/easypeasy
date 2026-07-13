@@ -24,7 +24,6 @@ function Register-LogonTask {
     .EXAMPLE
         Register-LogonTask -Name "MyTask" -Path "\MyFolder" -Executable "C:\MyFolder\MyExecutable.exe" -Argument "MyArgument"
     #>
-
     [CmdletBinding()]
     Param(
         [string] $Name,

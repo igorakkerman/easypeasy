@@ -29,7 +29,6 @@ function Get-StartMenuProgramsPath {
     .NOTES
         Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
     #>
-
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
@@ -66,7 +65,6 @@ function New-StartMenuProgramsFolder {
     .NOTES
         Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
@@ -128,7 +126,6 @@ function New-StartMenuShortcut {
     .NOTES
         Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $false)]
@@ -212,7 +209,6 @@ function Remove-StartMenuShortcut {
     .NOTES
         Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true, Position = 0)]
@@ -288,7 +284,6 @@ function New-PowershellStartMenuShortcut {
     .OUTPUTS
         string - Path to the newly created shortcut in the All Users Start Menu Programs folder.
     #>
-
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
