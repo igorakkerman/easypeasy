@@ -337,9 +337,7 @@ function local:Set-SystemPath {
 
     Backup-SystemPath
 
-    $context = `
-        if ($Machine) { @{ Machine = $true } } `
-        elseif ($User) { @{ User = $true } }
+    $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 
     $params = @{
         Name  = "Path"
@@ -395,9 +393,7 @@ function Add-SystemPathLocation {
         [switch] $User
     )
 
-    $context = `
-        if ($User) { @{ User = $true } } `
-        else { @{ Machine = $true } }
+    $context = $User ? @{ User = $true } : @{ Machine = $true }
 
     $currentPath = Get-SystemPath @context -Join
     $newPath = Add-PathLocation -Path $currentPath -Location $Location -Front:$Front
@@ -452,9 +448,7 @@ function Remove-SystemPathLocation {
         [switch] $User
     )
 
-    $context = `
-        if ($User) { @{ User = $true } } `
-        else { @{ Machine = $true } }
+    $context = $User ? @{ User = $true } : @{ Machine = $true }
 
     $currentPath = Get-SystemPath @context -Join
     $newPath = Remove-PathLocation -Path $currentPath -Location $Location
@@ -552,8 +546,8 @@ function Remove-DuplicateSystemPathLocations {
         }
     }
     else {
-        $context = if ($Machine) { @{ Machine = $true } } else { @{ User = $true } }
-        $scope = if ($Machine) { "machine" } else { "user" }
+        $context = $Machine ? @{ Machine = $true } : @{ User = $true }
+        $scope = $Machine ? "machine" : "user"
 
         $currentPath = Get-SystemPath @context -Join
         $deduped = Remove-DuplicatePathLocation -Path $currentPath
@@ -693,9 +687,9 @@ function Get-SystemPathLocation {
         elseif ($User) { @{ User = $true } } `
         else { @{} }
 
-    $isMatch = `
-        if ($PSCmdlet.ParameterSetName -eq "Filter") { { $_.Location.TrimEnd("\") -ilike $Filter.TrimEnd("\") } } `
-        else { { $_.Location.TrimEnd("\") -ieq $Location.TrimEnd("\") } }
+    $isMatch = $PSCmdlet.ParameterSetName -eq "Filter" `
+        ? { $_.Location.TrimEnd("\") -ilike $Filter.TrimEnd("\") } `
+        : { $_.Location.TrimEnd("\") -ieq $Location.TrimEnd("\") }
 
     # Get-SystemPath already tags each location with its scope, so reuse that instead of recomputing it here
     Get-SystemPath @context | Where-Object $isMatch

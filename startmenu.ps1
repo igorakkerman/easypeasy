@@ -158,9 +158,9 @@ function New-StartMenuShortcut {
     )
 
     # infer the shortcut name
-    $shortcutName = if ($Name) { $Name } else { ((Get-Item $Executable).BaseName) }
+    $shortcutName = $Name ? $Name : (Get-Item $Executable).BaseName
 
-    $folderName = if ($Folder) { $Folder } else { $shortcutName }
+    $folderName = $Folder ? $Folder : $shortcutName
 
     $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName -User:$User
     $shortcutPath = "$shortcutFolder\$shortcutName.lnk"
@@ -228,7 +228,7 @@ function Remove-StartMenuShortcut {
     )
 
     $programsPath = $User ? $userProgramsPath : $allUsersProgramsPath
-    $folderName = if ($Folder) { $Folder } else { $Name }
+    $folderName = $Folder ? $Folder : $Name
     $shortcutFolder = "$programsPath\$folderName"
     $shortcutPath = "$shortcutFolder\$Name.lnk"
 
@@ -320,12 +320,9 @@ function New-PowershellStartMenuShortcut {
         [switch] $Force
     )
 
-    $shortcutFolder = if ($Folder) {
-        New-StartMenuProgramsFolder -Name $Folder
-    }
-    else {
-        Get-StartMenuProgramsPath
-    }
+    $shortcutFolder = $Folder `
+        ? (New-StartMenuProgramsFolder -Name $Folder) `
+        : (Get-StartMenuProgramsPath)
 
     $arguments = @()
     if ($KeepOpen) {
