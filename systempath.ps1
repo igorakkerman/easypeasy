@@ -1,18 +1,21 @@
 class SystemPathLocation {
-    
+
+    [string] $Scope
     [ValidateNotNullOrEmpty()] [string] $Location
-    
-    SystemPathLocation($Location) {
+
+    SystemPathLocation($Scope, $Location) {
+        $this.Scope = $Scope
         $this.Location = $Location
     }
 
-    <# 
+    <#
     .SYNOPSIS
-        Folder location in the system path.
+        A folder location on the system path and the scope it belongs to.
     .DESCRIPTION
-        Folder location in the system path.
+        Holds a folder location on the system path together with its scope:
+        'Machine' (local machine), 'User' (current user) or 'Process' (local to the current shell).
     .EXAMPLE
-        $location = [SystemPathLocation]::new("C:\Program Files\Git\bin")
+        $location = [SystemPathLocation]::new("Machine", "C:\Program Files\Git\bin")
     #>
 }
 
@@ -233,13 +236,13 @@ function Get-SystemPath {
 
     if (-not $Filter) {
         return $Join ? $path  :
-        ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($_) } })
+        ($path -split ";" | ForEach-Object { if ($_) { [SystemPathLocation]::new($null, $_) } })
     }
 
     $locations = $path -split ";" | Where-Object { $_ -and $_.TrimEnd("\") -ilike $Filter.TrimEnd("\") }
 
     return $Join ? ($locations -join ";") :
-    ($locations | ForEach-Object { [SystemPathLocation]::new($_) })
+    ($locations | ForEach-Object { [SystemPathLocation]::new($null, $_) })
 }
 
 New-Alias -Name path -Value Get-SystemPath -ErrorAction SilentlyContinue | Out-Null
