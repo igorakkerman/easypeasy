@@ -175,6 +175,70 @@ function New-StartMenuShortcut {
     return $shortcutPath
 }
 
+function Remove-StartMenuShortcut {
+    <#
+    .SYNOPSIS
+        Removes a shortcut from Start Menu > Programs.
+
+    .DESCRIPTION
+        Removes a shortcut from the Start Menu Programs folder, for all users (the default) or the current user.
+        Mirrors New-StartMenuShortcut: the shortcut is expected at <Programs>\<Folder>\<Name>.lnk, where Folder
+        defaults to Name. After removing the shortcut, its containing folder is removed too if it is now empty.
+        If the shortcut does not exist, a terminating error is reported.
+
+    .PARAMETER Name
+        The name of the shortcut to remove from the Start Menu > Programs folder.
+
+    .PARAMETER Folder
+        The name of the folder in the Start Menu > Programs folder that contains the shortcut. Default: $Name
+
+    .PARAMETER AllUsers
+        Remove the shortcut from the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
+
+    .PARAMETER User
+        Remove the shortcut from the current user's Start Menu Programs folder.
+
+    .NOTES
+        Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
+    #>
+
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [Alias("App", "AppName")]
+        [string] $Name,
+
+        [Parameter(Mandatory = $false)]
+        [Alias("Group")]
+        [string] $Folder,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
+        [Alias("Machine", "All")]
+        [switch] $AllUsers,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User
+    )
+
+    $programsPath = $User ? $userProgramsPath : $allUsersProgramsPath
+    $folderName = if ($Folder) { $Folder } else { $Name }
+    $shortcutFolder = "$programsPath\$folderName"
+    $shortcutPath = "$shortcutFolder\$Name.lnk"
+
+    if (-not (Test-Path -LiteralPath $shortcutPath)) {
+        Write-Error "Shortcut not found: '$shortcutPath'" -ErrorAction Stop
+    }
+
+    if ($PSCmdlet.ShouldProcess($shortcutPath, "Remove shortcut")) {
+        Remove-Item -LiteralPath $shortcutPath -Force
+
+        # remove the containing folder if it is now empty, but never the Programs root
+        if ($shortcutFolder -ne $programsPath -and -not (Get-ChildItem -LiteralPath $shortcutFolder -Force)) {
+            Remove-Item -LiteralPath $shortcutFolder -Force
+        }
+    }
+}
+
 function New-PowershellStartMenuShortcut {
     <#
     .SYNOPSIS

@@ -85,6 +85,7 @@
         'Set-ShortcutRunAsAdministrator',
         'Get-ShortcutIconLocation',
         'New-StartMenuShortcut',
+        'Remove-StartMenuShortcut',
         'New-PowershellStartMenuShortcut',
         'Get-StartMenuProgramsPath',
         'New-StartMenuProgramsFolder',
