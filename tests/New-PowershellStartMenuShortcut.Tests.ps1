@@ -30,6 +30,15 @@ Describe 'New-PowershellStartMenuShortcut' {
         $wsh.CreateShortcut($path).Arguments | Should -Match '-NoExit'
     }
 
+    It 'creates the shortcut in the given -Folder' {
+        Mock -ModuleName easypeasy New-StartMenuProgramsFolder { $folder }
+
+        New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'InFolder' -Folder 'MyGroup' | Out-Null
+
+        Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
+            -ParameterFilter { $Name -eq 'MyGroup' }
+    }
+
     It 'fails when the shortcut already exists without -Force' {
         New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Dup' | Out-Null
 

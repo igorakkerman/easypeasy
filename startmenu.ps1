@@ -325,8 +325,8 @@ function New-PowershellStartMenuShortcut {
         [switch] $Force
     )
 
-    $shortcutFolder = if ($Group) {
-        New-StartMenuProgramsFolder -Name $Group
+    $shortcutFolder = if ($Folder) {
+        New-StartMenuProgramsFolder -Name $Folder
     }
     else {
         Get-StartMenuProgramsPath
