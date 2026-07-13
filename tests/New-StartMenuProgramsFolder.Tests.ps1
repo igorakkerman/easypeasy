@@ -22,4 +22,15 @@ Describe 'New-StartMenuProgramsFolder' {
         $result | Should -Match 'EasypeasyTest$'
         Should -Invoke -ModuleName easypeasy New-Item -Times 0 -Exactly
     }
+
+    It 'creates the folder under the current user Programs path with -User' {
+        Mock -ModuleName easypeasy New-Item { }
+        $userPrograms = New-Object -ComObject WScript.Shell | ForEach-Object { $_.SpecialFolders("Programs") }
+
+        $result = New-StartMenuProgramsFolder -Name 'EasypeasyTest' -User
+
+        $result | Should -Be "$userPrograms\EasypeasyTest"
+        Should -Invoke -ModuleName easypeasy New-Item -Times 1 -Exactly `
+            -ParameterFilter { $Path -eq "$userPrograms\EasypeasyTest" }
+    }
 }

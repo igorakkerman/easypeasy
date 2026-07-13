@@ -27,4 +27,18 @@ Describe 'New-StartMenuShortcut' {
         $path = New-StartMenuShortcut -Name 'WhatIfApp' -Executable 'C:\Windows\notepad.exe' -WhatIf
         $path | Should -Not -Exist
     }
+
+    It 'forwards -User to New-StartMenuProgramsFolder' {
+        New-StartMenuShortcut -Name 'MyApp' -Executable 'C:\Windows\notepad.exe' -User | Out-Null
+
+        Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
+            -ParameterFilter { $User }
+    }
+
+    It 'does not target the user folder by default' {
+        New-StartMenuShortcut -Name 'MyApp' -Executable 'C:\Windows\notepad.exe' | Out-Null
+
+        Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
+            -ParameterFilter { -not $User }
+    }
 }

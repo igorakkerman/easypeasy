@@ -2,6 +2,7 @@
 
 $wshShell = New-Object -ComObject WScript.Shell
 $allUsersProgramsPath = $wshShell.SpecialFolders("AllUsersPrograms")
+$userProgramsPath = $wshShell.SpecialFolders("Programs")
 
 # https://www.vbsedit.com/html/a239a3ac-e51c-4e70-859e-d2d8c2eb3135.asp
 # $windowStyleDefault = 1
@@ -14,16 +15,32 @@ function Get-StartMenuProgramsPath {
         Returns the path to Start Menu > Programs.
 
     .DESCRIPTION
-        Returns the path to the All Users Start Menu Programs folder.
+        Returns the path to the Start Menu Programs folder, for all users (the default) or the current user.
+
+    .PARAMETER AllUsers
+        Return the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
+
+    .PARAMETER User
+        Return the current user's Start Menu Programs folder.
 
     .OUTPUTS
-        string - Path to the All Users Start Menu Programs folder.
+        string - Path to the Start Menu Programs folder.
+
+    .NOTES
+        Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
     #>
 
     [CmdletBinding()]
-    param ()
+    param (
+        [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
+        [Alias("Machine", "All")]
+        [switch] $AllUsers,
 
-    return $allUsersProgramsPath
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User
+    )
+
+    return $User ? $userProgramsPath : $allUsersProgramsPath
 }
 
 function New-StartMenuProgramsFolder {
@@ -32,13 +49,22 @@ function New-StartMenuProgramsFolder {
         Creates a new folder in Start Menu > Programs.
 
     .DESCRIPTION
-        Creates a new folder in the All Users Start Menu Programs folder.
+        Creates a new folder in the Start Menu Programs folder, for all users (the default) or the current user.
 
     .PARAMETER Name
         The name of the folder in the Start Menu > Programs folder.
 
+    .PARAMETER AllUsers
+        Create the folder in the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
+
+    .PARAMETER User
+        Create the folder in the current user's Start Menu Programs folder.
+
     .OUTPUTS
-        string - Path to the newly created folder in the All Users Start Menu Programs folder.
+        string - Path to the newly created folder in the Start Menu Programs folder.
+
+    .NOTES
+        Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
     #>
 
     [CmdletBinding(SupportsShouldProcess)]
@@ -46,10 +72,18 @@ function New-StartMenuProgramsFolder {
         [Parameter(Mandatory = $true)]
         [Alias("AppName")] # DEPRECATED!
         [Alias("Folder", "Group")]
-        [string] $Name
+        [string] $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
+        [Alias("Machine", "All")]
+        [switch] $AllUsers,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User
     )
 
-    $shortcutFolderName = "$allUsersProgramsPath\$Name"
+    $programsPath = $User ? $userProgramsPath : $allUsersProgramsPath
+    $shortcutFolderName = "$programsPath\$Name"
     if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
         New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
     }    
@@ -62,7 +96,7 @@ function New-StartMenuShortcut {
         Creates a new shortcut in Start Menu > Programs.
 
     .DESCRIPTION
-        Creates a new shortcut in the All Users Start Menu Programs folder.
+        Creates a new shortcut in the Start Menu Programs folder, for all users (the default) or the current user.
 
     .PARAMETER Name
         The name of the application. This will be used as the name of the shortcut in the Start Menu > Programs folder.
@@ -79,8 +113,17 @@ function New-StartMenuShortcut {
     .PARAMETER Icon
         The path to the icon file to use for the shortcut.
 
+    .PARAMETER AllUsers
+        Create the shortcut in the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
+
+    .PARAMETER User
+        Create the shortcut in the current user's Start Menu Programs folder.
+
     .OUTPUTS
-        string - Path to the newly created shortcut in the All Users Start Menu Programs folder.
+        string - Path to the newly created shortcut in the Start Menu Programs folder.
+
+    .NOTES
+        Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
     #>
 
     [CmdletBinding(SupportsShouldProcess)]
@@ -88,7 +131,7 @@ function New-StartMenuShortcut {
         [Parameter(Mandatory = $false)]
         [Alias("App", "AppName")]
         [string] $Name,
-        
+
         [Parameter(Mandatory = $false)]
         [Alias("Group")]
         [string] $Folder,
@@ -101,7 +144,14 @@ function New-StartMenuShortcut {
 
         [Parameter(Mandatory = $false)]
         [Alias("IconLocation")]
-        [string] $Icon
+        [string] $Icon,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
+        [Alias("Machine", "All")]
+        [switch] $AllUsers,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User
     )
 
     # infer the shortcut name
@@ -109,7 +159,7 @@ function New-StartMenuShortcut {
 
     $folderName = if ($Folder) { $Folder } else { $shortcutName }
 
-    $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName
+    $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName -User:$User
     $shortcutPath = "$shortcutFolder\$shortcutName.lnk"
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $Executable
