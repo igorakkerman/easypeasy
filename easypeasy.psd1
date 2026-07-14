@@ -21,7 +21,7 @@
     # CompanyName = 'Unknown'
 
     # Copyright statement for this module
-    Copyright            = 'Copyright (c) 2025 Igor Akkerman. Licensed under the Apache License, Version 2.0'
+    Copyright            = 'Copyright (c) 2023-2026 Igor Akkerman. Licensed under the Apache License, Version 2.0'
 
     # Description of the functionality provided by this module
     Description          = 'Collection of utility functions and aliases to simplify and automate common tasks in Windows environments.'

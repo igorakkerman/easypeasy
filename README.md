@@ -321,7 +321,7 @@ Please contribute to the *easypeasy* module. Issues and pull requests are very w
 ## License
 The *easypeasy* module is licensed under the Apache License, Version 2.0. See the `LICENSE.txt` file for details.
 
-   Copyright 2025 Igor Akkerman
+   Copyright 2023-2026 Igor Akkerman
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
