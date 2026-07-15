@@ -26,14 +26,14 @@ in a specific scope (machine or user) \
 ```powershell
 > path
 
-Scope   Location
------   --------
-Machine C:\Program Files\PowerShell\7
-Machine C:\Program Files\Microsoft VS Code\bin
-Machine C:\Windows\system32
-Machine C:\Windows
-User    C:\Users\me\go\bin
-Process C:\Program Files\PowerShell\7
+Scope      Location
+-----      --------
+Machine    C:\Program Files\PowerShell\7
+Machine    C:\Program Files\Microsoft VS Code\bin
+Machine    C:\Windows\system32
+Machine    C:\Windows
+User       C:\Users\me\go\bin
+Process    C:\Program Files\PowerShell\7
 ...
 ```
 
@@ -45,10 +45,10 @@ Each location is tagged with its **scope**: `Machine`, `User`, or `Process` — 
 ```powershell
 > path Windows
 
-Scope   Location
------   --------
-Machine C:\Windows\system32
-Machine C:\Windows
+Scope      Location
+-----      --------
+Machine    C:\Windows\system32
+Machine    C:\Windows
 ...
 ```
 
@@ -70,9 +70,9 @@ Three kinds of criteria are available, and a location must satisfy **all** of th
 > Get-SystemPathLocation -Location "C:\Windows"
 > Get-SystemPathLocation -Filter "*\Git\*" -User
 
-Scope   Location
------   --------
-Machine C:\Windows
+Scope      Location
+-----      --------
+Machine    C:\Windows
 ```
 
 Both commands take the same criteria as `Get-SystemPath` — `-Contains` (positional), `-Filter` and `-Match` — plus an exact `-Location`, and the scope switches `-Machine` and `-User`. At least one criterion is required. Each result carries the scope it was found in: `Machine`, `User`, or `Process`.
