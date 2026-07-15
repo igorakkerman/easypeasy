@@ -28,18 +28,18 @@ Describe 'New-StartMenuShortcut' {
         $path | Should -Not -Exist
     }
 
-    It 'forwards -User to New-StartMenuProgramsFolder' {
-        New-StartMenuShortcut -Name 'UserApp' -Executable 'C:\Windows\notepad.exe' -User | Out-Null
+    It 'forwards -AllUsers to New-StartMenuProgramsFolder' {
+        New-StartMenuShortcut -Name 'AllUsersApp' -Executable 'C:\Windows\notepad.exe' -AllUsers | Out-Null
 
         Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
-            -ParameterFilter { $User }
+            -ParameterFilter { $AllUsers }
     }
 
-    It 'does not target the user folder by default' {
+    It 'does not target the All Users folder by default' {
         New-StartMenuShortcut -Name 'DefaultApp' -Executable 'C:\Windows\notepad.exe' | Out-Null
 
         Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
-            -ParameterFilter { -not $User }
+            -ParameterFilter { -not $AllUsers }
     }
 
     It 'fails when the shortcut already exists without -Force' {

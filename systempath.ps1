@@ -360,13 +360,13 @@ function Add-SystemPathLocation {
     .PARAMETER Machine
         If specified, the system path for the local machine is used.
     .PARAMETER User
-        If specified, the system path for the current user is used.
+        If specified, the system path for the current user is used. (Default.)
     .PARAMETER Front
         If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
         If the location is already present, -Front moves it to the beginning.
     .NOTES
         Alias: addpath
-        Default scope is Machine for backward compatibility. In v2 the default will change to User.
+        Default scope is User.
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -386,14 +386,14 @@ function Add-SystemPathLocation {
         [Alias("Prepend", "First", "Start")]
         [switch] $Front,
 
-        [Parameter(Mandatory = $false, ParameterSetName = "Machine")]
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
 
-    $context = $User ? @{ User = $true } : @{ Machine = $true }
+    $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 
     $currentPath = Get-SystemPath @context -Join
     $newPath = Add-PathLocation -Path $currentPath -Location $Location -Front:$Front
@@ -424,10 +424,10 @@ function Remove-SystemPathLocation {
     .PARAMETER Machine
         If specified, the system path for the local machine is used.
     .PARAMETER User
-        If specified, the system path for the current user is used.
+        If specified, the system path for the current user is used. (Default.)
     .NOTES
         Alias: rmpath, removepath
-        Default scope is Machine for backward compatibility. In v2 the default will change to User.
+        Default scope is User.
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -441,14 +441,14 @@ function Remove-SystemPathLocation {
         [Alias("Folder")]
         [string] $Location,
         
-        [Parameter(Mandatory = $false, ParameterSetName = "Machine")]
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
-        
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
 
-    $context = $User ? @{ User = $true } : @{ Machine = $true }
+    $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 
     $currentPath = Get-SystemPath @context -Join
     $newPath = Remove-PathLocation -Path $currentPath -Location $Location

@@ -17,7 +17,11 @@ Describe 'Get-StartMenuProgramsPath' {
         Get-StartMenuProgramsPath -User | Should -Exist
     }
 
-    It 'returns a different path for -User than for the machine default' {
-        Get-StartMenuProgramsPath -User | Should -Not -Be (Get-StartMenuProgramsPath)
+    It 'returns the current user Programs folder by default' {
+        Get-StartMenuProgramsPath | Should -Be (Get-StartMenuProgramsPath -User)
+    }
+
+    It 'returns a different path for -AllUsers than for the user default' {
+        Get-StartMenuProgramsPath -AllUsers | Should -Not -Be (Get-StartMenuProgramsPath)
     }
 }

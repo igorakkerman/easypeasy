@@ -4,20 +4,20 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## What this is
 
-`easypeasy` is a PowerShell 7 (Core-only) module published to the PowerShell Gallery. It wraps common Windows system-administration tasks (system PATH, environment variables, Start Menu shortcuts, scheduled tasks, theme switching, timestamps, disk usage, admin checks) behind `Verb-Noun` functions plus short aliases.
+`easypeasy` is a PowerShell 7 (Core-only) module published to the PowerShell Gallery. It wraps common Windows system-administration tasks (system PATH, environment variables, Start Menu shortcuts, scheduled tasks, timestamps, admin checks) behind `Verb-Noun` functions plus short aliases.
 
 ## Architecture
 
 - `easypeasy.psm1` is the root **module**. It does nothing but dot-source each domain `.ps1` file in `$PSScriptRoot`. Load order matters: helpers like `timestamp.ps1`, `administrator.ps1`, and `environment.ps1` are sourced before the files that depend on them.
 - `easypeasy.psd1` is the manifest. **`FunctionsToExport` and `AliasesToExport` are explicit lists (no wildcards).** A new public function or alias is invisible to module consumers until its name is added here — keep these in sync when adding/renaming exports.
-- Each `.ps1` is one domain, e.g. `systempath.ps1`, `environment.ps1`, `startmenu.ps1`, `shortcut.ps1`, `task.ps1`, `theme.ps1`, `specialfolder.ps1`, `volume.ps1`, `explorer.ps1`, `administrator.ps1`, `timestamp.ps1`.
+- Each `.ps1` is one domain, e.g. `systempath.ps1`, `environment.ps1`, `startmenu.ps1`, `shortcut.ps1`, `task.ps1`, `specialfolder.ps1`, `explorer.ps1`, `administrator.ps1`, `timestamp.ps1`.
 - Layering: `systempath.ps1` builds on `environment.ps1` (PATH is just an env var); `startmenu.ps1` dot-sources `shortcut.ps1`; most write operations call `Assert-Administrator` (from `administrator.ps1`).
 
 ## Conventions (match these when editing)
 
-- **Internal helpers are scoped with `function local:Name`** (e.g. `local:Add-PathLocation`, `local:Send-ThemeChangeBroadcast`) so they aren't exported. Public functions are plain `function Name`.
+- **Internal helpers are scoped with `function local:Name`** (e.g. `local:Add-PathLocation`, `local:Set-SystemPath`) so they aren't exported. Public functions are plain `function Name`.
 - **Aliases** are registered at the bottom of each file: `New-Alias -Name x -Value Verb-Noun -ErrorAction SilentlyContinue | Out-Null`. The alias must also be listed in `AliasesToExport` in the manifest. Document the alias in the function's help under `.NOTES` (`Alias: x`) — comment-based help has no keyword for aliases.
-- **Machine / User / Effective parameter-set pattern**: read functions offer `-Machine`, `-User`, and a default `-Effective` (current-process value); write functions offer `-Machine` (the default) and `-User`. When the effective target is Machine, the function calls `Assert-Administrator` first.
+- **Machine / User / Effective parameter-set pattern**: read functions offer `-Machine`, `-User`, and a default `-Effective` (current-process value); write functions offer `-Machine` and `-User` (the default). When the effective target is Machine, the function calls `Assert-Administrator` first.
 - **State-changing functions use `[CmdletBinding(SupportsShouldProcess)]`** and gate the mutation behind `if ($PSCmdlet.ShouldProcess(...))`, so `-WhatIf`/`-Confirm` work. Preserve this when adding side effects.
 - PATH edits keep the current process (`$env:PATH`) and the persisted registry value in sync; location comparisons ignore trailing backslashes.
 

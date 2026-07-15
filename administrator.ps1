@@ -28,7 +28,7 @@ function Invoke-Elevated {
         Invoke-Elevated addpath -Machine 'C:\Tools'
 
     .EXAMPLE
-        sudops Set-Theme dark
+        sudops setenv -Machine JAVA_HOME 'C:\Java\jdk-21'
 
     .NOTES
         Aliases: sudops, sups

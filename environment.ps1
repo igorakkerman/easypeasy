@@ -91,11 +91,11 @@ function Set-EnvironmentVariable() {
         If specified, the environment variable is set in the machine environment.
 
     .PARAMETER User
-        If specified, the environment variable is set in the user environment.
+        If specified, the environment variable is set in the user environment. (Default.)
 
     .NOTES
         Alias: setenv
-        Default scope is Machine for backward compatibility. In v2 the default will change to User.
+        Default scope is User.
 
     .EXAMPLE
         Set-EnvironmentVariable -Name "JAVA_HOME" -Value "C:\Java\JDK" -Machine
@@ -111,22 +111,22 @@ function Set-EnvironmentVariable() {
         [Parameter(Position = 1, Mandatory = $true)]
         [string] $Value,
 
-        [Parameter(Mandatory = $false, ParameterSetName = "Machine")]
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
 
-    if ($User) {
-        $environment = [System.EnvironmentVariableTarget]::User
-        $envType = "User"
-    }
-    # Machine is the default
-    else {
+    if ($Machine) {
         Assert-Administrator
         $environment = [System.EnvironmentVariableTarget]::Machine
         $envType = "Machine"
+    }
+    # User is the default
+    else {
+        $environment = [System.EnvironmentVariableTarget]::User
+        $envType = "User"
     }
 
     if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
@@ -150,11 +150,11 @@ function Remove-EnvironmentVariable() {
         If specified, the environment variable is removed from the machine environment.
 
     .PARAMETER User
-        If specified, the environment variable is removed from the user environment.
+        If specified, the environment variable is removed from the user environment. (Default.)
 
     .NOTES
         Alias: rmenv
-        Default scope is Machine for backward compatibility. In v2 the default will change to User.
+        Default scope is User.
 
     .EXAMPLE
         Remove-EnvironmentVariable -Name "JAVA_HOME" -Machine
@@ -167,22 +167,22 @@ function Remove-EnvironmentVariable() {
         [Parameter(Position = 0, Mandatory = "true")]
         [string] $Name,
 
-        [Parameter(Mandatory = $false, ParameterSetName = "Machine")]
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
 
-    if ($User) {
-        $environment = [System.EnvironmentVariableTarget]::User
-        $envType = "User"
-    }
-    # Machine is default
-    else {
+    if ($Machine) {
         Assert-Administrator
         $environment = [System.EnvironmentVariableTarget]::Machine
         $envType = "Machine"
+    }
+    # User is default
+    else {
+        $environment = [System.EnvironmentVariableTarget]::User
+        $envType = "User"
     }
 
     if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {

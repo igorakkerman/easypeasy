@@ -4,7 +4,7 @@
     RootModule           = 'easypeasy.psm1'
 
     # Version number of this module.
-    ModuleVersion        = '1.11.0'
+    ModuleVersion        = '2.0.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @(
@@ -67,7 +67,6 @@
         'Assert-Administrator',
         'Invoke-Elevated',
         'Get-Timestamp',
-        'Get-Usage',
         'Get-ProgramFilesFolder',
         'Get-MyDocumentsFolder',
         'Get-DesktopFolder',
@@ -90,10 +89,7 @@
         'New-PowershellStartMenuShortcut',
         'Get-StartMenuProgramsPath',
         'New-StartMenuProgramsFolder',
-        'Register-LogonTask',
-        'Get-Theme',
-        'Set-Theme',
-        'Switch-Theme'
+        'Register-LogonTask'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -116,9 +112,7 @@
         'docs',
         'desktop',
         'sx',
-        'time',
-        'du',
-        'theme'
+        'time'
     )
 
     # DSC resources to export from this module
@@ -138,7 +132,7 @@
             # Tags applied to this module. These help with module discovery in online galleries.
             Tags       = @(
                 'PSEdition_Core', 'Windows', 'System', 'Environment', 'Path', 'EnvironmentVariable', 'Shortcut', 
-                'StartMenu', 'LogonTask', 'Theme', 'Utility', 'Alias', 'Function', 'Automation', 'Productivity'
+                'StartMenu', 'LogonTask', 'Utility', 'Alias', 'Function', 'Automation', 'Productivity'
             )
 
             # A URL to the license for this module.
@@ -154,7 +148,7 @@
             # ReleaseNotes = ''
 
             # Prerelease string of this module
-            # Prerelease = ''
+            Prerelease = 'rc1'
 
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
             # RequireLicenseAcceptance = $false

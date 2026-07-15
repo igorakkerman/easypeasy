@@ -36,10 +36,10 @@ Describe 'Invoke-Elevated' {
     ) {
         Mock -ModuleName easypeasy sudo { }
 
-        & $alias Set-Theme dark
+        & $alias rmenv -Machine JAVA_HOME
 
         Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
-            $args[-1] -eq 'Set-Theme dark'
+            $args[-1] -eq 'rmenv -Machine JAVA_HOME'
         }
     }
 

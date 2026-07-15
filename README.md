@@ -9,9 +9,7 @@ The *easypeasy* PowerShell module simplifies and automates common tasks in Windo
 - manage environment variables
 - create and remove start menu shortcuts
 - create scheduled tasks
-- switch between light and dark themes
 - create timestamps
-- show disk usage
 - run a command as administrator (sudo)
 - verify administrator privileges
 
@@ -85,11 +83,11 @@ True
 #### Add or remove a folder to/from the system PATH permanently
 
 in a specific scope (machine 🅰️ or user) \
-**default**: **machine** scope
+**default**: **user** scope
 
 ```powershell
 > addpath "C:\Program Files\MyApp"
-> addpath -User "C:\Program Files\MyApp"
+> addpath -Machine "C:\Program Files\MyApp" # 🅰️
 > addpath -Front "C:\Program Files\MyApp" # this folder will be searched first
 
 > rmpath "C:\Program Files\MyApp" # removes every occurrence of this path
@@ -149,13 +147,13 @@ C:\Java\jdk-21
 
 #### Set the value of a variable or remove it permanently 
 in a specific scope (machine 🅰️ or user) \
-**default**: **machine** scope
+**default**: **user** scope
 ```powershell
 > setenv JAVA_HOME "C:\Java\jdk-21"
-> setenv -User JAVA_HOME "C:\Java\jdk-21"
+> setenv -Machine JAVA_HOME "C:\Java\jdk-21" # 🅰️
 
 > rmenv JAVA_HOME
-> rmenv -User JAVA_HOME
+> rmenv -Machine JAVA_HOME # 🅰️
 ```
 
 `setenv` and `rmenv` are aliases for `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` respectively, which you should use in scripts.
@@ -164,7 +162,7 @@ in a specific scope (machine 🅰️ or user) \
 
 #### Create a shortcut for MyApp in the Start Menu
 
-for all users (**default**) 🅰️ or the current user (`-User`) \
+for the current user (**default**) or all users (`-AllUsers`) 🅰️ \
 The shortcut will be created as `MyApp` in the `MyApp` programs folder.
 The argument `-Debug` will be passed to the executable.
 ```powershell
@@ -174,7 +172,7 @@ The argument `-Debug` will be passed to the executable.
         -Arguments "-Debug" `
         -Icon "C:\Program Files\MyApp\MyBeautifulIcon.ico"
 
-> New-StartMenuShortcut -User -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"  # current user, no admin
+> New-StartMenuShortcut -AllUsers -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"  # all users, needs admin
 ```
 
 An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it.
@@ -184,10 +182,10 @@ An existing shortcut is left untouched and a terminating error is reported, unle
 
 #### Remove a Start Menu shortcut
 
-in the all-users (**default**) 🅰️ or the current user's (`-User`) Start Menu
+in the current user's (**default**) or the all-users (`-AllUsers`) 🅰️ Start Menu
 ```powershell
 > Remove-StartMenuShortcut MyApp
-> Remove-StartMenuShortcut -User MyApp
+> Remove-StartMenuShortcut -AllUsers MyApp
 ```
 
 The shortcut's containing folder is removed too when it becomes empty. A terminating error is reported if the shortcut does not exist.
@@ -219,21 +217,6 @@ Register-LogonTask `
     -Force
 ```
 
-### Dark Mode
-
-#### Switch between light and dark theme
-
-```powershell
-> theme
-```
-
-`theme` is an alias for `Switch-Theme`. `Get-Theme`, `Set-Theme`, `Switch-Theme` and `theme` will be removed in v2.
-
-```powershell
-> theme dark
-> theme light
-```
-
 ### Utilities
 
 #### Quick timestamp creation
@@ -254,7 +237,6 @@ Runs the given command in an elevated PowerShell session via the Windows `sudo` 
 ```powershell
 > sudops addpath -Machine "C:\Tools"
 > sudops setenv -Machine JAVA_HOME "C:\Java\jdk-21"
-> sups Set-Theme dark
 ```
 
 `sudops` (and the shorter `sups`) is an alias for `Invoke-Elevated`, which you should use in scripts. Requires the Windows `sudo` feature to be installed and enabled.
@@ -265,34 +247,6 @@ Runs the given command in an elevated PowerShell session via the Windows `sudo` 
 > Assert-Administrator
 Assert-Administrator: This operation requires administrator privileges.
 ```
-
-#### Output the disk usage for the current folder
-
-```powershell
-> Get-Usage
-
-Name                           Sum (MB)      Sum
-----                           --------      ---
-C:\easypeasy\systempath.ps1    0,011    11297,00
-C:\easypeasy\startmenu.ps1     0,006     5961,00
-C:\easypeasy\environment.ps1   0,006     5873,00
-C:\easypeasy\easypeasy.psd1    0,005     5748,00
-C:\easypeasy\README.md         0,005     5243,00
-C:\easypeasy\theme.ps1         0,003     2692,00
-C:\easypeasy\task.ps1          0,001     1497,00
-C:\easypeasy\specialfolder.ps1 0,001     1299,00
-C:\easypeasy\.vscode           0,001     1116,00
-C:\easypeasy\LICENSE.txt       0,001     1070,00
-C:\easypeasy\shortcut.ps1      0,001      991,00
-C:\easypeasy\volume.ps1        0,001      628,00
-C:\easypeasy\timestamp.ps1     0,001      541,00
-C:\easypeasy\explorer.ps1      0,000      481,00
-C:\easypeasy\.github           0,000      432,00
-C:\easypeasy\administrator.ps1 0,000      374,00
-C:\easypeasy\easypeasy.psm1    0,000      349,00
-```
-
-`du` is an alias for `Get-Usage`. Both will be removed in v2.
 
 ## Installation
 ### Installation from PowerShell Gallery

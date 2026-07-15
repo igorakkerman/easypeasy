@@ -1,10 +1,14 @@
 # Changelog
 
-## Upcoming Breaking Changes
+## 2.0.0-rc1 - 2026-07-15
 
-### Deprecated
-- **`Get-Usage` and alias `du` will be removed in v2.**
-- **`Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme` will be removed in v2.**
+### Removed
+- **`Get-Usage` and alias `du`.**
+- **`Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme`.**
+
+### Changed
+- **The default scope of the system-path and environment write functions changed from Machine to User** — `Add-SystemPathLocation`, `Remove-SystemPathLocation`, `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` now write to the user scope unless `-Machine` is given. Administrator privileges are no longer required by default.
+- **The default Start Menu scope changed from All Users to the current user** — `Get-StartMenuProgramsPath`, `New-StartMenuProgramsFolder`, `New-StartMenuShortcut` and `Remove-StartMenuShortcut` now target the current user's Start Menu unless `-AllUsers` (alias `-Machine`, `-All`) is given. `New-PowershellStartMenuShortcut`, which has no scope switch, follows the new default.
 
 ## 1.11.0 - 2026-07-13
 

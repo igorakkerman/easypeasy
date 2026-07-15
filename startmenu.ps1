@@ -15,31 +15,31 @@ function Get-StartMenuProgramsPath {
         Returns the path to Start Menu > Programs.
 
     .DESCRIPTION
-        Returns the path to the Start Menu Programs folder, for all users (the default) or the current user.
+        Returns the path to the Start Menu Programs folder, for the current user (the default) or for all users.
 
     .PARAMETER AllUsers
-        Return the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
+        Return the All Users (machine) Start Menu Programs folder. Aliases: Machine, All.
 
     .PARAMETER User
-        Return the current user's Start Menu Programs folder.
+        Return the current user's Start Menu Programs folder. (Default.)
 
     .OUTPUTS
         string - Path to the Start Menu Programs folder.
 
     .NOTES
-        Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
+        Default scope is User (current user).
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
 
-    return $User ? $userProgramsPath : $allUsersProgramsPath
+    return $AllUsers ? $allUsersProgramsPath : $userProgramsPath
 }
 
 function New-StartMenuProgramsFolder {
@@ -48,22 +48,22 @@ function New-StartMenuProgramsFolder {
         Creates a new folder in Start Menu > Programs.
 
     .DESCRIPTION
-        Creates a new folder in the Start Menu Programs folder, for all users (the default) or the current user.
+        Creates a new folder in the Start Menu Programs folder, for the current user (the default) or for all users.
 
     .PARAMETER Name
         The name of the folder in the Start Menu > Programs folder.
 
     .PARAMETER AllUsers
-        Create the folder in the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
+        Create the folder in the All Users (machine) Start Menu Programs folder. Aliases: Machine, All.
 
     .PARAMETER User
-        Create the folder in the current user's Start Menu Programs folder.
+        Create the folder in the current user's Start Menu Programs folder. (Default.)
 
     .OUTPUTS
         string - Path to the newly created folder in the Start Menu Programs folder.
 
     .NOTES
-        Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
+        Default scope is User (current user).
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -72,15 +72,15 @@ function New-StartMenuProgramsFolder {
         [Alias("Folder", "Group")]
         [string] $Name,
 
-        [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
 
-    $programsPath = $User ? $userProgramsPath : $allUsersProgramsPath
+    $programsPath = $AllUsers ? $allUsersProgramsPath : $userProgramsPath
     $shortcutFolderName = "$programsPath\$Name"
     if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
         New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
@@ -94,7 +94,7 @@ function New-StartMenuShortcut {
         Creates a new shortcut in Start Menu > Programs.
 
     .DESCRIPTION
-        Creates a new shortcut in the Start Menu Programs folder, for all users (the default) or the current user.
+        Creates a new shortcut in the Start Menu Programs folder, for the current user (the default) or for all users.
 
     .PARAMETER Name
         The name of the application. This will be used as the name of the shortcut in the Start Menu > Programs folder.
@@ -115,7 +115,7 @@ function New-StartMenuShortcut {
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
 
     .PARAMETER AllUsers
-        Create the shortcut in the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
+        Create the shortcut in the All Users (machine) Start Menu Programs folder. Aliases: Machine, All.
 
     .PARAMETER User
         Create the shortcut in the current user's Start Menu Programs folder.
@@ -149,11 +149,11 @@ function New-StartMenuShortcut {
         [Parameter(Mandatory = $false)]
         [switch] $Force,
 
-        [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -162,7 +162,7 @@ function New-StartMenuShortcut {
 
     $folderName = $Folder ? $Folder : $shortcutName
 
-    $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName -User:$User
+    $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName -AllUsers:$AllUsers
     $shortcutPath = "$shortcutFolder\$shortcutName.lnk"
 
     if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
@@ -189,7 +189,7 @@ function Remove-StartMenuShortcut {
         Removes a shortcut from Start Menu > Programs.
 
     .DESCRIPTION
-        Removes a shortcut from the Start Menu Programs folder, for all users (the default) or the current user.
+        Removes a shortcut from the Start Menu Programs folder, for the current user (the default) or for all users.
         Mirrors New-StartMenuShortcut: the shortcut is expected at <Programs>\<Folder>\<Name>.lnk, where Folder
         defaults to Name. After removing the shortcut, its containing folder is removed too if it is now empty.
         If the shortcut does not exist, a terminating error is reported.
@@ -201,13 +201,13 @@ function Remove-StartMenuShortcut {
         The name of the folder in the Start Menu > Programs folder that contains the shortcut. Default: $Name
 
     .PARAMETER AllUsers
-        Remove the shortcut from the All Users (machine) Start Menu Programs folder. This is the default. Aliases: Machine, All.
+        Remove the shortcut from the All Users (machine) Start Menu Programs folder. Aliases: Machine, All.
 
     .PARAMETER User
-        Remove the shortcut from the current user's Start Menu Programs folder.
+        Remove the shortcut from the current user's Start Menu Programs folder. (Default.)
 
     .NOTES
-        Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
+        Default scope is User (current user).
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -219,15 +219,15 @@ function Remove-StartMenuShortcut {
         [Alias("Group")]
         [string] $Folder,
 
-        [Parameter(Mandatory = $false, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
 
-    $programsPath = $User ? $userProgramsPath : $allUsersProgramsPath
+    $programsPath = $AllUsers ? $allUsersProgramsPath : $userProgramsPath
     $folderName = $Folder ? $Folder : $Name
     $shortcutFolder = "$programsPath\$folderName"
     $shortcutPath = "$shortcutFolder\$Name.lnk"
@@ -252,7 +252,7 @@ function New-PowershellStartMenuShortcut {
         Creates a new shortcut that runs a PowerShell command in Start Menu > Programs.
 
     .DESCRIPTION
-        Creates a new shortcut that runs a PowerShell command in the All Users Start Menu Programs folder.
+        Creates a new shortcut that runs a PowerShell command in the current user's Start Menu Programs folder.
 
     .PARAMETER Command
         The PowerShell command to run.
@@ -282,7 +282,7 @@ function New-PowershellStartMenuShortcut {
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
 
     .OUTPUTS
-        string - Path to the newly created shortcut in the All Users Start Menu Programs folder.
+        string - Path to the newly created shortcut in the current user's Start Menu Programs folder.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (

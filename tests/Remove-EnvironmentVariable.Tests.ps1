@@ -18,6 +18,15 @@ Describe 'Remove-EnvironmentVariable' {
             Remove-EnvironmentVariable -Name EASYPEASY_TEST -User -WhatIf
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -Be 'x'
         }
+
+        It 'removes the variable from the user scope by default, without requiring administrator' {
+            Mock -ModuleName easypeasy Assert-Administrator { throw 'admin required' }
+
+            Remove-EnvironmentVariable -Name EASYPEASY_TEST
+
+            [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
+            Should -Invoke -ModuleName easypeasy Assert-Administrator -Times 0 -Exactly
+        }
     }
 
     Context 'machine scope requires administrator' {
@@ -25,7 +34,7 @@ Describe 'Remove-EnvironmentVariable' {
         It 'errors when not elevated' {
             Mock -ModuleName easypeasy Assert-Administrator { throw 'admin required' }
 
-            { Remove-EnvironmentVariable -Name EASYPEASY_TEST -ErrorAction Stop } |
+            { Remove-EnvironmentVariable -Name EASYPEASY_TEST -Machine -ErrorAction Stop } |
                 Should -Throw '*admin required*'
         }
     }

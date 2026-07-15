@@ -26,6 +26,20 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\New' -User -WhatIf
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
+
+        It 'targets the user scope by default' {
+            Add-SystemPathLocation -Location 'C:\New'
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and -not $Machine }
+        }
+
+        It 'targets the machine scope with -Machine' {
+            Add-SystemPathLocation -Location 'C:\New' -Machine
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Machine -and -not $User }
+        }
     }
 
     Context 'idempotent when the location is already present' {

@@ -1,6 +1,5 @@
 . "$PSScriptRoot\timestamp.ps1"
 . "$PSScriptRoot\administrator.ps1"
-. "$PSScriptRoot\volume.ps1"
 . "$PSScriptRoot\environment.ps1"
 . "$PSScriptRoot\explorer.ps1"
 . "$PSScriptRoot\specialfolder.ps1"
@@ -8,4 +7,3 @@
 . "$PSScriptRoot\systempath.ps1"
 . "$PSScriptRoot\shortcut.ps1"
 . "$PSScriptRoot\task.ps1"
-. "$PSScriptRoot\theme.ps1"
