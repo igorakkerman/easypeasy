@@ -44,22 +44,22 @@ function local:Add-PathLocation {
         Adds a location to a semicolon-separated path.
     .DESCRIPTION
         Permanently adds the specified location to the specified semicolon-separated path and returns the path.
-        Adding is idempotent: if the path already contains the location and -Front is not specified,
+        Adding is idempotent: if the path already contains the location and -First is not specified,
         the path is returned unchanged.
-        If the path already contains the location and -Front is specified,
+        If the path already contains the location and -First is specified,
         the existing location is moved to the beginning of the path.
     .PARAMETER Path
         Semiocolon separated path to add the location to.
     .PARAMETER Location
         Folder location to add to the path.
-    .PARAMETER Front
+    .PARAMETER First
         If specified, the location is added to the beginning of the path.
         Otherwise, it is added to the end.
-        If the location already exists, -Front moves it to the beginning.
+        If the location already exists, -First moves it to the beginning.
     .OUTPUTS
         Modified path.
     .EXAMPLE
-        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -Front
+        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -First
     .EXAMPLE
         Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
     #>
@@ -73,7 +73,7 @@ function local:Add-PathLocation {
         [string] $Location,
 
         [Parameter(Mandatory = $true)]
-        [bool] $Front
+        [bool] $First
     )
 
     $oldLocations = $Path -split ";"
@@ -81,7 +81,7 @@ function local:Add-PathLocation {
     $alreadyPresent = $oldLocations | Where-Object { $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
 
     if ($alreadyPresent) {
-        if (-not $Front) {
+        if (-not $First) {
             # idempotent: the location is already present, leave the path unchanged
             return $Path
         }
@@ -93,7 +93,7 @@ function local:Add-PathLocation {
 
     $pathWithoutSemicolon = $Path.TrimEnd(";")
 
-    return $Front ? "$Location;$pathWithoutSemicolon" : "$pathWithoutSemicolon;$Location"
+    return $First ? "$Location;$pathWithoutSemicolon" : "$pathWithoutSemicolon;$Location"
 }
 
 function local:Remove-PathLocation {
@@ -354,16 +354,17 @@ function Add-SystemPathLocation {
     .DESCRIPTION
         Adds the specified location to the system path, either for the current user or for the local machine.
         Adding is idempotent: if the location is already present, the path is left unchanged and a warning is reported.
-        If the location is already present and -Front is specified, it is moved to the beginning of the path.
+        If the location is already present and -First is specified, it is moved to the beginning of the path.
     .PARAMETER Location
         Folder location to add to the system path.
     .PARAMETER Machine
         If specified, the system path for the local machine is used.
     .PARAMETER User
         If specified, the system path for the current user is used. (Default.)
-    .PARAMETER Front
+    .PARAMETER First
         If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
-        If the location is already present, -Front moves it to the beginning.
+        If the location is already present, -First moves it to the beginning.
+        Alias: Front.
     .NOTES
         Alias: addpath
         Default scope is User.
@@ -374,7 +375,7 @@ function Add-SystemPathLocation {
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
     .EXAMPLE
-        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -Front
+        Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -First
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -383,8 +384,8 @@ function Add-SystemPathLocation {
         [string] $Location,
 
         [Parameter(Mandatory = $false)]
-        [Alias("Prepend", "First", "Start")]
-        [switch] $Front,
+        [Alias("Front")]
+        [switch] $First,
 
         [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
@@ -396,7 +397,7 @@ function Add-SystemPathLocation {
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 
     $currentPath = Get-SystemPath @context -Join
-    $newPath = Add-PathLocation -Path $currentPath -Location $Location -Front:$Front
+    $newPath = Add-PathLocation -Path $currentPath -Location $Location -First:$First
 
     # idempotent: nothing changed means the location is already present
     if ($newPath -eq $currentPath) {
@@ -408,7 +409,7 @@ function Add-SystemPathLocation {
         Set-SystemPath @context -Path $newPath
 
         # enable new location immediately
-        $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -Front:$Front
+        $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First:$First
     }
 }
 
@@ -624,7 +625,7 @@ function Move-SystemPathLocation {
     }
 
     $targetPath = Get-SystemPath @target -Join
-    $newTarget = Add-PathLocation -Path $targetPath -Location $Location -Front:$false
+    $newTarget = Add-PathLocation -Path $targetPath -Location $Location -First:$false
 
     if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system path")) {
         return

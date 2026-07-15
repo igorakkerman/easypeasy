@@ -69,7 +69,7 @@ Describe 'Add-SystemPathLocation' {
         }
     }
 
-    Context 'moving an existing location to the front with -Front' {
+    Context 'moving an existing location to the front with -First' {
 
         BeforeEach {
             $script:originalPath = $env:PATH
@@ -81,15 +81,22 @@ Describe 'Add-SystemPathLocation' {
         AfterEach { $env:PATH = $originalPath }
 
         It 'persists the location moved to the front' {
-            Add-SystemPathLocation -Location 'C:\Exists' -Front -User
+            Add-SystemPathLocation -Location 'C:\Exists' -First -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $Path -eq 'C:\Exists;C:\A;C:\B' -and $User }
         }
 
         It 'does not throw for an existing location' {
-            { Add-SystemPathLocation -Location 'C:\Exists' -Front -User -ErrorAction Stop } |
+            { Add-SystemPathLocation -Location 'C:\Exists' -First -User -ErrorAction Stop } |
                 Should -Not -Throw
+        }
+
+        It 'accepts the Front alias' {
+            Add-SystemPathLocation -Location 'C:\Exists' -User -Front
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Path -eq 'C:\Exists;C:\A;C:\B' }
         }
     }
 }

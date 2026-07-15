@@ -88,7 +88,7 @@ in a specific scope (machine 🅰️ or user) \
 ```powershell
 > addpath "C:\Program Files\MyApp"
 > addpath -Machine "C:\Program Files\MyApp" # 🅰️
-> addpath -Front "C:\Program Files\MyApp" # this folder will be searched first
+> addpath -First "C:\Program Files\MyApp" # this folder will be searched first
 
 > rmpath "C:\Program Files\MyApp" # removes every occurrence of this path
 ```
