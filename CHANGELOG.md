@@ -8,6 +8,7 @@
 ### Removed
 - **`Get-Usage` and alias `du`.**
 - **`Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme`.**
+- **The `-Group` and `-GroupName` parameter aliases on the Start Menu functions** — pass `-Folder` on `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut`, and `-Name` on `New-StartMenuProgramsFolder`.
 
 ### Changed
 - **The default scope of the system-path and environment write functions changed from Machine to User** — `Add-SystemPathLocation`, `Remove-SystemPathLocation`, `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` now write to the user scope unless `-Machine` is given. Administrator privileges are no longer required by default.

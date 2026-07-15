@@ -69,7 +69,7 @@ function New-StartMenuProgramsFolder {
     param (
         [Parameter(Mandatory = $true)]
         [Alias("AppName")] # DEPRECATED!
-        [Alias("Folder", "Group")]
+        [Alias("Folder")]
         [string] $Name,
 
         [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
@@ -140,7 +140,6 @@ function New-StartMenuShortcut {
         [string] $Name,
 
         [Parameter(Mandatory = $false)]
-        [Alias("Group")]
         [string] $Folder,
 
         [Parameter(Mandatory = $true)]
@@ -236,7 +235,6 @@ function Remove-StartMenuShortcut {
         [string] $Name,
 
         [Parameter(Mandatory = $false)]
-        [Alias("Group")]
         [string] $Folder,
 
         [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
@@ -322,7 +320,6 @@ function New-PowershellStartMenuShortcut {
         [string] $Name,
 
         [Parameter(Mandatory = $false)]
-        [Alias("Group", "GroupName")]
         [string] $Folder,
 
         [Parameter(Mandatory = $false)]
