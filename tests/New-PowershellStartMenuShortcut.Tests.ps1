@@ -52,4 +52,44 @@ Describe 'New-PowershellStartMenuShortcut' {
         $path = New-PowershellStartMenuShortcut -Command 'Get-ChildItem' -Name 'Over' -Force
         $wsh.CreateShortcut($path).Arguments | Should -Match 'Get-ChildItem'
     }
+
+    It 'uses icon index 0 by default' {
+        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconDefault' `
+            -IconLocation 'C:\Windows\explorer.exe'
+
+        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,0'
+    }
+
+    It 'uses the given icon index' {
+        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconIndexed' `
+            -IconLocation 'C:\Windows\explorer.exe' -IconIndex 3
+
+        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+    }
+
+    It 'accepts the icon file under the -IconFile alias' {
+        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconFileAlias' `
+            -IconFile 'C:\Windows\explorer.exe' -IconIndex 3
+
+        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+    }
+
+    It 'takes the combined location from -Icon' {
+        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconCombined' `
+            -Icon 'C:\Windows\explorer.exe,3'
+
+        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+    }
+
+    It 'fails when -Icon is combined with -IconLocation' {
+        { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconBoth' `
+                -Icon 'C:\Windows\explorer.exe,3' -IconLocation 'C:\Windows\explorer.exe' } |
+            Should -Throw '*cannot be combined*'
+    }
+
+    It 'fails when -Icon is combined with -IconIndex' {
+        { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconBothIndex' `
+                -Icon 'C:\Windows\explorer.exe,3' -IconIndex 0 } |
+            Should -Throw '*cannot be combined*'
+    }
 }

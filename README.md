@@ -180,9 +180,19 @@ The argument `-Debug` will be passed to the executable.
         -AppName MyApp `
         -Executable "C:\Program Files\MyApp\MyApp.exe" `
         -Arguments "-Debug" `
-        -Icon "C:\Program Files\MyApp\MyBeautifulIcon.ico"
+        -IconLocation "C:\Program Files\MyApp\MyBeautifulIcon.ico"
 
 > New-StartMenuShortcut -AllUsers -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"  # all users, needs admin
+```
+
+The icon file may hold several icons; `-IconIndex` picks one (**default**: `0`).
+Alternatively, `-Icon` takes the combined `file,index` form. `-Icon` and `-IconLocation` / `-IconIndex` are mutually exclusive.
+```powershell
+> New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
+        -IconLocation "C:\Program Files\MyApp\MyApp.exe" -IconIndex 3
+
+> New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
+        -Icon "C:\Program Files\MyApp\MyApp.exe,3"
 ```
 
 An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it.

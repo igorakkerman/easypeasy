@@ -109,7 +109,14 @@ function New-StartMenuShortcut {
         The arguments to pass to the executable.
 
     .PARAMETER Icon
-        The path to the icon file to use for the shortcut.
+        The icon to use for the shortcut, as a combined location in the form "file,index", e.g. "C:\Program Files\MyApp\MyApp.exe,0".
+        Cannot be combined with -IconLocation or -IconIndex.
+
+    .PARAMETER IconLocation
+        The path to the icon file to use for the shortcut. Cannot be combined with -Icon. Alias: IconFile.
+
+    .PARAMETER IconIndex
+        The index of the icon within the icon file given by -IconLocation. Default: 0. Cannot be combined with -Icon.
 
     .PARAMETER Force
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
@@ -143,8 +150,14 @@ function New-StartMenuShortcut {
         [string] $Arguments,
 
         [Parameter(Mandatory = $false)]
-        [Alias("IconLocation")]
         [string] $Icon,
+
+        [Parameter(Mandatory = $false)]
+        [Alias("IconFile")]
+        [string] $IconLocation,
+
+        [Parameter(Mandatory = $false)]
+        [int] $IconIndex = 0,
 
         [Parameter(Mandatory = $false)]
         [switch] $Force,
@@ -156,6 +169,10 @@ function New-StartMenuShortcut {
         [Parameter(Mandatory = $false, ParameterSetName = "User")]
         [switch] $User
     )
+
+    if ($Icon -and ($IconLocation -or $PSBoundParameters.ContainsKey("IconIndex"))) {
+        Write-Error "-Icon cannot be combined with -IconLocation or -IconIndex." -ErrorAction Stop
+    }
 
     # infer the shortcut name
     $shortcutName = $Name ? $Name : (Get-Item $Executable).BaseName
@@ -172,8 +189,11 @@ function New-StartMenuShortcut {
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $Executable
     $shortcut.Arguments = $Arguments
-    If ($Icon) {
-        $shortcut.IconLocation = "$Icon,0"
+    if ($Icon) {
+        $shortcut.IconLocation = $Icon
+    }
+    elseif ($IconLocation) {
+        $shortcut.IconLocation = "$IconLocation,$IconIndex"
     }
     
     if ($PSCmdlet.ShouldProcess($shortcutPath, "Create shortcut")) {
@@ -276,7 +296,14 @@ function New-PowershellStartMenuShortcut {
         Whether to keep the PowerShell window open after the command has finished running.
 
     .PARAMETER Icon
-        The path to the icon file to use for the shortcut.
+        The icon to use for the shortcut, as a combined location in the form "file,index", e.g. "C:\Program Files\MyApp\MyApp.exe,0".
+        Cannot be combined with -IconLocation or -IconIndex.
+
+    .PARAMETER IconLocation
+        The path to the icon file to use for the shortcut. Cannot be combined with -Icon. Alias: IconFile.
+
+    .PARAMETER IconIndex
+        The index of the icon within the icon file given by -IconLocation. Default: 0. Cannot be combined with -Icon.
 
     .PARAMETER Force
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
@@ -313,12 +340,22 @@ function New-PowershellStartMenuShortcut {
         [switch] $KeepOpen = $false,
 
         [Parameter(Mandatory = $false)]
-        [Alias("IconLocation")]
         [string] $Icon,
+
+        [Parameter(Mandatory = $false)]
+        [Alias("IconFile")]
+        [string] $IconLocation,
+
+        [Parameter(Mandatory = $false)]
+        [int] $IconIndex = 0,
 
         [Parameter(Mandatory = $false)]
         [switch] $Force
     )
+
+    if ($Icon -and ($IconLocation -or $PSBoundParameters.ContainsKey("IconIndex"))) {
+        Write-Error "-Icon cannot be combined with -IconLocation or -IconIndex." -ErrorAction Stop
+    }
 
     $shortcutFolder = $Folder `
         ? (New-StartMenuProgramsFolder -Name $Folder) `
@@ -347,7 +384,10 @@ function New-PowershellStartMenuShortcut {
     }
 
     if ($Icon) {
-        $shortcut.IconLocation = "$Icon,0"
+        $shortcut.IconLocation = $Icon
+    }
+    elseif ($IconLocation) {
+        $shortcut.IconLocation = "$IconLocation,$IconIndex"
     }
 
     if ($PSCmdlet.ShouldProcess($shortcutPath, "Create shortcut")) {

@@ -55,4 +55,44 @@ Describe 'New-StartMenuShortcut' {
         $path = New-StartMenuShortcut -Name 'Over' -Executable 'C:\Windows\regedit.exe' -Force
         $wsh.CreateShortcut($path).TargetPath | Should -Be 'C:\Windows\regedit.exe'
     }
+
+    It 'uses icon index 0 by default' {
+        $path = New-StartMenuShortcut -Name 'IconDefault' -Executable 'C:\Windows\notepad.exe' `
+            -IconLocation 'C:\Windows\explorer.exe'
+
+        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,0'
+    }
+
+    It 'uses the given icon index' {
+        $path = New-StartMenuShortcut -Name 'IconIndexed' -Executable 'C:\Windows\notepad.exe' `
+            -IconLocation 'C:\Windows\explorer.exe' -IconIndex 3
+
+        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+    }
+
+    It 'accepts the icon file under the -IconFile alias' {
+        $path = New-StartMenuShortcut -Name 'IconFileAlias' -Executable 'C:\Windows\notepad.exe' `
+            -IconFile 'C:\Windows\explorer.exe' -IconIndex 3
+
+        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+    }
+
+    It 'takes the combined location from -Icon' {
+        $path = New-StartMenuShortcut -Name 'IconCombined' -Executable 'C:\Windows\notepad.exe' `
+            -Icon 'C:\Windows\explorer.exe,3'
+
+        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+    }
+
+    It 'fails when -Icon is combined with -IconLocation' {
+        { New-StartMenuShortcut -Name 'IconBoth' -Executable 'C:\Windows\notepad.exe' `
+                -Icon 'C:\Windows\explorer.exe,3' -IconLocation 'C:\Windows\explorer.exe' } |
+            Should -Throw '*cannot be combined*'
+    }
+
+    It 'fails when -Icon is combined with -IconIndex' {
+        { New-StartMenuShortcut -Name 'IconBothIndex' -Executable 'C:\Windows\notepad.exe' `
+                -Icon 'C:\Windows\explorer.exe,3' -IconIndex 0 } |
+            Should -Throw '*cannot be combined*'
+    }
 }
