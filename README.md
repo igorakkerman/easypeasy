@@ -43,7 +43,7 @@ Each location is tagged with its **scope**: `Machine`, `User`, or `Process` — 
 #### Find a folder in the system PATH
 
 ```powershell
-> path *Windows*
+> path Windows
 
 Scope   Location
 -----   --------
@@ -52,13 +52,22 @@ Machine C:\Windows
 ...
 ```
 
-`*Windows*` is the `-Filter` parameter, which you should name explicitly in scripts.
+`Windows` is the `-Contains` parameter, which you should name explicitly in scripts. It selects every location containing the string, case-insensitively, and is taken literally — no wildcards.
+
+Three kinds of criteria are available, and a location must satisfy **all** of the criteria given:
+
+```powershell
+> path Git Program                # contains both strings
+> path -Filter "*\Git\*"          # wildcard match
+> path -Match "\\Git\\(cmd|bin)$" # regex match
+> path Git -Filter "*\bin"        # contains Git AND matches the wildcard
+```
 
 #### Find a folder on the system PATH and the scope it lives in
 
 ```powershell
-> Get-SystemPathLocation "C:\Windows"
-> Get-SystemPathLocation -Filter "*\Git\*"
+> Get-SystemPathLocation Windows
+> Get-SystemPathLocation -Location "C:\Windows"
 > Get-SystemPathLocation -Filter "*\Git\*" -User
 
 Scope   Location
@@ -66,7 +75,7 @@ Scope   Location
 Machine C:\Windows
 ```
 
-Both commands accept an exact `-Location` (positional) or a `-Filter` wildcard, and the scope switches `-Machine` and `-User`. Each result carries the scope it was found in: `Machine`, `User`, or `Process`.
+Both commands take the same criteria as `Get-SystemPath` — `-Contains` (positional), `-Filter` and `-Match` — plus an exact `-Location`, and the scope switches `-Machine` and `-User`. At least one criterion is required. Each result carries the scope it was found in: `Machine`, `User`, or `Process`.
 
 #### Test whether a folder is on the system PATH
 
@@ -74,7 +83,8 @@ in a specific scope (machine or user) \
 **default**: **effective** in current shell
 
 ```powershell
-> Test-SystemPathLocation "C:\Program Files\Git\bin"
+> Test-SystemPathLocation -Location "C:\Program Files\Git\bin"
+> Test-SystemPathLocation Git
 > Test-SystemPathLocation -Filter "*\Git\*" -Machine
 
 True

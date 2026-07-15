@@ -43,13 +43,6 @@ Describe 'Get-SystemPath' {
                 Should -Be @('C:\Program Files\Git\bin')
         }
 
-        It 'accepts the filter positionally' {
-            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
-
-            (Get-SystemPath '*Git*').Location |
-                Should -Be @('C:\Program Files\Git\bin')
-        }
-
         It 'matches case-insensitively' {
             $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
 
@@ -73,6 +66,88 @@ Describe 'Get-SystemPath' {
             $env:PATH = 'C:\A;C:\B'
 
             Get-SystemPath -Filter '*nomatch*' | Should -BeNullOrEmpty
+        }
+    }
+
+    Context '-Contains' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        It 'returns every location containing the substring, positionally and without wildcards' {
+            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin;C:\Here\Git'
+
+            (Get-SystemPath Git).Location |
+                Should -Be @('C:\Program Files\Git\bin', 'C:\Here\Git')
+        }
+
+        It 'matches case-insensitively' {
+            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+
+            (Get-SystemPath git).Location | Should -Be @('C:\Program Files\Git\bin')
+        }
+
+        It 'takes the substring literally, so wildcards match nothing' {
+            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+
+            Get-SystemPath '*Git*' | Should -BeNullOrEmpty
+        }
+
+        It 'requires all substrings to be contained' {
+            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd'
+
+            (Get-SystemPath Git bin).Location | Should -Be @('C:\Program Files\Git\bin')
+        }
+
+        It 'returns everything when no criterion is given' {
+            $env:PATH = 'C:\A;C:\B'
+
+            (Get-SystemPath).Location | Should -Be @('C:\A', 'C:\B')
+        }
+    }
+
+    Context '-Match' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        It 'returns only locations matching the regex' {
+            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd;C:\Windows'
+
+            (Get-SystemPath -Match '\\Git\\(bin|cmd)$').Location |
+                Should -Be @('C:\Program Files\Git\bin', 'C:\Program Files\Git\cmd')
+        }
+
+        It 'matches case-insensitively' {
+            $env:PATH = 'C:\Program Files\Git\bin;C:\Windows'
+
+            (Get-SystemPath -Match 'git').Location | Should -Be @('C:\Program Files\Git\bin')
+        }
+
+        It 'requires all regexes to match' {
+            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd'
+
+            (Get-SystemPath -Match '\\Git\\', 'bin$').Location |
+                Should -Be @('C:\Program Files\Git\bin')
+        }
+    }
+
+    Context 'combined criteria' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        It 'requires criteria of different kinds to all be satisfied' {
+            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd;C:\Tools\bin'
+
+            (Get-SystemPath Git -Filter '*\bin' -Match 'Program').Location |
+                Should -Be @('C:\Program Files\Git\bin')
+        }
+
+        It 'returns nothing when one criterion excludes the rest' {
+            $env:PATH = 'C:\Program Files\Git\bin'
+
+            Get-SystemPath Git -Filter '*\cmd' | Should -BeNullOrEmpty
         }
     }
 
