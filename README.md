@@ -227,7 +227,7 @@ Register-LogonTask `
 > theme
 ```
 
-`theme` is an alias for `Switch-Theme`, which you should use in scripts.
+`theme` is an alias for `Switch-Theme`. `Get-Theme`, `Set-Theme`, `Switch-Theme` and `theme` will be removed in v2.
 
 ```powershell
 > theme dark

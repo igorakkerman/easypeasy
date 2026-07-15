@@ -4,6 +4,7 @@
 
 ### Deprecated
 - **`Get-Usage` and alias `du` will be removed in v2.**
+- **`Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme` will be removed in v2.**
 
 ## 1.11.0 - 2026-07-13
 

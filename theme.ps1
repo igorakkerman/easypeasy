@@ -10,6 +10,9 @@ function Get-Theme {
 
     .OUTPUTS string - either "light" or "dark" according to the current Windows theme
 
+    .NOTES
+        Get-Theme will be removed in v2.
+
     .EXAMPLE
         Write-Host "Windows is using $(Get-Theme) mode."
     #>
@@ -33,6 +36,9 @@ function Set-Theme {
 
     .PARAMETER Theme
         The theme to set. Valid values are "light" or "dark".
+
+    .NOTES
+        Set-Theme will be removed in v2.
 
     .EXAMPLE
         Set-Theme -Theme dark
@@ -83,6 +89,8 @@ function Switch-Theme {
 
     .NOTES
         Alias: theme
+
+        Both Switch-Theme and theme will be removed in v2.
 
     .EXAMPLE
         Switch-Theme
