@@ -18,6 +18,8 @@ function Get-Usage {
 
     .NOTES
         Alias: du
+
+        Both Get-Usage and du will be removed in v2.
     #>
     [CmdletBinding()]
     param (

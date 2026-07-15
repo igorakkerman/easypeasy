@@ -1,5 +1,10 @@
 # Changelog
 
+## Upcoming Breaking Changes
+
+### Deprecated
+- **`Get-Usage` and alias `du` will be removed in v2.**
+
 ## 1.11.0 - 2026-07-13
 
 ### Added

@@ -269,7 +269,7 @@ Assert-Administrator: This operation requires administrator privileges.
 #### Output the disk usage for the current folder
 
 ```powershell
-> du
+> Get-Usage
 
 Name                           Sum (MB)      Sum
 ----                           --------      ---
@@ -292,7 +292,7 @@ C:\easypeasy\administrator.ps1 0,000      374,00
 C:\easypeasy\easypeasy.psm1    0,000      349,00
 ```
 
-`du` is an alias for `Get-Usage`, which you should use in scripts.
+`du` is an alias for `Get-Usage`. Both will be removed in v2.
 
 ## Installation
 ### Installation from PowerShell Gallery
