@@ -23,10 +23,16 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Developing
 
-No build step. Iterate by importing the module from source:
+No build step for development. Iterate by importing the module from source:
 
 ```powershell
 Import-Module .\easypeasy.psd1 -Force
+```
+
+`build.ps1` is only for packaging: it stages the publishable files into a folder named after the module and returns its path. `Publish-Module` packs the whole folder it is pointed at, so the staging leaves out the development artifacts (`tests/`, `.github/`, `.vscode/`, `AGENTS.md`, `CLAUDE.md`, `build.ps1` itself). Run it to inspect what a release would ship:
+
+```powershell
+./build.ps1 -Destination .\out
 ```
 
 ### Testing
@@ -47,7 +53,7 @@ Invoke-ScriptAnalyzer -Path . -Settings .vscode\analyzersettings.psd1 -Recurse
 
 ## Releasing
 
-Publishing is automated by `.github/workflows/publish.yaml`: creating a GitHub **release** (tag `vX.Y.Z`) runs `Publish-Module` to the PowerShell Gallery.
+Publishing is automated by `.github/workflows/publish.yaml`: creating a GitHub **release** (tag `vX.Y.Z`) stages the package with `build.ps1` and runs `Publish-Module` on the staged folder to the PowerShell Gallery.
 
 - **Version** — bump `ModuleVersion` in `easypeasy.psd1` following SemVer: **patch** for fixes/docs, **minor** for new public functions or aliases. Commit the bump on its own (`Bump module version to vX.Y.Z`).
 - **Notes** — `CHANGELOG.md` is the source of truth for release notes ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format, newest first); each GitHub release mirrors its matching section. Add a `## [X.Y.Z] - YYYY-MM-DD` section for the release before tagging.

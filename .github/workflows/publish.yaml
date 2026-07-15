@@ -13,4 +13,4 @@ jobs:
               env:
                 GALLERY_KEY: ${{ secrets.GALLERY_KEY }}
               shell: pwsh
-              run: Publish-Module -Path . -NuGetApiKey $env:GALLERY_KEY -Repository PSGallery -Verbose
+              run: Publish-Module -Path (./build.ps1) -NuGetApiKey $env:GALLERY_KEY -Repository PSGallery -Verbose
