@@ -2,23 +2,25 @@
 
 ## 2.0.0-rc1 - 2026-07-15
 
-### Added
-- **`-IconLocation` (alias `-IconFile`) and `-IconIndex` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut`** — `-IconIndex` selects the icon within the icon file given by `-IconLocation`, instead of always using index `0`. Default: `0`.
-- **`-AllUsers` (aliases `-Machine`, `-All`) and `-User` on `New-PowershellStartMenuShortcut`** — the shortcut can now be created in the All Users Start Menu, matching the other Start Menu functions. The default stays the current user.
+### Start Menu
+- **Changed:** The default Start Menu scope changed from All Users to the current user — `Get-StartMenuProgramsPath`, `New-StartMenuProgramsFolder`, `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut` now target the current user's Start Menu unless `-AllUsers` (alias `-Machine`, `-All`) is given.
+- **Changed:** `-Name` on `New-StartMenuShortcut` is now mandatory — it is no longer inferred from the `-Executable` file name.
+- **Changed:** `New-StartMenuShortcut` and `Remove-StartMenuShortcut` now use the Start Menu Programs root when `-Folder` is omitted — `-Folder` previously defaulted to `-Name`, so the shortcut went to `<Programs>\<Name>\<Name>.lnk`; it is now `<Programs>\<Name>.lnk`, matching `New-PowershellStartMenuShortcut`. Pass `-Folder` to keep a containing folder.
+- **Changed:** `-Icon` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` now takes the combined location in the form `"file,index"`, e.g. `-Icon "C:\Program Files\MyApp\MyApp.exe,3"`. It previously took a plain icon file path and always appended `,0` — pass such a path as `-IconLocation` instead. `-Icon` is mutually exclusive with `-IconLocation` / `-IconIndex`; combining them is a terminating error.
+- **Added:** `-IconLocation` (alias `-IconFile`) and `-IconIndex` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` — `-IconIndex` selects the icon within the icon file given by `-IconLocation`, instead of always using index `0`. Default: `0`.
+- **Added:** `-AllUsers` (aliases `-Machine`, `-All`) and `-User` on `New-PowershellStartMenuShortcut` — the shortcut can now be created in the All Users Start Menu, matching the other Start Menu functions. The default stays the current user.
+- **Removed:** The `-Group` and `-GroupName` parameter aliases on the Start Menu functions — pass `-Folder` on `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut`, and `-Name` on `New-StartMenuProgramsFolder`.
+- **Removed:** The `-AppName` and `-Folder` parameter aliases on `New-StartMenuProgramsFolder` — pass `-Name`.
+- **Removed:** The `-App` and `-AppName` parameter aliases on `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut` — pass `-Name`.
 
-### Removed
-- **`Get-Usage` and alias `du`.**
-- **`Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme`.**
-- **The `-Group` and `-GroupName` parameter aliases on the Start Menu functions** — pass `-Folder` on `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut`, and `-Name` on `New-StartMenuProgramsFolder`.
-- **The `-AppName` and `-Folder` parameter aliases on `New-StartMenuProgramsFolder`** — pass `-Name`.
-- **The `-App` and `-AppName` parameter aliases on `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut`** — pass `-Name`.
+### System PATH and environment variables
+- **Changed:** The default scope of the system-path and environment write functions changed from Machine to User — `Add-SystemPathLocation`, `Remove-SystemPathLocation`, `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` now write to the user scope unless `-Machine` is given. Administrator privileges are no longer required by default.
 
-### Changed
-- **The default scope of the system-path and environment write functions changed from Machine to User** — `Add-SystemPathLocation`, `Remove-SystemPathLocation`, `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` now write to the user scope unless `-Machine` is given. Administrator privileges are no longer required by default.
-- **The default Start Menu scope changed from All Users to the current user** — `Get-StartMenuProgramsPath`, `New-StartMenuProgramsFolder`, `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut` now target the current user's Start Menu unless `-AllUsers` (alias `-Machine`, `-All`) is given.
-- **`-Name` on `New-StartMenuShortcut` is now mandatory** — it is no longer inferred from the `-Executable` file name.
-- **`New-StartMenuShortcut` and `Remove-StartMenuShortcut` now use the Start Menu Programs root when `-Folder` is omitted** — `-Folder` previously defaulted to `-Name`, so the shortcut went to `<Programs>\<Name>\<Name>.lnk`; it is now `<Programs>\<Name>.lnk`, matching `New-PowershellStartMenuShortcut`. Pass `-Folder` to keep a containing folder.
-- **`-Icon` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` now takes the combined location** in the form `"file,index"`, e.g. `-Icon "C:\Program Files\MyApp\MyApp.exe,3"`. It previously took a plain icon file path and always appended `,0` — pass such a path as `-IconLocation` instead. `-Icon` is mutually exclusive with `-IconLocation` / `-IconIndex`; combining them is a terminating error.
+### Theme
+- **Removed:** entire component (`Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme`)
+
+### Usage
+- **Removed:** entire component (`Get-Usage` and alias `du`)
 
 ## 1.11.0 - 2026-07-13
 
