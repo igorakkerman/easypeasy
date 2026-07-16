@@ -2,28 +2,39 @@
 
 ## 2.0.0-rc1 - 2026-07-15
 
+First major release in years. Streamlined, consistent APIs. Parameters mostly used by scripts are mandatory now, without defaults, making calling code more expressive. Legacy parameters and aliases of little use are dropped, as are the theme component (to be re-built separately) and the usage component — better alternatives exist, e.g. `du` in Microsoft's [Coreutils for Windows](https://github.com/microsoft/coreutils).
+
 ### Start Menu
-- **Changed:** The default Start Menu scope changed from All Users to the current user — `Get-StartMenuProgramsPath`, `New-StartMenuProgramsFolder`, `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut` now target the current user's Start Menu unless `-AllUsers` (alias `-Machine`, `-All`) is given.
-- **Changed:** `-Name` on `New-StartMenuShortcut` is now mandatory — it is no longer inferred from the `-Executable` file name.
-- **Changed:** `New-StartMenuShortcut` and `Remove-StartMenuShortcut` now use the Start Menu Programs root when `-Folder` is omitted — `-Folder` previously defaulted to `-Name`, so the shortcut went to `<Programs>\<Name>\<Name>.lnk`; it is now `<Programs>\<Name>.lnk`, matching `New-PowershellStartMenuShortcut`. Pass `-Folder` to keep a containing folder.
-- **Changed:** `-Icon` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` now takes the combined location in the form `"file,index"`, e.g. `-Icon "C:\Program Files\MyApp\MyApp.exe,3"`. It previously took a plain icon file path and always appended `,0` — pass such a path as `-IconLocation` instead. `-Icon` is mutually exclusive with `-IconLocation` / `-IconIndex`; combining them is a terminating error.
-- **Added:** `-IconLocation` (alias `-IconFile`) and `-IconIndex` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` — `-IconIndex` selects the icon within the icon file given by `-IconLocation`, instead of always using index `0`. Default: `0`.
-- **Added:** `-AllUsers` (aliases `-Machine`, `-All`) and `-User` on `New-PowershellStartMenuShortcut` — the shortcut can now be created in the All Users Start Menu, matching the other Start Menu functions. The default stays the current user.
-- **Removed:** The `-Group` and `-GroupName` parameter aliases on the Start Menu functions — pass `-Folder` on `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut`, and `-Name` on `New-StartMenuProgramsFolder`.
-- **Removed:** The `-AppName` and `-Folder` parameter aliases on `New-StartMenuProgramsFolder` — pass `-Name`.
-- **Removed:** The `-App` and `-AppName` parameter aliases on `New-StartMenuShortcut`, `Remove-StartMenuShortcut` and `New-PowershellStartMenuShortcut` — pass `-Name`.
+- **Changed:** All Start Menu functions target the current user; pass `-AllUsers` (aliases `-Machine`, `-All`) for the previous All Users default.
+- **Changed:** `-Name` on `New-StartMenuShortcut` is mandatory, no longer inferred from `-Executable`.
+- **Changed:** `New-StartMenuShortcut` and `Remove-StartMenuShortcut` use the Programs root when `-Folder` is omitted: `<Programs>\<Name>.lnk`, previously `<Programs>\<Name>\<Name>.lnk`. Pass `-Folder` to keep a containing folder.
+- **Changed:** `-Icon` takes a combined `"file,index"`, e.g. `-Icon "C:\Program Files\MyApp\MyApp.exe,3"`; a plain icon file path goes to `-IconLocation` instead. Mutually exclusive with `-IconLocation` / `-IconIndex`.
+- **Added:** `-IconLocation` (alias `-IconFile`) and `-IconIndex` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` — pick the icon within the file, instead of always index `0`. Default: `0`.
+- **Added:** `-AllUsers` (aliases `-Machine`, `-All`) and `-User` on `New-PowershellStartMenuShortcut`, matching the other Start Menu functions. Default stays the current user.
+- **Removed:** Aliases `-Group` and `-GroupName` — pass `-Folder`, or `-Name` on `New-StartMenuProgramsFolder`.
+- **Removed:** Aliases `-AppName` and `-Folder` on `New-StartMenuProgramsFolder` — pass `-Name`.
+- **Removed:** Aliases `-App` and `-AppName` on the shortcut functions — pass `-Name`.
 
 ### System PATH and environment variables
-- **Changed:** The default scope of the system-path and environment write functions changed from Machine to User — `Add-SystemPathLocation`, `Remove-SystemPathLocation`, `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` now write to the user scope unless `-Machine` is given. Administrator privileges are no longer required by default.
+- **Changed:** The system PATH and environment write functions now default to the user scope; pass `-Machine` for machine scope. Administrator privileges are no longer required by default.
+- **Added:** A table view for system path locations, widening the Scope column so scope names are no longer truncated.
+- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` — a literal substring, a wildcard pattern, a regular expression.
+- **Changed:** positional parameter: `-Contains` replaces `-Filter` / `-Location`, use `path Git`, `-Filter "*Git*"` or `-Match ".*Git.*"`.
+- **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` require at least one of `-Location`, `-Contains`, `-Filter` and `-Match`; a call without a criterion is a terminating error.
+- **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
+- **Removed:** Aliases `-Prepend` and `-Start` on `Add-SystemPathLocation`.
 
 ### Scheduled tasks
-- **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask` — the task is only registered after confirmation; `-WhatIf` reports the task it would register without touching the task scheduler.
+- **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask` — the task is registered only after confirmation; `-WhatIf` reports what it would register without touching the task scheduler.
 
 ### Theme
-- **Removed:** entire component (`Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme`)
+- **Removed:** The entire component — `Get-Theme`, `Set-Theme`, `Switch-Theme` and the alias `theme`.
 
 ### Usage
-- **Removed:** entire component (`Get-Usage` and alias `du`)
+- **Removed:** The entire component — `Get-Usage` and the alias `du`.
+
+### Packaging
+- **Changed:** The published package ships only the module files; tests, CI workflows, editor settings and agent instructions are staged out.
 
 ## 1.11.0 - 2026-07-13
 
