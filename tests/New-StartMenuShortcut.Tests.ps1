@@ -42,6 +42,10 @@ Describe 'New-StartMenuShortcut' {
             -ParameterFilter { -not $AllUsers }
     }
 
+    It 'requires -Name' {
+        { New-StartMenuShortcut -Executable 'C:\Windows\notepad.exe' -ErrorAction Stop } | Should -Throw
+    }
+
     It 'fails when the shortcut already exists without -Force' {
         New-StartMenuShortcut -Name 'Dup' -Executable 'C:\Windows\notepad.exe' | Out-Null
 

@@ -14,6 +14,7 @@
 ### Changed
 - **The default scope of the system-path and environment write functions changed from Machine to User** — `Add-SystemPathLocation`, `Remove-SystemPathLocation`, `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` now write to the user scope unless `-Machine` is given. Administrator privileges are no longer required by default.
 - **The default Start Menu scope changed from All Users to the current user** — `Get-StartMenuProgramsPath`, `New-StartMenuProgramsFolder`, `New-StartMenuShortcut` and `Remove-StartMenuShortcut` now target the current user's Start Menu unless `-AllUsers` (alias `-Machine`, `-All`) is given. `New-PowershellStartMenuShortcut`, which has no scope switch, follows the new default.
+- **`-Name` on `New-StartMenuShortcut` is now mandatory** — it is no longer inferred from the `-Executable` file name.
 - **`-Icon` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` now takes the combined location** in the form `"file,index"`, e.g. `-Icon "C:\Program Files\MyApp\MyApp.exe,3"`. It previously took a plain icon file path and always appended `,0` — pass such a path as `-IconLocation` instead. `-Icon` is mutually exclusive with `-IconLocation` / `-IconIndex`; combining them is a terminating error.
 
 ## 1.11.0 - 2026-07-13

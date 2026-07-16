@@ -95,7 +95,7 @@ function New-StartMenuShortcut {
         Creates a new shortcut in the Start Menu Programs folder, for the current user (the default) or for all users.
 
     .PARAMETER Name
-        The name of the application. This will be used as the name of the shortcut in the Start Menu > Programs folder.
+        The name of the shortcut in the Start Menu > Programs folder.
 
     .PARAMETER Folder
         The name of the folder in the Start Menu > Programs folder. Default: $Name
@@ -133,7 +133,7 @@ function New-StartMenuShortcut {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true)]
         [Alias("App", "AppName")]
         [string] $Name,
 
@@ -171,13 +171,10 @@ function New-StartMenuShortcut {
         Write-Error "-Icon cannot be combined with -IconLocation or -IconIndex." -ErrorAction Stop
     }
 
-    # infer the shortcut name
-    $shortcutName = $Name ? $Name : (Get-Item $Executable).BaseName
-
-    $folderName = $Folder ? $Folder : $shortcutName
+    $folderName = $Folder ? $Folder : $Name
 
     $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName -AllUsers:$AllUsers
-    $shortcutPath = "$shortcutFolder\$shortcutName.lnk"
+    $shortcutPath = "$shortcutFolder\$Name.lnk"
 
     if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
         Write-Error "Shortcut already exists: '$shortcutPath'. Use -Force to overwrite." -ErrorAction Stop
