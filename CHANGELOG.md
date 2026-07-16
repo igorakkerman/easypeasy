@@ -2,7 +2,9 @@
 
 ## 2.0.0-rc1 - 2026-07-15
 
-First major release in years. Streamlined, consistent APIs. Parameters mostly used by scripts are mandatory now, without defaults, making calling code more expressive. Legacy parameters and aliases of little use are dropped, as are the theme component (to be re-built separately) and the usage component — better alternatives exist, e.g. `du` in Microsoft's [Coreutils for Windows](https://github.com/microsoft/coreutils).
+First major release in years. Streamlined, consistent APIs. Parameters mostly used by scripts are mandatory now, without defaults, making calling code more expressive. 
+
+Dropping legacy parameters and aliases of little use, the theme component and the usage component. Theme app will be rebuilt separately. For the disk usage, use `du` in Microsoft's [Coreutils for Windows](https://github.com/microsoft/coreutils)).
 
 ### Start Menu
 - **Changed:** All Start Menu functions target the current user; pass `-AllUsers` (aliases `-Machine`, `-All`) for the previous All Users default.
@@ -16,26 +18,26 @@ First major release in years. Streamlined, consistent APIs. Parameters mostly us
 - **Removed:** Aliases `-App` and `-AppName` on the shortcut functions — pass `-Name`.
 
 ### System PATH and environment variables
-- **Changed:** The system PATH and environment write functions now default to the user scope; pass `-Machine` for machine scope. Administrator privileges are no longer required by default.
-- **Added:** A table view for system path locations, widening the Scope column so scope names are no longer truncated.
-- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` — a literal substring, a wildcard pattern, a regular expression.
-- **Added:** `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` rejects an invalid regular expression up front, naming the pattern and the reason.
+- **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.
+- **Added:** Table view for system path locations in output of `Get-SystemPath`. 
+- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` — literal substring, wildcard pattern, regular expression.
+- **Added:** `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` rejects invalid regular expressions.
 - **Changed:** positional parameter: `-Contains` replaces `-Filter` / `-Location`, use `path Git`, `-Filter "*Git*"` or `-Match ".*Git.*"`.
-- **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` require at least one of `-Location`, `-Contains`, `-Filter` and `-Match`; a call without a criterion is a terminating error.
+- **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` require at least one of `-Location`, `-Contains`, `-Filter` and `-Match`.
 - **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
 - **Removed:** Aliases `-Prepend` and `-Start` on `Add-SystemPathLocation`.
 
 ### Scheduled tasks
-- **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask` — the task is registered only after confirmation; `-WhatIf` reports what it would register without touching the task scheduler.
+- **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
 
 ### Theme
-- **Removed:** The entire component — `Get-Theme`, `Set-Theme`, `Switch-Theme` and the alias `theme`.
+- **Removed:** Entire component — `Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme`.
 
 ### Usage
-- **Removed:** The entire component — `Get-Usage` and the alias `du`.
+- **Removed:** Entire component — `Get-Usage` and alias `du`.
 
 ### Packaging
-- **Changed:** The published package ships only the module files; tests, CI workflows, editor settings and agent instructions are staged out.
+- **Changed:** Published package ships only the module files; tests, CI workflows, editor settings and agent instructions staged out.
 
 ## 1.11.0 - 2026-07-13
 
