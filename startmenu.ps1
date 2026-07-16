@@ -134,7 +134,6 @@ function New-StartMenuShortcut {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
-        [Alias("App", "AppName")]
         [string] $Name,
 
         [Parameter(Mandatory = $false)]
@@ -226,7 +225,6 @@ function Remove-StartMenuShortcut {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true, Position = 0)]
-        [Alias("App", "AppName")]
         [string] $Name,
 
         [Parameter(Mandatory = $false)]
@@ -311,7 +309,6 @@ function New-PowershellStartMenuShortcut {
         [string] $Command,
 
         [Parameter(Mandatory = $true)]
-        [Alias("App", "AppName")]
         [string] $Name,
 
         [Parameter(Mandatory = $false)]
