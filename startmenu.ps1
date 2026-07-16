@@ -125,13 +125,13 @@ function New-StartMenuShortcut {
         Create the shortcut in the All Users (machine) Start Menu Programs folder. Aliases: Machine, All.
 
     .PARAMETER User
-        Create the shortcut in the current user's Start Menu Programs folder.
+        Create the shortcut in the current user's Start Menu Programs folder. (Default.)
 
     .OUTPUTS
         string - Path to the newly created shortcut in the Start Menu Programs folder.
 
     .NOTES
-        Default scope is AllUsers (machine) for backward compatibility. In v2 the default will change to User (current user).
+        Default scope is User (current user).
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
