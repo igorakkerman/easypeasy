@@ -98,7 +98,7 @@ function New-StartMenuShortcut {
         The name of the shortcut in the Start Menu > Programs folder.
 
     .PARAMETER Folder
-        The name of the folder in the Start Menu > Programs folder. Default: $Name
+        The name of the folder in Start Menu > Programs to create the shortcut in. If not specified, the shortcut is created directly in Start Menu > Programs.
 
     .PARAMETER Executable
         The path to the executable.
@@ -170,9 +170,9 @@ function New-StartMenuShortcut {
         Write-Error "-Icon cannot be combined with -IconLocation or -IconIndex." -ErrorAction Stop
     }
 
-    $folderName = $Folder ? $Folder : $Name
-
-    $shortcutFolder = New-StartMenuProgramsFolder -Name $folderName -AllUsers:$AllUsers
+    $shortcutFolder = $Folder `
+        ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
+        : (Get-StartMenuProgramsPath -AllUsers:$AllUsers)
     $shortcutPath = "$shortcutFolder\$Name.lnk"
 
     if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
@@ -203,15 +203,15 @@ function Remove-StartMenuShortcut {
 
     .DESCRIPTION
         Removes a shortcut from the Start Menu Programs folder, for the current user (the default) or for all users.
-        Mirrors New-StartMenuShortcut: the shortcut is expected at <Programs>\<Folder>\<Name>.lnk, where Folder
-        defaults to Name. After removing the shortcut, its containing folder is removed too if it is now empty.
-        If the shortcut does not exist, a terminating error is reported.
+        Mirrors New-StartMenuShortcut: the shortcut is expected at <Programs>\<Folder>\<Name>.lnk, or directly at
+        <Programs>\<Name>.lnk when Folder is not specified. After removing the shortcut, its containing folder is
+        removed too if it is now empty. If the shortcut does not exist, a terminating error is reported.
 
     .PARAMETER Name
         The name of the shortcut to remove from the Start Menu > Programs folder.
 
     .PARAMETER Folder
-        The name of the folder in the Start Menu > Programs folder that contains the shortcut. Default: $Name
+        The name of the folder in Start Menu > Programs that contains the shortcut. If not specified, the shortcut is expected directly in Start Menu > Programs.
 
     .PARAMETER AllUsers
         Remove the shortcut from the All Users (machine) Start Menu Programs folder. Aliases: Machine, All.
@@ -239,8 +239,7 @@ function Remove-StartMenuShortcut {
     )
 
     $programsPath = $AllUsers ? $allUsersProgramsPath : $userProgramsPath
-    $folderName = $Folder ? $Folder : $Name
-    $shortcutFolder = "$programsPath\$folderName"
+    $shortcutFolder = $Folder ? "$programsPath\$Folder" : $programsPath
     $shortcutPath = "$shortcutFolder\$Name.lnk"
 
     if (-not (Test-Path -LiteralPath $shortcutPath)) {

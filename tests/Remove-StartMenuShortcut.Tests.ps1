@@ -15,11 +15,11 @@ Describe 'Remove-StartMenuShortcut' {
             Mock -ModuleName easypeasy Get-ChildItem { }   # folder empty after removal
         }
 
-        It 'removes the .lnk under the current user Programs folder by default' {
+        It 'removes the .lnk from the current user Programs root by default' {
             Remove-StartMenuShortcut -Name 'Foo'
 
             Should -Invoke -ModuleName easypeasy Remove-Item -Times 1 -Exactly `
-                -ParameterFilter { $LiteralPath -eq "$userPrograms\Foo\Foo.lnk" }
+                -ParameterFilter { $LiteralPath -eq "$userPrograms\Foo.lnk" }
         }
 
         It 'uses -Folder for the containing folder when given' {
@@ -33,23 +33,30 @@ Describe 'Remove-StartMenuShortcut' {
             Remove-StartMenuShortcut -Name 'Foo' -AllUsers
 
             Should -Invoke -ModuleName easypeasy Remove-Item -Times 1 -Exactly `
-                -ParameterFilter { $LiteralPath -eq "$allUsers\Foo\Foo.lnk" }
+                -ParameterFilter { $LiteralPath -eq "$allUsers\Foo.lnk" }
         }
 
         It 'removes the containing folder when it is now empty' {
-            Remove-StartMenuShortcut -Name 'Foo'
+            Remove-StartMenuShortcut -Name 'Foo' -Folder 'Bar'
 
             Should -Invoke -ModuleName easypeasy Remove-Item -Times 1 -Exactly `
-                -ParameterFilter { $LiteralPath -eq "$userPrograms\Foo" }
+                -ParameterFilter { $LiteralPath -eq "$userPrograms\Bar" }
         }
 
         It 'keeps the containing folder when it still holds other items' {
             Mock -ModuleName easypeasy Get-ChildItem { 'C:\Old\Other.lnk' }
 
+            Remove-StartMenuShortcut -Name 'Foo' -Folder 'Bar'
+
+            Should -Invoke -ModuleName easypeasy Remove-Item -Times 0 -Exactly `
+                -ParameterFilter { $LiteralPath -eq "$userPrograms\Bar" }
+        }
+
+        It 'never removes the Programs root when -Folder is omitted' {
             Remove-StartMenuShortcut -Name 'Foo'
 
             Should -Invoke -ModuleName easypeasy Remove-Item -Times 0 -Exactly `
-                -ParameterFilter { $LiteralPath -eq "$userPrograms\Foo" }
+                -ParameterFilter { $LiteralPath -eq $userPrograms }
         }
 
         It 'removes nothing under -WhatIf' {

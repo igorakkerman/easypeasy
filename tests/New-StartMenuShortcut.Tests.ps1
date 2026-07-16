@@ -12,6 +12,7 @@ Describe 'New-StartMenuShortcut' {
 
     BeforeEach {
         Mock -ModuleName easypeasy New-StartMenuProgramsFolder { $folder }
+        Mock -ModuleName easypeasy Get-StartMenuProgramsPath { $folder }
     }
 
     AfterAll { Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue }
@@ -28,17 +29,38 @@ Describe 'New-StartMenuShortcut' {
         $path | Should -Not -Exist
     }
 
-    It 'forwards -AllUsers to New-StartMenuProgramsFolder' {
-        New-StartMenuShortcut -Name 'AllUsersApp' -Executable 'C:\Windows\notepad.exe' -AllUsers | Out-Null
+    It 'creates the shortcut in the given -Folder' {
+        New-StartMenuShortcut -Name 'InFolder' -Executable 'C:\Windows\notepad.exe' -Folder 'MyFolder' | Out-Null
 
         Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
+            -ParameterFilter { $Name -eq 'MyFolder' }
+    }
+
+    It 'creates the shortcut in the Programs root when -Folder is omitted' {
+        New-StartMenuShortcut -Name 'InRoot' -Executable 'C:\Windows\notepad.exe' | Out-Null
+
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly
+        Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 0 -Exactly
+    }
+
+    It 'forwards -AllUsers to New-StartMenuProgramsFolder' {
+        New-StartMenuShortcut -Name 'AllUsersApp' -Executable 'C:\Windows\notepad.exe' -Folder 'MyFolder' -AllUsers | Out-Null
+
+        Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
+            -ParameterFilter { $AllUsers }
+    }
+
+    It 'forwards -AllUsers to Get-StartMenuProgramsPath when -Folder is omitted' {
+        New-StartMenuShortcut -Name 'AllUsersRoot' -Executable 'C:\Windows\notepad.exe' -AllUsers | Out-Null
+
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly `
             -ParameterFilter { $AllUsers }
     }
 
     It 'does not target the All Users folder by default' {
         New-StartMenuShortcut -Name 'DefaultApp' -Executable 'C:\Windows\notepad.exe' | Out-Null
 
-        Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly `
             -ParameterFilter { -not $AllUsers }
     }
 
