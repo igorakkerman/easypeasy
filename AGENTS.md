@@ -60,3 +60,12 @@ Publishing is automated by `.github/workflows/publish.yaml`: creating a GitHub *
 - **Cut the release** — tag `vX.Y.Z` and mirror that changelog section into the release body: `gh release create vX.Y.Z --title vX.Y.Z --notes-file <section>`. Revise a body later with `gh release edit vX.Y.Z --notes-file <section>`.
 - **Auth** — the workflow signs in with the `GALLERY_KEY` repo secret (a PowerShell Gallery API key). An invalid/expired key fails the `Publish` step with HTTP **403**; update it via `gh secret set GALLERY_KEY`, then `gh run rerun <run-id>` — no need to recreate the release.
 - **Verify** — watch with `gh run watch <run-id>`, then confirm the package with `Find-Module easypeasy -RequiredVersion X.Y.Z`.
+
+### Changelog style
+
+Entries are terse. Write the change, then stop.
+
+- **No articles** — `a`, `an`, `the`. e.g. `Removed: Entire component — Get-Theme, Set-Theme, Switch-Theme and alias theme.` — not `The entire component ... and the alias theme`.
+- **Drop implied auxiliaries** — `Administrator privileges no longer required by default.` — not `are no longer required`. `tests, CI workflows and editor settings staged out` — not `are staged out`.
+- **State the change, not its rationale, mechanics or consequences.** `Added: -WhatIf and -Confirm on Register-LogonTask` — not `... — the task is registered only after confirmation; -WhatIf reports what it would register without touching the task scheduler`. `rejects invalid regular expressions` — not `rejects an invalid regular expression up front, naming the pattern and the reason`.
+- **Release summary** — short paragraphs separated by blank lines, one theme each.
