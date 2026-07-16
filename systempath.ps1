@@ -1,3 +1,22 @@
+class ValidRegexAttribute : System.Management.Automation.ValidateEnumeratedArgumentsAttribute {
+
+    [void] ValidateElement([object] $element) {
+        $pattern = [string] $element
+        try { [void] [regex]::new($pattern) }
+        catch { throw "'$pattern' is not a valid regular expression: $($_.Exception.InnerException.Message)" }
+    }
+
+    <#
+    .SYNOPSIS
+        Validates that an argument is a valid regular expression.
+    .DESCRIPTION
+        Rejects an argument that cannot be parsed as a regular expression, reporting the pattern and the reason.
+        Every element of a collection is validated separately.
+    .EXAMPLE
+        [ValidRegexAttribute()] [string[]] $Match
+    #>
+}
+
 class SystemPathLocation {
 
     [string] $Scope
@@ -306,6 +325,7 @@ function Get-SystemPath {
         ignores trailing backslashes.
     .PARAMETER Match
         Regular expressions; only locations matching all of them are returned. Matching is case-insensitive.
+        An invalid regular expression is a terminating error.
     .OUTPUTS
         SystemPathLocation objects with a Location and a Scope property, or a semicolon-separated string when -Join is specified.
     .NOTES
@@ -348,6 +368,7 @@ function Get-SystemPath {
         [string[]] $Filter,
 
         [Parameter(Mandatory = $false)]
+        [ValidRegexAttribute()]
         [string[]] $Match
     )
 
@@ -756,6 +777,7 @@ function Get-SystemPathLocation {
         Wildcard patterns; only locations matching all of them are returned.
     .PARAMETER Match
         Regular expressions; only locations matching all of them are returned.
+        An invalid regular expression is a terminating error.
     .PARAMETER Machine
         If specified, the system path for the local machine is searched.
     .PARAMETER User
@@ -784,6 +806,7 @@ function Get-SystemPathLocation {
         [string[]] $Filter,
 
         [Parameter(Mandatory = $false)]
+        [ValidRegexAttribute()]
         [string[]] $Match,
 
         [Parameter(Mandatory = $false)]
@@ -835,7 +858,7 @@ function Test-SystemPathLocation {
     .PARAMETER Filter
         Wildcard patterns the location must match.
     .PARAMETER Match
-        Regular expressions the location must match.
+        Regular expressions the location must match. An invalid regular expression is a terminating error.
     .PARAMETER Machine
         If specified, the system path for the local machine is searched.
     .PARAMETER User
@@ -863,6 +886,7 @@ function Test-SystemPathLocation {
         [string[]] $Filter,
 
         [Parameter(Mandatory = $false)]
+        [ValidRegexAttribute()]
         [string[]] $Match,
 
         [Parameter(Mandatory = $false)]

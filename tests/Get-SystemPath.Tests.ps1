@@ -130,6 +130,16 @@ Describe 'Get-SystemPath' {
             (Get-SystemPath -Match '\\Git\\', 'bin$').Location |
                 Should -Be @('C:\Program Files\Git\bin')
         }
+
+        It 'rejects an invalid regex, reporting the pattern and the reason' {
+            { Get-SystemPath -Match '(' } |
+                Should -Throw -ExpectedMessage "*'(' is not a valid regular expression: *Not enough*"
+        }
+
+        It 'rejects an invalid regex among valid ones' {
+            { Get-SystemPath -Match 'bin$', '(' } |
+                Should -Throw -ExpectedMessage "*'(' is not a valid regular expression*"
+        }
     }
 
     Context 'combined criteria' {

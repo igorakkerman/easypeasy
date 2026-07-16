@@ -40,6 +40,11 @@ Describe 'Test-SystemPathLocation' {
         Test-SystemPathLocation -Match '\\Git\\bin$' | Should -BeTrue
     }
 
+    It 'rejects an invalid -Match regex, reporting the pattern and the reason' {
+        { Test-SystemPathLocation -Match '(' } |
+            Should -Throw -ExpectedMessage "*'(' is not a valid regular expression: *Not enough*"
+    }
+
     It 'returns $false when one of several criteria fails' {
         Test-SystemPathLocation Git -Filter '*\cmd' | Should -BeFalse
     }

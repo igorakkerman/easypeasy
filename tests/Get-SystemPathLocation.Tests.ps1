@@ -79,6 +79,11 @@ Describe 'Get-SystemPathLocation' {
             { Get-SystemPathLocation -ErrorAction Stop } |
                 Should -Throw '*at least one*'
         }
+
+        It 'rejects an invalid regex on -Match, reporting the pattern and the reason' {
+            { Get-SystemPathLocation -Match '(' } |
+                Should -Throw -ExpectedMessage "*'(' is not a valid regular expression: *Not enough *"
+        }
     }
 
     Context 'scoped lookups' {

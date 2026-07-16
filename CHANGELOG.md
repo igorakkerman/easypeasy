@@ -19,6 +19,7 @@ First major release in years. Streamlined, consistent APIs. Parameters mostly us
 - **Changed:** The system PATH and environment write functions now default to the user scope; pass `-Machine` for machine scope. Administrator privileges are no longer required by default.
 - **Added:** A table view for system path locations, widening the Scope column so scope names are no longer truncated.
 - **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` — a literal substring, a wildcard pattern, a regular expression.
+- **Added:** `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` rejects an invalid regular expression up front, naming the pattern and the reason.
 - **Changed:** positional parameter: `-Contains` replaces `-Filter` / `-Location`, use `path Git`, `-Filter "*Git*"` or `-Match ".*Git.*"`.
 - **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` require at least one of `-Location`, `-Contains`, `-Filter` and `-Match`; a call without a criterion is a terminating error.
 - **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
