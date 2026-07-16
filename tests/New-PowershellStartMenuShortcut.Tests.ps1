@@ -33,10 +33,33 @@ Describe 'New-PowershellStartMenuShortcut' {
     It 'creates the shortcut in the given -Folder' {
         Mock -ModuleName easypeasy New-StartMenuProgramsFolder { $folder }
 
-        New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'InFolder' -Folder 'MyGroup' | Out-Null
+        New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'InFolder' -Folder 'MyFolder' | Out-Null
 
         Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
-            -ParameterFilter { $Name -eq 'MyGroup' }
+            -ParameterFilter { $Name -eq 'MyFolder' }
+    }
+
+    It 'forwards -AllUsers to Get-StartMenuProgramsPath' {
+        New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersRoot' -AllUsers | Out-Null
+
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly `
+            -ParameterFilter { $AllUsers }
+    }
+
+    It 'forwards -AllUsers to New-StartMenuProgramsFolder' {
+        Mock -ModuleName easypeasy New-StartMenuProgramsFolder { $folder }
+
+        New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersFolder' -Folder 'MyFolder' -AllUsers | Out-Null
+
+        Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 1 -Exactly `
+            -ParameterFilter { $AllUsers }
+    }
+
+    It 'does not target the All Users folder by default' {
+        New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'DefaultScope' | Out-Null
+
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly `
+            -ParameterFilter { -not $AllUsers }
     }
 
     It 'fails when the shortcut already exists without -Force' {

@@ -262,7 +262,7 @@ function New-PowershellStartMenuShortcut {
         Creates a new shortcut that runs a PowerShell command in Start Menu > Programs.
 
     .DESCRIPTION
-        Creates a new shortcut that runs a PowerShell command in the current user's Start Menu Programs folder.
+        Creates a new shortcut that runs a PowerShell command in the Start Menu Programs folder, for the current user (the default) or for all users.
 
     .PARAMETER Command
         The PowerShell command to run.
@@ -298,8 +298,17 @@ function New-PowershellStartMenuShortcut {
     .PARAMETER Force
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
 
+    .PARAMETER AllUsers
+        Create the shortcut in the All Users (machine) Start Menu Programs folder. Aliases: Machine, All.
+
+    .PARAMETER User
+        Create the shortcut in the current user's Start Menu Programs folder. (Default.)
+
     .OUTPUTS
-        string - Path to the newly created shortcut in the current user's Start Menu Programs folder.
+        string - Path to the newly created shortcut in the Start Menu Programs folder.
+
+    .NOTES
+        Default scope is User (current user).
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -338,7 +347,14 @@ function New-PowershellStartMenuShortcut {
         [int] $IconIndex = 0,
 
         [Parameter(Mandatory = $false)]
-        [switch] $Force
+        [switch] $Force,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
+        [Alias("Machine", "All")]
+        [switch] $AllUsers,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [switch] $User
     )
 
     if ($Icon -and ($IconLocation -or $PSBoundParameters.ContainsKey("IconIndex"))) {
@@ -346,8 +362,8 @@ function New-PowershellStartMenuShortcut {
     }
 
     $shortcutFolder = $Folder `
-        ? (New-StartMenuProgramsFolder -Name $Folder) `
-        : (Get-StartMenuProgramsPath)
+        ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
+        : (Get-StartMenuProgramsPath -AllUsers:$AllUsers)
 
     $arguments = @()
     if ($KeepOpen) {
