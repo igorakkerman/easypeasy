@@ -16,6 +16,9 @@
 ### System PATH and environment variables
 - **Changed:** The default scope of the system-path and environment write functions changed from Machine to User — `Add-SystemPathLocation`, `Remove-SystemPathLocation`, `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` now write to the user scope unless `-Machine` is given. Administrator privileges are no longer required by default.
 
+### Scheduled tasks
+- **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask` — the task is only registered after confirmation; `-WhatIf` reports the task it would register without touching the task scheduler.
+
 ### Theme
 - **Removed:** entire component (`Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme`)
 

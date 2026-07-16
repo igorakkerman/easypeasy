@@ -23,4 +23,10 @@ Describe 'Register-LogonTask' {
         Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 1 -Exactly `
             -ParameterFilter { $Force }
     }
+
+    It 'does nothing under -WhatIf' {
+        Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument 'x' -WhatIf
+
+        Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 0 -Exactly
+    }
 }

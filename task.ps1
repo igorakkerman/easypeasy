@@ -24,7 +24,7 @@ function Register-LogonTask {
     .EXAMPLE
         Register-LogonTask -Name "MyTask" -Path "\MyFolder" -Executable "C:\MyFolder\MyExecutable.exe" -Argument "MyArgument"
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     Param(
         [string] $Name,
         [string] $Path = "\",
@@ -46,11 +46,13 @@ function Register-LogonTask {
         -Action $action `
         -Settings $settings
 
-    Register-ScheduledTask `
-        -TaskName $Name `
-        -TaskPath $Path `
-        -InputObject $task `
-        -Force:$Force `
-    | Out-Null
+    if ($PSCmdlet.ShouldProcess("$Path$Name", "Register logon task")) {
+        Register-ScheduledTask `
+            -TaskName $Name `
+            -TaskPath $Path `
+            -InputObject $task `
+            -Force:$Force `
+        | Out-Null
+    }
 }
 
