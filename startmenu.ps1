@@ -68,8 +68,6 @@ function New-StartMenuProgramsFolder {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
-        [Alias("AppName")] # DEPRECATED!
-        [Alias("Folder")]
         [string] $Name,
 
         [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
