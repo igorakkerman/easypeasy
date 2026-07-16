@@ -26,6 +26,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` require at least one of `-Location`, `-Contains`, `-Filter` and `-Match`.
 - **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
 - **Removed:** Aliases `-Prepend` and `-Start` on `Add-SystemPathLocation`.
+- **Fixed:** Aliases `addpath`, `rmpath` and `removepath` are exported;
+  previously missing from the manifest.
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
