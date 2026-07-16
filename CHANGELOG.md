@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0-rc1 - 2026-07-15
+## 2.0.0 - pending
 
 First major release in years. Streamlined, consistent APIs. Parameters mostly used by scripts are mandatory now, without defaults, making calling code more expressive. 
 
