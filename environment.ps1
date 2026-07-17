@@ -1,3 +1,35 @@
+function local:Sync-ProcessEnvironmentVariable {
+    <#
+    .SYNOPSIS
+        Updates the current process environment variable to the value in effect.
+    .DESCRIPTION
+        Recomputes the value a fresh process would resolve - the user value over the machine value -
+        and applies it to the current process, so a persisted change takes effect immediately.
+        PATH is left untouched: it is composed of several scopes and may carry process-only entries,
+        so the system-path functions keep the current process PATH in sync themselves.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Name
+    )
+
+    if ($Name -ieq "Path") {
+        return
+    }
+
+    $user = [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)
+    $machine = [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::Machine)
+
+    $effective = ($null -ne $user) ? $user : $machine
+
+    if ($null -eq $effective) {
+        Remove-Item -Path "env:$Name" -ErrorAction SilentlyContinue
+    }
+    else {
+        Set-Item -Path "env:$Name" -Value $effective
+    }
+}
+
 function Get-EnvironmentVariable() {
     <#
     .SYNOPSIS
@@ -78,8 +110,9 @@ function Set-EnvironmentVariable() {
         Sets the value of an environment variable.
 
     .DESCRIPTION
-        Sets the value of the specified environment variable, 
+        Sets the value of the specified environment variable,
         either in the machine environment or the user environment.
+        The change also takes effect in the current process immediately.
 
     .PARAMETER Name
         The name of the environment variable.
@@ -131,6 +164,7 @@ function Set-EnvironmentVariable() {
 
     if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
         [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
+        Sync-ProcessEnvironmentVariable -Name $Name
     }
 }
 
@@ -140,8 +174,9 @@ function Remove-EnvironmentVariable() {
         Removes an environment variable.
 
     .DESCRIPTION
-        Removes the specified environment variable, 
+        Removes the specified environment variable,
         either from the machine environment or the user environment.
+        The change also takes effect in the current process immediately.
 
     .PARAMETER Name
         The name of the environment variable.
@@ -187,6 +222,7 @@ function Remove-EnvironmentVariable() {
 
     if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
         [Environment]::SetEnvironmentVariable($Name, $null, $environment)
+        Sync-ProcessEnvironmentVariable -Name $Name
     }
 }
 

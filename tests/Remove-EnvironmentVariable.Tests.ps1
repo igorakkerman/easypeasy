@@ -6,17 +6,29 @@ Describe 'Remove-EnvironmentVariable' {
 
     Context 'user scope' {
 
-        BeforeEach { [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', 'x', 'User') }
-        AfterEach { [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', $null, 'User') }
+        BeforeEach {
+            [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', 'x', 'User')
+            $env:EASYPEASY_TEST = 'x'
+        }
+        AfterEach {
+            [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', $null, 'User')
+            Remove-Item -Path env:EASYPEASY_TEST -ErrorAction SilentlyContinue
+        }
 
         It 'removes a user environment variable' {
             Remove-EnvironmentVariable -Name EASYPEASY_TEST -User
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
         }
 
+        It 'clears the variable from the current process immediately' {
+            Remove-EnvironmentVariable -Name EASYPEASY_TEST -User
+            $env:EASYPEASY_TEST | Should -BeNullOrEmpty
+        }
+
         It 'keeps the variable under -WhatIf' {
             Remove-EnvironmentVariable -Name EASYPEASY_TEST -User -WhatIf
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -Be 'x'
+            $env:EASYPEASY_TEST | Should -Be 'x'
         }
 
         It 'removes the variable from the user scope by default, without requiring administrator' {

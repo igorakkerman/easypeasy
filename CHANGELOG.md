@@ -28,6 +28,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Removed:** Aliases `-Prepend` and `-Start` on `Add-SystemPathLocation`.
 - **Fixed:** Aliases `addpath`, `rmpath` and `removepath` are exported;
   previously missing from the manifest.
+- **Changed:** `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` apply the change to the current process immediately.
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
