@@ -1,3 +1,26 @@
+class EnvironmentVariable {
+
+    [string] $Scope
+    [ValidateNotNullOrEmpty()] [string] $Name
+    [string] $Value
+
+    EnvironmentVariable($Scope, $Name, $Value) {
+        $this.Scope = $Scope
+        $this.Name = $Name
+        $this.Value = $Value
+    }
+
+    <#
+    .SYNOPSIS
+        An environment variable and the scope it belongs to.
+    .DESCRIPTION
+        Holds an environment variable's name and value together with its scope:
+        'Machine' (local machine) or 'User' (current user).
+    .EXAMPLE
+        $variable = [EnvironmentVariable]::new("User", "GOPATH", "C:\Go")
+    #>
+}
+
 function local:Sync-ProcessEnvironmentVariable {
     <#
     .SYNOPSIS
@@ -102,6 +125,53 @@ function Get-EnvironmentVariable() {
     }
 
     return $value
+}
+
+function Get-Environment() {
+    <#
+    .SYNOPSIS
+        Returns the environment variables of a scope.
+
+    .DESCRIPTION
+        Returns every environment variable of the machine environment or the user environment
+        as EnvironmentVariable records, each carrying its Name, Value and Scope.
+
+    .PARAMETER Machine
+        If specified, the environment variables of the machine environment are returned.
+
+    .PARAMETER User
+        If specified, the environment variables of the user environment are returned.
+
+    .OUTPUTS
+        EnvironmentVariable records with a Scope, Name and Value property.
+
+    .EXAMPLE
+        Get-Environment -Machine
+
+    .EXAMPLE
+        Get-Environment -User
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User
+    )
+
+    if ($Machine) {
+        $target = [System.EnvironmentVariableTarget]::Machine
+        $scope = "Machine"
+    }
+    else {
+        $target = [System.EnvironmentVariableTarget]::User
+        $scope = "User"
+    }
+
+    [Environment]::GetEnvironmentVariables($target).GetEnumerator() `
+    | Sort-Object -Property Key `
+    | ForEach-Object { [EnvironmentVariable]::new($scope, $_.Key, $_.Value) }
 }
 
 function Set-EnvironmentVariable() {

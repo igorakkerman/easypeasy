@@ -82,6 +82,7 @@
         'Move-SystemPathLocation',
         'Backup-SystemPath',
         'Get-EnvironmentVariable',
+        'Get-Environment',
         'Set-EnvironmentVariable',
         'Remove-EnvironmentVariable',
         'Set-ShortcutRunAsAdministrator',
