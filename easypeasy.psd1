@@ -153,7 +153,7 @@
             # ReleaseNotes = ''
 
             # Prerelease string of this module
-            Prerelease = 'rc1'
+            Prerelease = 'rc2'
 
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
             # RequireLicenseAcceptance = $false
