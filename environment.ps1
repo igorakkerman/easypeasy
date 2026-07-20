@@ -127,8 +127,11 @@ function Get-Environment() {
         Returns the environment variables of a scope.
 
     .DESCRIPTION
-        Returns every environment variable of the machine environment or the user environment
-        as EnvironmentVariable records, each carrying its Name, Value and Scope.
+        Returns environment variables as EnvironmentVariable records, each carrying its Name, Value and Scope.
+        Both the machine and the user environment are returned by default; pass -Machine or -User for one scope.
+        Records are ordered by name; where both scopes define a variable the user record comes first,
+        since the user value is the one in effect. PATH is the exception - the machine and user paths are
+        combined, machine first.
 
     .PARAMETER Machine
         If specified, the environment variables of the machine environment are returned.
@@ -140,6 +143,9 @@ function Get-Environment() {
         EnvironmentVariable records with a Scope, Name and Value property.
 
     .EXAMPLE
+        Get-Environment
+
+    .EXAMPLE
         Get-Environment -Machine
 
     .EXAMPLE
@@ -147,25 +153,28 @@ function Get-Environment() {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
         [switch] $User
     )
 
-    if ($Machine) {
-        $target = [System.EnvironmentVariableTarget]::Machine
-        $scope = "Machine"
-    }
-    else {
-        $target = [System.EnvironmentVariableTarget]::User
-        $scope = "User"
+    # both scopes by default (neither or both switches)
+    if ($Machine -eq $User) {
+        $Machine = $true
+        $User = $true
     }
 
-    [Environment]::GetEnvironmentVariables($target).GetEnumerator() `
-    | Sort-Object -Property Key `
-    | ForEach-Object { [EnvironmentVariable]::new($scope, $_.Key, $_.Value) }
+    $targets = [ordered] @{}
+    if ($Machine) { $targets["Machine"] = [System.EnvironmentVariableTarget]::Machine }
+    if ($User) { $targets["User"] = [System.EnvironmentVariableTarget]::User }
+
+    $variables = foreach ($scope in $targets.Keys) {
+        [Environment]::GetEnvironmentVariables($targets[$scope]).GetEnumerator() `
+        | ForEach-Object { [EnvironmentVariable]::new($scope, $_.Key, $_.Value) }
+    }
+
+    # by name, descending scope putting User before Machine where both scopes define the same variable
+    $variables | Sort-Object -Property Name, @{ Expression = "Scope"; Descending = $true }
 }
 
 function Set-EnvironmentVariable() {

@@ -39,10 +39,22 @@ Describe 'Get-Environment' {
         }
     }
 
-    Context 'scope is required' {
+    Context 'default scope' {
 
-        It 'errors when neither -Machine nor -User is given' {
-            { Get-Environment } | Should -Throw
+        It 'returns both scopes when neither switch is given' {
+            (Get-Environment | ForEach-Object Scope | Sort-Object -Unique) | Should -Be @('Machine', 'User')
+        }
+
+        It 'orders records by name' {
+            $names = Get-Environment | ForEach-Object Name
+            $names | Should -Be ($names | Sort-Object)
+        }
+
+        It 'places the user record before the machine record for a variable in both scopes' {
+            $duplicates = Get-Environment | Group-Object Name | Where-Object Count -gt 1
+            foreach ($duplicate in $duplicates) {
+                ($duplicate.Group | ForEach-Object Scope) | Should -Be @('User', 'Machine')
+            }
         }
     }
 }
