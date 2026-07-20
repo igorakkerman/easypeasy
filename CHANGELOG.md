@@ -30,6 +30,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
   previously missing from the manifest.
 - **Changed:** `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` apply the change to the current process immediately.
 - **Added:** `Get-Environment` — returns environment variables of `-Machine` or `-User` as records carrying scope, name and value.
+- **Fixed:** `Remove-EnvironmentVariable` deletes registry value instead of leaving empty tombstone.
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`

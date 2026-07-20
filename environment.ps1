@@ -291,7 +291,8 @@ function Remove-EnvironmentVariable() {
     }
 
     if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
-        [Environment]::SetEnvironmentVariable($Name, $null, $environment)
+        # [NullString]::Value binds to a genuine null; [string] $null would coerce to "", leaves a registry tombstone instead of deleting
+        [Environment]::SetEnvironmentVariable($Name, [NullString]::Value, $environment)
         Sync-ProcessEnvironmentVariable -Name $Name
     }
 }

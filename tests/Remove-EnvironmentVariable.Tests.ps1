@@ -11,13 +11,18 @@ Describe 'Remove-EnvironmentVariable' {
             $env:EASYPEASY_TEST = 'x'
         }
         AfterEach {
-            [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', $null, 'User')
+            [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', [NullString]::Value, 'User')
             Remove-Item -Path env:EASYPEASY_TEST -ErrorAction SilentlyContinue
         }
 
         It 'removes a user environment variable' {
             Remove-EnvironmentVariable -Name EASYPEASY_TEST -User
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
+        }
+
+        It 'deletes the registry value instead of leaving an empty tombstone' {
+            Remove-EnvironmentVariable -Name EASYPEASY_TEST -User
+            (Get-Item 'HKCU:\Environment').GetValueNames() | Should -Not -Contain 'EASYPEASY_TEST'
         }
 
         It 'clears the variable from the current process immediately' {
