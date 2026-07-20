@@ -40,17 +40,11 @@ function local:Sync-ProcessEnvironmentVariable {
         return
     }
 
-    $user = [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)
-    $machine = [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::Machine)
+    $userValue = Get-EnvironmentVariable -Name $Name -User -ErrorAction SilentlyContinue
+    $machineValue = Get-EnvironmentVariable -Name $Name -Machine -ErrorAction SilentlyContinue
 
-    $effective = ($null -ne $user) ? $user : $machine
-
-    if ($null -eq $effective) {
-        Remove-Item -Path "env:$Name" -ErrorAction SilentlyContinue
-    }
-    else {
-        Set-Item -Path "env:$Name" -Value $effective
-    }
+    # a $null value removes the variable from the current process
+    Set-Item -Path "env:$Name" -Value ($userValue ?? $machineValue)
 }
 
 function Get-EnvironmentVariable() {
