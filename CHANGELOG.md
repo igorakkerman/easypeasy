@@ -26,7 +26,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` require at least one of `-Location`, `-Contains`, `-Filter` and `-Match`.
 - **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
 - **Removed:** Aliases `-Prepend` and `-Start` on `Add-SystemPathLocation`.
-- **Fixed:** Aliases `addpath`, `rmpath` and `removepath` are exported;
+- **Fixed:** Aliases `addpath` and `rmpath` are exported;
   previously missing from the manifest.
 - **Changed:** `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` apply the change to the current process immediately.
 - **Added:** `Get-Environment` — returns environment variables as records carrying scope, name and value; both scopes by default, or `-Machine` / `-User`.

@@ -541,7 +541,7 @@ function Remove-SystemPathLocation {
     .PARAMETER User
         If specified, the system path for the current user is used. (Default.)
     .NOTES
-        Alias: rmpath, removepath
+        Alias: rmpath
         Default scope is User.
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
@@ -897,6 +897,5 @@ function Test-SystemPathLocation {
 
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
-New-Alias -Name removepath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name deduppath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name movepath -Value Move-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
