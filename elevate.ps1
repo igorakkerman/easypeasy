@@ -8,7 +8,7 @@ function Assert-Elevated {
     param ()
 
     if (! (Test-Elevated)) {
-        Write-Error "This operation requires administrator privileges." -ErrorAction Stop
+        Write-Error "Operation requires administrator privileges." -ErrorAction Stop
     }
 }
 
