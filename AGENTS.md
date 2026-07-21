@@ -8,10 +8,10 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Architecture
 
-- `easypeasy.psm1` is the root **module**. It does nothing but dot-source each domain `.ps1` file in `$PSScriptRoot`. Load order matters: helpers like `timestamp.ps1`, `administrator.ps1`, and `environment.ps1` are sourced before the files that depend on them.
+- `easypeasy.psm1` is the root **module**. It does nothing but dot-source each domain `.ps1` file in `$PSScriptRoot`. Load order matters: helpers like `timestamp.ps1`, `elevate.ps1`, and `environment.ps1` are sourced before the files that depend on them.
 - `easypeasy.psd1` is the manifest. **`FunctionsToExport` and `AliasesToExport` are explicit lists (no wildcards).** A new public function or alias is invisible to module consumers until its name is added here — keep these in sync when adding/renaming exports.
-- Each `.ps1` is one domain, e.g. `systempath.ps1`, `environment.ps1`, `startmenu.ps1`, `shortcut.ps1`, `task.ps1`, `specialfolder.ps1`, `explorer.ps1`, `administrator.ps1`, `timestamp.ps1`.
-- Layering: `systempath.ps1` builds on `environment.ps1` (PATH is just an env var); `startmenu.ps1` dot-sources `shortcut.ps1`; a `-Machine` write that is not already elevated re-runs itself through `Invoke-Elevated` (from `administrator.ps1`). `Assert-Administrator` stays exported for callers that want a hard admin check.
+- Each `.ps1` is one domain, e.g. `systempath.ps1`, `environment.ps1`, `startmenu.ps1`, `shortcut.ps1`, `task.ps1`, `specialfolder.ps1`, `explorer.ps1`, `elevate.ps1`, `timestamp.ps1`.
+- Layering: `systempath.ps1` builds on `environment.ps1` (PATH is just an env var); `startmenu.ps1` dot-sources `shortcut.ps1`; a `-Machine` write that is not already elevated re-runs itself through `Invoke-Elevated` (from `elevate.ps1`). `Assert-Administrator` stays exported for callers that want a hard admin check.
 
 ## Conventions (match these when editing)
 
