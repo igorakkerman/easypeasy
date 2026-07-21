@@ -3,7 +3,7 @@ function local:Test-Elevated {
     return $identity.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Assert-Administrator {
+function Assert-Elevated {
     [CmdletBinding()]
     param ()
 

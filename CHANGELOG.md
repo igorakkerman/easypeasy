@@ -33,6 +33,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Fixed:** `Remove-EnvironmentVariable` deletes registry value instead of leaving empty tombstone.
 - **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error.
 - **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` force inline execution in the current terminal via `sudo --inline`, and report a terminating error on failure.
+- **Changed:** `Assert-Administrator` renamed to `Assert-Elevated`.
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
