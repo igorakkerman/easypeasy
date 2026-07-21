@@ -111,14 +111,14 @@ in a specific scope (machine 🅰️ or user), or both combined \
 **default**: **both**, keeping a cross-scope duplicate on the machine PATH
 
 ```powershell
-> deduppath                # both scopes; keeps machine on overlap
-> deduppath -KeepMachine   # both scopes; keeps machine on overlap (explicit)
-> deduppath -KeepUser      # both scopes; keeps user on overlap
-> deduppath -Machine       # machine PATH only
-> deduppath -User          # user PATH only
+> cleanpath                # both scopes; keeps machine on overlap
+> cleanpath -KeepMachine   # both scopes; keeps machine on overlap (explicit)
+> cleanpath -KeepUser      # both scopes; keeps user on overlap
+> cleanpath -Machine       # machine PATH only
+> cleanpath -User          # user PATH only
 ```
 
-`deduppath` is an alias for `Remove-DuplicateSystemPathLocations`, which you should use in scripts. \
+`cleanpath` is an alias for `Remove-DuplicateSystemPathLocations`, which you should use in scripts. \
 Within a scope, the first occurrence of each folder is kept.
 
 #### Move a folder between the machine and user system PATH 🅰️

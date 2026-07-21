@@ -111,7 +111,7 @@
         'path',
         'addpath',
         'rmpath',
-        'deduppath',
+        'cleanpath',
         'movepath',
         'programs',
         'docs',

@@ -601,7 +601,7 @@ function Remove-DuplicateSystemPathLocations {
     .PARAMETER KeepUser
         When cleaning both scopes, a location present on both is kept on the user path and removed from the machine path.
     .NOTES
-        Alias: deduppath
+        Alias: cleanpath
     .EXAMPLE
         Remove-DuplicateSystemPathLocations
     .EXAMPLE
@@ -897,5 +897,5 @@ function Test-SystemPathLocation {
 
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
-New-Alias -Name deduppath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name cleanpath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name movepath -Value Move-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null

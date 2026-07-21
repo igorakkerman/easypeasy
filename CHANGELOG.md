@@ -70,7 +70,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 ## 1.10.0 - 2026-07-13
 
 ### Added
-- **`Remove-DuplicateSystemPathLocations`** (alias `deduppath`) — removes duplicate locations from the system PATH, for the local machine, the current user, or both combined (the default). Within a scope the first occurrence of each location is kept; on a cross-scope duplicate the machine copy is kept by default, or the user copy with `-KeepUser`. Idempotent — no change when there are no duplicates.
+- **`Remove-DuplicateSystemPathLocations`** (alias `cleanpath`) — removes duplicate locations from the system PATH, for the local machine, the current user, or both combined (the default). Within a scope the first occurrence of each location is kept; on a cross-scope duplicate the machine copy is kept by default, or the user copy with `-KeepUser`. Idempotent — no change when there are no duplicates.
 - **`Move-SystemPathLocation`** (alias `movepath`) — moves a location from the machine system PATH to the user system PATH (`-ToUser`) or the other way (`-ToMachine`). If there is nothing to move (already on the target, or on neither), a warning is reported.
 
 ### Changed
