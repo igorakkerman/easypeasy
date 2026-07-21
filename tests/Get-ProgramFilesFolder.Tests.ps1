@@ -5,8 +5,8 @@ BeforeAll {
 Describe 'Get-ProgramFilesFolder' {
 
     It 'returns an existing directory' {
-        $path = Get-ProgramFilesFolder
-        $path | Should -Not -BeNullOrEmpty
-        Test-Path -LiteralPath $path -PathType Container | Should -BeTrue
+        $location = Get-ProgramFilesFolder
+        $location | Should -Not -BeNullOrEmpty
+        Test-Path -LiteralPath $location -PathType Container | Should -BeTrue
     }
 }

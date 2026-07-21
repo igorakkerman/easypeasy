@@ -16,6 +16,6 @@ Describe 'Get-ShortcutIconLocation' {
     AfterAll { Remove-Item $lnk -Force -ErrorAction SilentlyContinue }
 
     It 'returns the icon location of a shortcut' {
-        Get-ShortcutIconLocation -Path $lnk | Should -Be 'C:\Windows\notepad.exe,0'
+        Get-ShortcutIconLocation -Location $lnk | Should -Be 'C:\Windows\notepad.exe,0'
     }
 }

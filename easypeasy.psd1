@@ -91,7 +91,7 @@
         'New-StartMenuShortcut',
         'Remove-StartMenuShortcut',
         'New-PowershellStartMenuShortcut',
-        'Get-StartMenuProgramsPath',
+        'Get-StartMenuProgramsLocation',
         'New-StartMenuProgramsFolder',
         'Register-LogonTask'
     )

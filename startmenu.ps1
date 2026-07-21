@@ -1,15 +1,15 @@
 . "$PSScriptRoot\shortcut.ps1"
 
 $wshShell = New-Object -ComObject WScript.Shell
-$allUsersProgramsPath = $wshShell.SpecialFolders("AllUsersPrograms")
-$userProgramsPath = $wshShell.SpecialFolders("Programs")
+$allUsersProgramsLocation = $wshShell.SpecialFolders("AllUsersPrograms")
+$userProgramsLocation = $wshShell.SpecialFolders("Programs")
 
 # https://www.vbsedit.com/html/a239a3ac-e51c-4e70-859e-d2d8c2eb3135.asp
 # $windowStyleDefault = 1
 $windowStyleMaximized = 3
 $windowStyleMinimized = 7
 
-function Get-StartMenuProgramsPath {
+function Get-StartMenuProgramsLocation {
     <#
     .SYNOPSIS
         Returns the path to Start Menu > Programs.
@@ -39,7 +39,7 @@ function Get-StartMenuProgramsPath {
         [switch] $User
     )
 
-    return $AllUsers ? $allUsersProgramsPath : $userProgramsPath
+    return $AllUsers ? $allUsersProgramsLocation : $userProgramsLocation
 }
 
 function New-StartMenuProgramsFolder {
@@ -78,11 +78,11 @@ function New-StartMenuProgramsFolder {
         [switch] $User
     )
 
-    $programsPath = $AllUsers ? $allUsersProgramsPath : $userProgramsPath
-    $shortcutFolderName = "$programsPath\$Name"
+    $programsLocation = $AllUsers ? $allUsersProgramsLocation : $userProgramsLocation
+    $shortcutFolderName = "$programsLocation\$Name"
     if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
         New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
-    }    
+    }
     return $shortcutFolderName
 }
 
@@ -101,7 +101,7 @@ function New-StartMenuShortcut {
         The name of the folder in Start Menu > Programs to create the shortcut in. If not specified, the shortcut is created directly in Start Menu > Programs.
 
     .PARAMETER Executable
-        The path to the executable.
+        The location of the executable.
 
     .PARAMETER Arguments
         The arguments to pass to the executable.
@@ -172,14 +172,14 @@ function New-StartMenuShortcut {
 
     $shortcutFolder = $Folder `
         ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
-        : (Get-StartMenuProgramsPath -AllUsers:$AllUsers)
-    $shortcutPath = "$shortcutFolder\$Name.lnk"
+        : (Get-StartMenuProgramsLocation -AllUsers:$AllUsers)
+    $shortcutLocation = "$shortcutFolder\$Name.lnk"
 
-    if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
-        Write-Error "Shortcut already exists, use -Force to overwrite. path: '$shortcutPath'" -ErrorAction Stop
+    if (-not $Force -and (Test-Path -LiteralPath $shortcutLocation)) {
+        Write-Error "Shortcut already exists, use -Force to overwrite. location: '$shortcutLocation'" -ErrorAction Stop
     }
 
-    $shortcut = $wshShell.CreateShortcut($shortcutPath)
+    $shortcut = $wshShell.CreateShortcut($shortcutLocation)
     $shortcut.TargetPath = $Executable
     $shortcut.Arguments = $Arguments
     if ($Icon) {
@@ -188,12 +188,12 @@ function New-StartMenuShortcut {
     elseif ($IconLocation) {
         $shortcut.IconLocation = "$IconLocation,$IconIndex"
     }
-    
-    if ($PSCmdlet.ShouldProcess($shortcutPath, "Create shortcut")) {
+
+    if ($PSCmdlet.ShouldProcess($shortcutLocation, "Create shortcut")) {
         $shortcut.Save()
     }
 
-    return $shortcutPath
+    return $shortcutLocation
 }
 
 function Remove-StartMenuShortcut {
@@ -238,19 +238,19 @@ function Remove-StartMenuShortcut {
         [switch] $User
     )
 
-    $programsPath = $AllUsers ? $allUsersProgramsPath : $userProgramsPath
-    $shortcutFolder = $Folder ? "$programsPath\$Folder" : $programsPath
-    $shortcutPath = "$shortcutFolder\$Name.lnk"
+    $programsLocation = $AllUsers ? $allUsersProgramsLocation : $userProgramsLocation
+    $shortcutFolder = $Folder ? "$programsLocation\$Folder" : $programsLocation
+    $shortcutLocation = "$shortcutFolder\$Name.lnk"
 
-    if (-not (Test-Path -LiteralPath $shortcutPath)) {
-        Write-Error "Shortcut not found: '$shortcutPath'" -ErrorAction Stop
+    if (-not (Test-Path -LiteralPath $shortcutLocation)) {
+        Write-Error "Shortcut not found: '$shortcutLocation'" -ErrorAction Stop
     }
 
-    if ($PSCmdlet.ShouldProcess($shortcutPath, "Remove shortcut")) {
-        Remove-Item -LiteralPath $shortcutPath -Force
+    if ($PSCmdlet.ShouldProcess($shortcutLocation, "Remove shortcut")) {
+        Remove-Item -LiteralPath $shortcutLocation -Force
 
         # remove the containing folder if it is now empty, but never the Programs root
-        if ($shortcutFolder -ne $programsPath -and -not (Get-ChildItem -LiteralPath $shortcutFolder -Force)) {
+        if ($shortcutFolder -ne $programsLocation -and -not (Get-ChildItem -LiteralPath $shortcutFolder -Force)) {
             Remove-Item -LiteralPath $shortcutFolder -Force
         }
     }
@@ -363,7 +363,7 @@ function New-PowershellStartMenuShortcut {
 
     $shortcutFolder = $Folder `
         ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
-        : (Get-StartMenuProgramsPath -AllUsers:$AllUsers)
+        : (Get-StartMenuProgramsLocation -AllUsers:$AllUsers)
 
     $arguments = @()
     if ($KeepOpen) {
@@ -371,13 +371,13 @@ function New-PowershellStartMenuShortcut {
     }
     $arguments += "-Command `"$Command`""
 
-    $shortcutPath = "$shortcutFolder\$Name.lnk"
+    $shortcutLocation = "$shortcutFolder\$Name.lnk"
 
-    if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
-        Write-Error "Shortcut already exists, use -Force to overwrite. path: '$shortcutPath'" -ErrorAction Stop
+    if (-not $Force -and (Test-Path -LiteralPath $shortcutLocation)) {
+        Write-Error "Shortcut already exists, use -Force to overwrite. location: '$shortcutLocation'" -ErrorAction Stop
     }
 
-    $shortcut = $wshShell.CreateShortcut($shortcutPath)
+    $shortcut = $wshShell.CreateShortcut($shortcutLocation)
     $shortcut.TargetPath = "pwsh"
     $shortcut.Arguments = $arguments -join ' '
     if (-not $Visible) {
@@ -394,13 +394,13 @@ function New-PowershellStartMenuShortcut {
         $shortcut.IconLocation = "$IconLocation,$IconIndex"
     }
 
-    if ($PSCmdlet.ShouldProcess($shortcutPath, "Create shortcut")) {
+    if ($PSCmdlet.ShouldProcess($shortcutLocation, "Create shortcut")) {
         $shortcut.Save()
     }
 
     if ($RunAsAdministrator) {
-        Set-ShortcutRunAsAdministrator $shortcutPath
+        Set-ShortcutRunAsAdministrator $shortcutLocation
     }
 
-    return $shortcutPath
+    return $shortcutLocation
 }

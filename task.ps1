@@ -13,7 +13,7 @@ function Register-LogonTask {
         Path to the task. Default: root path ("\").
 
     .PARAMETER Executable
-        The path to the executable to run.
+        The location of the executable to run.
 
     .PARAMETER Argument
         The argument to pass to the executable.

@@ -5,8 +5,8 @@ BeforeAll {
 Describe 'Get-DesktopFolder' {
 
     It 'returns an existing directory' {
-        $path = Get-DesktopFolder
-        $path | Should -Not -BeNullOrEmpty
-        Test-Path -LiteralPath $path -PathType Container | Should -BeTrue
+        $location = Get-DesktopFolder
+        $location | Should -Not -BeNullOrEmpty
+        Test-Path -LiteralPath $location -PathType Container | Should -BeTrue
     }
 }

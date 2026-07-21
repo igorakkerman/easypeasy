@@ -12,21 +12,21 @@ Describe 'New-StartMenuShortcut' {
 
     BeforeEach {
         Mock -ModuleName easypeasy New-StartMenuProgramsFolder { $folder }
-        Mock -ModuleName easypeasy Get-StartMenuProgramsPath { $folder }
+        Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $folder }
     }
 
     AfterAll { Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue }
 
     It 'creates a .lnk pointing at the executable' {
-        $path = New-StartMenuShortcut -Name 'MyApp' -Executable 'C:\Windows\notepad.exe'
+        $location = New-StartMenuShortcut -Name 'MyApp' -Executable 'C:\Windows\notepad.exe'
 
-        $path | Should -Exist
-        $wsh.CreateShortcut($path).TargetPath | Should -Be 'C:\Windows\notepad.exe'
+        $location | Should -Exist
+        $wsh.CreateShortcut($location).TargetPath | Should -Be 'C:\Windows\notepad.exe'
     }
 
     It 'creates no file under -WhatIf' {
-        $path = New-StartMenuShortcut -Name 'WhatIfApp' -Executable 'C:\Windows\notepad.exe' -WhatIf
-        $path | Should -Not -Exist
+        $location = New-StartMenuShortcut -Name 'WhatIfApp' -Executable 'C:\Windows\notepad.exe' -WhatIf
+        $location | Should -Not -Exist
     }
 
     It 'creates the shortcut in the given -Folder' {
@@ -39,7 +39,7 @@ Describe 'New-StartMenuShortcut' {
     It 'creates the shortcut in the Programs root when -Folder is omitted' {
         New-StartMenuShortcut -Name 'InRoot' -Executable 'C:\Windows\notepad.exe' | Out-Null
 
-        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsLocation -Times 1 -Exactly
         Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 0 -Exactly
     }
 
@@ -50,17 +50,17 @@ Describe 'New-StartMenuShortcut' {
             -ParameterFilter { $AllUsers }
     }
 
-    It 'forwards -AllUsers to Get-StartMenuProgramsPath when -Folder is omitted' {
+    It 'forwards -AllUsers to Get-StartMenuProgramsLocation when -Folder is omitted' {
         New-StartMenuShortcut -Name 'AllUsersRoot' -Executable 'C:\Windows\notepad.exe' -AllUsers | Out-Null
 
-        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly `
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsLocation -Times 1 -Exactly `
             -ParameterFilter { $AllUsers }
     }
 
     It 'does not target the All Users folder by default' {
         New-StartMenuShortcut -Name 'DefaultApp' -Executable 'C:\Windows\notepad.exe' | Out-Null
 
-        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly `
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsLocation -Times 1 -Exactly `
             -ParameterFilter { -not $AllUsers }
     }
 
@@ -78,36 +78,36 @@ Describe 'New-StartMenuShortcut' {
     It 'overwrites an existing shortcut with -Force' {
         New-StartMenuShortcut -Name 'Over' -Executable 'C:\Windows\notepad.exe' | Out-Null
 
-        $path = New-StartMenuShortcut -Name 'Over' -Executable 'C:\Windows\regedit.exe' -Force
-        $wsh.CreateShortcut($path).TargetPath | Should -Be 'C:\Windows\regedit.exe'
+        $location = New-StartMenuShortcut -Name 'Over' -Executable 'C:\Windows\regedit.exe' -Force
+        $wsh.CreateShortcut($location).TargetPath | Should -Be 'C:\Windows\regedit.exe'
     }
 
     It 'uses icon index 0 by default' {
-        $path = New-StartMenuShortcut -Name 'IconDefault' -Executable 'C:\Windows\notepad.exe' `
+        $location = New-StartMenuShortcut -Name 'IconDefault' -Executable 'C:\Windows\notepad.exe' `
             -IconLocation 'C:\Windows\explorer.exe'
 
-        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,0'
+        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,0'
     }
 
     It 'uses the given icon index' {
-        $path = New-StartMenuShortcut -Name 'IconIndexed' -Executable 'C:\Windows\notepad.exe' `
+        $location = New-StartMenuShortcut -Name 'IconIndexed' -Executable 'C:\Windows\notepad.exe' `
             -IconLocation 'C:\Windows\explorer.exe' -IconIndex 3
 
-        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
     }
 
     It 'accepts the icon file under the -IconFile alias' {
-        $path = New-StartMenuShortcut -Name 'IconFileAlias' -Executable 'C:\Windows\notepad.exe' `
+        $location = New-StartMenuShortcut -Name 'IconFileAlias' -Executable 'C:\Windows\notepad.exe' `
             -IconFile 'C:\Windows\explorer.exe' -IconIndex 3
 
-        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
     }
 
     It 'takes the combined location from -Icon' {
-        $path = New-StartMenuShortcut -Name 'IconCombined' -Executable 'C:\Windows\notepad.exe' `
+        $location = New-StartMenuShortcut -Name 'IconCombined' -Executable 'C:\Windows\notepad.exe' `
             -Icon 'C:\Windows\explorer.exe,3'
 
-        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
     }
 
     It 'fails when -Icon is combined with -IconLocation' {

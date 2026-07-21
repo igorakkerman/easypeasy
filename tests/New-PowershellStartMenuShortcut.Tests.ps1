@@ -11,23 +11,23 @@ Describe 'New-PowershellStartMenuShortcut' {
     }
 
     BeforeEach {
-        Mock -ModuleName easypeasy Get-StartMenuProgramsPath { $folder }
+        Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $folder }
     }
 
     AfterAll { Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue }
 
     It 'creates a pwsh shortcut that runs the command' {
-        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'ShowDate'
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'ShowDate'
 
-        $path | Should -Exist
-        $shortcut = $wsh.CreateShortcut($path)
+        $location | Should -Exist
+        $shortcut = $wsh.CreateShortcut($location)
         $shortcut.TargetPath | Should -Match 'pwsh'
         $shortcut.Arguments | Should -Match '-Command'
     }
 
     It 'keeps the window open with -KeepOpen (-NoExit)' {
-        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'KeepOpen' -KeepOpen
-        $wsh.CreateShortcut($path).Arguments | Should -Match '-NoExit'
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'KeepOpen' -KeepOpen
+        $wsh.CreateShortcut($location).Arguments | Should -Match '-NoExit'
     }
 
     It 'creates the shortcut in the given -Folder' {
@@ -39,10 +39,10 @@ Describe 'New-PowershellStartMenuShortcut' {
             -ParameterFilter { $Name -eq 'MyFolder' }
     }
 
-    It 'forwards -AllUsers to Get-StartMenuProgramsPath' {
+    It 'forwards -AllUsers to Get-StartMenuProgramsLocation' {
         New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersRoot' -AllUsers | Out-Null
 
-        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly `
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsLocation -Times 1 -Exactly `
             -ParameterFilter { $AllUsers }
     }
 
@@ -58,7 +58,7 @@ Describe 'New-PowershellStartMenuShortcut' {
     It 'does not target the All Users folder by default' {
         New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'DefaultScope' | Out-Null
 
-        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsPath -Times 1 -Exactly `
+        Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsLocation -Times 1 -Exactly `
             -ParameterFilter { -not $AllUsers }
     }
 
@@ -72,36 +72,36 @@ Describe 'New-PowershellStartMenuShortcut' {
     It 'overwrites an existing shortcut with -Force' {
         New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Over' | Out-Null
 
-        $path = New-PowershellStartMenuShortcut -Command 'Get-ChildItem' -Name 'Over' -Force
-        $wsh.CreateShortcut($path).Arguments | Should -Match 'Get-ChildItem'
+        $location = New-PowershellStartMenuShortcut -Command 'Get-ChildItem' -Name 'Over' -Force
+        $wsh.CreateShortcut($location).Arguments | Should -Match 'Get-ChildItem'
     }
 
     It 'uses icon index 0 by default' {
-        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconDefault' `
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconDefault' `
             -IconLocation 'C:\Windows\explorer.exe'
 
-        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,0'
+        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,0'
     }
 
     It 'uses the given icon index' {
-        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconIndexed' `
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconIndexed' `
             -IconLocation 'C:\Windows\explorer.exe' -IconIndex 3
 
-        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
     }
 
     It 'accepts the icon file under the -IconFile alias' {
-        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconFileAlias' `
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconFileAlias' `
             -IconFile 'C:\Windows\explorer.exe' -IconIndex 3
 
-        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
     }
 
     It 'takes the combined location from -Icon' {
-        $path = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconCombined' `
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconCombined' `
             -Icon 'C:\Windows\explorer.exe,3'
 
-        $wsh.CreateShortcut($path).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
     }
 
     It 'fails when -Icon is combined with -IconLocation' {
