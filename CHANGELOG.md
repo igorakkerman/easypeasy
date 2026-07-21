@@ -32,6 +32,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Fixed:** Aliases `addpath` and `rmpath` are exported;
   previously missing from the manifest.
 - **Changed:** `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` apply the change to the current process immediately.
+- **Added:** `-Expand` on `Set-EnvironmentVariable` — writes `REG_EXPAND_SZ` so a `%…%` reference stays as indirection; default `REG_SZ`.
 - **Added:** `Get-Environment` — returns environment variables as records carrying scope, name and value; both scopes by default, or `-Machine` / `-User`.
 - **Fixed:** `Remove-EnvironmentVariable` deletes registry value instead of leaving empty tombstone.
 - **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error.

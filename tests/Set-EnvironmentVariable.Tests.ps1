@@ -62,4 +62,56 @@ Describe 'Set-EnvironmentVariable' {
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
     }
+
+    Context 'expandable value (-Expand)' {
+
+        AfterEach {
+            [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', $null, 'User')
+            Remove-Item -Path env:EASYPEASY_TEST -ErrorAction SilentlyContinue
+        }
+
+        It 'writes a REG_EXPAND_SZ value with -Expand' {
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expand
+            (Get-Item 'HKCU:\Environment').GetValueKind('EASYPEASY_TEST') |
+                Should -Be ([Microsoft.Win32.RegistryValueKind]::ExpandString)
+        }
+
+        It 'stores the %...% reference verbatim, unexpanded' {
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expand
+            (Get-Item 'HKCU:\Environment').GetValue('EASYPEASY_TEST', $null, 'DoNotExpandEnvironmentNames') |
+                Should -Be '%SystemRoot%\tools'
+        }
+
+        It 'writes a REG_SZ value without -Expand' {
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User
+            (Get-Item 'HKCU:\Environment').GetValueKind('EASYPEASY_TEST') |
+                Should -Be ([Microsoft.Win32.RegistryValueKind]::String)
+        }
+
+        It 'applies the expanded value to the current process immediately' {
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expand
+            $env:EASYPEASY_TEST | Should -Be "$env:SystemRoot\tools"
+        }
+
+        It 'does not write under -WhatIf' {
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expand -WhatIf
+            [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
+            $env:EASYPEASY_TEST | Should -BeNullOrEmpty
+        }
+
+        It 'auto-elevates through Invoke-Elevated, passing -Expand, for a machine write when not administrator' {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -Machine -Expand
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains 'Set-EnvironmentVariable' -and
+                $Command -contains 'EASYPEASY_TEST' -and
+                $Command -contains '-Machine' -and
+                $Command -contains '-Expand'
+            }
+            [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'Machine') | Should -BeNullOrEmpty
+        }
+    }
 }
