@@ -297,6 +297,13 @@ function Remove-EnvironmentVariable() {
         $scope = "User"
     }
 
+    # idempotent: nothing to remove means the variable is not set in this scope
+    $scopeSwitch = $Machine ? @{ Machine = $true } : @{ User = $true }
+    if ($null -eq (Get-EnvironmentVariable -Name $Name @scopeSwitch -ErrorAction SilentlyContinue)) {
+        Write-Warning "Environment variable is not set. scope: $scope, name: $Name"
+        return
+    }
+
     if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from the ${scope} scope")) {
         # when not already elevated, a machine write runs in an elevated process instead of in-process
         if ($Machine -and -not (Test-Elevated)) {

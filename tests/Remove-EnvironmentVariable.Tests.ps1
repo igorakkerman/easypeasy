@@ -44,6 +44,12 @@ Describe 'Remove-EnvironmentVariable' {
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
+
+        It 'warns when the variable is not set' {
+            Remove-EnvironmentVariable -Name EASYPEASY_ABSENT -User -WarningVariable warning -WarningAction SilentlyContinue
+
+            $warning | Should -Match "not set"
+        }
     }
 
     Context 'machine scope' {
@@ -51,6 +57,7 @@ Describe 'Remove-EnvironmentVariable' {
         It 'auto-elevates instead of writing in-process when not administrator' {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'present' }
 
             Remove-EnvironmentVariable -Name EASYPEASY_TEST -Machine
 
@@ -63,6 +70,7 @@ Describe 'Remove-EnvironmentVariable' {
 
         It 'does not elevate under -WhatIf' {
             Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'present' }
 
             Remove-EnvironmentVariable -Name EASYPEASY_TEST -Machine -WhatIf
 
