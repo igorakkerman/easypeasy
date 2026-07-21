@@ -2,7 +2,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
 }
 
-Describe 'Get-ShortcutIconLocation' {
+Describe 'Get-ShortcutIcon' {
 
     BeforeAll {
         $script:lnk = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid).lnk"
@@ -16,6 +16,6 @@ Describe 'Get-ShortcutIconLocation' {
     AfterAll { Remove-Item $lnk -Force -ErrorAction SilentlyContinue }
 
     It 'returns the icon location of a shortcut' {
-        Get-ShortcutIconLocation -Location $lnk | Should -Be 'C:\Windows\notepad.exe,0'
+        Get-ShortcutIcon -Shortcut $lnk | Should -Be 'C:\Windows\notepad.exe,0'
     }
 }
