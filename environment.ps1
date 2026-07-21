@@ -184,7 +184,7 @@ function Set-EnvironmentVariable() {
 
     .DESCRIPTION
         Sets the value of the specified environment variable,
-        either in the machine environment or the user environment.
+        either in the machine scope or the user scope.
         The change also takes effect in the current process immediately.
 
     .PARAMETER Name
@@ -194,10 +194,10 @@ function Set-EnvironmentVariable() {
         The value to set the environment variable to.
 
     .PARAMETER Machine
-        If specified, the environment variable is set in the machine environment.
+        If specified, the environment variable is set in the machine scope.
 
     .PARAMETER User
-        If specified, the environment variable is set in the user environment. (Default.)
+        If specified, the environment variable is set in the user scope. (Default.)
 
     .NOTES
         Alias: setenv
@@ -226,15 +226,15 @@ function Set-EnvironmentVariable() {
 
     if ($Machine) {
         $environment = [System.EnvironmentVariableTarget]::Machine
-        $envType = "Machine"
+        $scope = "Machine"
     }
     # User is the default
     else {
         $environment = [System.EnvironmentVariableTarget]::User
-        $envType = "User"
+        $scope = "User"
     }
 
-    if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
+    if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in the ${scope} scope")) {
         # when not already elevated, a machine write runs in an elevated process instead of in-process
         if ($Machine -and -not (Test-Elevated)) {
             Invoke-Elevated Set-EnvironmentVariable -Name $Name -Value $Value -Machine
@@ -253,17 +253,17 @@ function Remove-EnvironmentVariable() {
 
     .DESCRIPTION
         Removes the specified environment variable,
-        either from the machine environment or the user environment.
+        either from the machine scope or the user scope.
         The change also takes effect in the current process immediately.
 
     .PARAMETER Name
         The name of the environment variable.
 
     .PARAMETER Machine
-        If specified, the environment variable is removed from the machine environment.
+        If specified, the environment variable is removed from the machine scope.
 
     .PARAMETER User
-        If specified, the environment variable is removed from the user environment. (Default.)
+        If specified, the environment variable is removed from the user scope. (Default.)
 
     .NOTES
         Alias: rmenv
@@ -289,15 +289,15 @@ function Remove-EnvironmentVariable() {
 
     if ($Machine) {
         $environment = [System.EnvironmentVariableTarget]::Machine
-        $envType = "Machine"
+        $scope = "Machine"
     }
     # User is default
     else {
         $environment = [System.EnvironmentVariableTarget]::User
-        $envType = "User"
+        $scope = "User"
     }
 
-    if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
+    if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from the ${scope} scope")) {
         # when not already elevated, a machine write runs in an elevated process instead of in-process
         if ($Machine -and -not (Test-Elevated)) {
             Invoke-Elevated Remove-EnvironmentVariable -Name $Name -Machine
