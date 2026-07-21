@@ -225,7 +225,6 @@ function Set-EnvironmentVariable() {
     )
 
     if ($Machine) {
-        Assert-Administrator
         $environment = [System.EnvironmentVariableTarget]::Machine
         $envType = "Machine"
     }
@@ -236,7 +235,13 @@ function Set-EnvironmentVariable() {
     }
 
     if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in ${envType} environment")) {
-        [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
+        # when not already elevated, a machine write runs in an elevated process instead of in-process
+        if ($Machine -and -not (Test-Elevated)) {
+            Invoke-Elevated Set-EnvironmentVariable -Name $Name -Value $Value -Machine
+        }
+        else {
+            [Environment]::SetEnvironmentVariable($Name, $Value, $environment)
+        }
         Sync-ProcessEnvironmentVariable -Name $Name
     }
 }
@@ -283,7 +288,6 @@ function Remove-EnvironmentVariable() {
     )
 
     if ($Machine) {
-        Assert-Administrator
         $environment = [System.EnvironmentVariableTarget]::Machine
         $envType = "Machine"
     }
@@ -294,8 +298,14 @@ function Remove-EnvironmentVariable() {
     }
 
     if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from ${envType} environment")) {
-        # [NullString]::Value binds to a genuine null; [string] $null would coerce to "", leaves a registry tombstone instead of deleting
-        [Environment]::SetEnvironmentVariable($Name, [NullString]::Value, $environment)
+        # when not already elevated, a machine write runs in an elevated process instead of in-process
+        if ($Machine -and -not (Test-Elevated)) {
+            Invoke-Elevated Remove-EnvironmentVariable -Name $Name -Machine
+        }
+        else {
+            # [NullString]::Value binds to a genuine null; [string] $null would coerce to "", leaves a registry tombstone instead of deleting
+            [Environment]::SetEnvironmentVariable($Name, [NullString]::Value, $environment)
+        }
         Sync-ProcessEnvironmentVariable -Name $Name
     }
 }

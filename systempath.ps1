@@ -449,10 +449,6 @@ function local:Set-SystemPath {
         [switch] $User
     )
 
-    if ($Machine) {
-        Assert-Administrator
-    }
-
     Backup-SystemPath
 
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }

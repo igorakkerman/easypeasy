@@ -251,15 +251,15 @@ Register-LogonTask `
 
 `time` is an alias for `Get-Timestamp`, which you should use in scripts.
 
-#### Run a command as administrator (sudo)
+#### Run a command as administrator
 
-Runs the given command in an elevated PowerShell session via the Windows `sudo` command, prompting for confirmation through the User Account Control dialog.
+Runs the given command in an elevated PowerShell session, prompting for confirmation through the User Account Control dialog.
 ```powershell
-> sudops addpath -Machine "C:\Tools"
-> sudops setenv -Machine JAVA_HOME "C:\Java\jdk-21"
+> sudops New-Item -ItemType Directory "C:\Program Files\MyTool"
+> sudops Restart-Service -Name Spooler
 ```
 
-`sudops` (and the shorter `sups`) is an alias for `Invoke-Elevated`, which you should use in scripts. Requires the Windows `sudo` feature to be installed and enabled.
+`sudops` (and the shorter `sups`) is an alias for `Invoke-Elevated`, which you should use in scripts.
 
 #### Verify that the current user is an administrator
 

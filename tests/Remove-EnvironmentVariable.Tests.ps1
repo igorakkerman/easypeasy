@@ -36,23 +36,37 @@ Describe 'Remove-EnvironmentVariable' {
             $env:EASYPEASY_TEST | Should -Be 'x'
         }
 
-        It 'removes the variable from the user scope by default, without requiring administrator' {
-            Mock -ModuleName easypeasy Assert-Administrator { throw 'admin required' }
+        It 'removes the variable from the user scope by default, without elevating' {
+            Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
 
             Remove-EnvironmentVariable -Name EASYPEASY_TEST
 
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
-            Should -Invoke -ModuleName easypeasy Assert-Administrator -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
     }
 
-    Context 'machine scope requires administrator' {
+    Context 'machine scope' {
 
-        It 'errors when not elevated' {
-            Mock -ModuleName easypeasy Assert-Administrator { throw 'admin required' }
+        It 'auto-elevates instead of writing in-process when not administrator' {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
 
-            { Remove-EnvironmentVariable -Name EASYPEASY_TEST -Machine -ErrorAction Stop } |
-                Should -Throw '*admin required*'
+            Remove-EnvironmentVariable -Name EASYPEASY_TEST -Machine
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains 'Remove-EnvironmentVariable' -and
+                $Command -contains 'EASYPEASY_TEST' -and
+                $Command -contains '-Machine'
+            }
+        }
+
+        It 'does not elevate under -WhatIf' {
+            Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
+
+            Remove-EnvironmentVariable -Name EASYPEASY_TEST -Machine -WhatIf
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
     }
 }
