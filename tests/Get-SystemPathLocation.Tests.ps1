@@ -82,7 +82,7 @@ Describe 'Get-SystemPathLocation' {
 
         It 'rejects an invalid regex on -Match, reporting the pattern and the reason' {
             { Get-SystemPathLocation -Match '(' } |
-                Should -Throw -ExpectedMessage "*'(' is not a valid regular expression: *Not enough *"
+                Should -Throw -ExpectedMessage "*Invalid regular expression. pattern: '('*Not enough*"
         }
     }
 

@@ -42,7 +42,7 @@ Describe 'Test-SystemPathLocation' {
 
     It 'rejects an invalid -Match regex, reporting the pattern and the reason' {
         { Test-SystemPathLocation -Match '(' } |
-            Should -Throw -ExpectedMessage "*'(' is not a valid regular expression: *Not enough*"
+            Should -Throw -ExpectedMessage "*Invalid regular expression. pattern: '('*Not enough*"
     }
 
     It 'returns $false when one of several criteria fails' {

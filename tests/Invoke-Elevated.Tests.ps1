@@ -46,7 +46,7 @@ Describe 'Invoke-Elevated' {
     It 'reports a terminating error when the elevated command exits non-zero' -Skip:(-not $hasSudo) {
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 1 }
 
-        { Invoke-Elevated addpath -Machine 'C:\Tools' } | Should -Throw '*exit code 1*'
+        { Invoke-Elevated addpath -Machine 'C:\Tools' } | Should -Throw '*exitCode: 1*'
     }
 
     It 'treats a non-terminating error in the elevated command as success' -Skip:(-not $hasSudo) {

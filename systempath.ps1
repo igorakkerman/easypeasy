@@ -3,7 +3,7 @@ class ValidRegexAttribute : System.Management.Automation.ValidateEnumeratedArgum
     [void] ValidateElement([object] $element) {
         $pattern = [string] $element
         try { [void] [regex]::new($pattern) }
-        catch { throw "'$pattern' is not a valid regular expression: $($_.Exception.InnerException.Message)" }
+        catch { throw "Invalid regular expression. pattern: '$pattern', reason: $($_.Exception.InnerException.Message)" }
     }
 
     <#
@@ -733,8 +733,8 @@ function Move-SystemPathLocation {
         $onTarget = (Get-SystemPath @target -Join) -split ";" `
         | Where-Object { $_ -and $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
 
-        $reason = $onTarget ? "it is already on the $targetName path" : "it is not on the $sourceName path"
-        Write-Warning "Nothing to move; $($reason): '$Location'"
+        $reason = $onTarget ? "already on the $targetName path" : "not on the $sourceName path"
+        Write-Warning "Nothing to move. reason: $reason, location: '$Location'"
         return
     }
 

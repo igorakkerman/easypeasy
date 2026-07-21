@@ -176,7 +176,7 @@ function New-StartMenuShortcut {
     $shortcutPath = "$shortcutFolder\$Name.lnk"
 
     if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
-        Write-Error "Shortcut already exists: '$shortcutPath'. Use -Force to overwrite." -ErrorAction Stop
+        Write-Error "Shortcut already exists, use -Force to overwrite. path: '$shortcutPath'" -ErrorAction Stop
     }
 
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
@@ -374,7 +374,7 @@ function New-PowershellStartMenuShortcut {
     $shortcutPath = "$shortcutFolder\$Name.lnk"
 
     if (-not $Force -and (Test-Path -LiteralPath $shortcutPath)) {
-        Write-Error "Shortcut already exists: '$shortcutPath'. Use -Force to overwrite." -ErrorAction Stop
+        Write-Error "Shortcut already exists, use -Force to overwrite. path: '$shortcutPath'" -ErrorAction Stop
     }
 
     $shortcut = $wshShell.CreateShortcut($shortcutPath)

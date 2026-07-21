@@ -57,7 +57,7 @@ function Invoke-Elevated {
         # --inline forces sudo to run in the current terminal, whatever mode the system is configured for
         sudo --inline $powershell -NoProfile -EncodedCommand $encodedCommand
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "Elevated command failed with exit code ${LASTEXITCODE}: $line" -ErrorAction Stop
+            Write-Error "Elevated command failed. exitCode: $LASTEXITCODE, command: $line" -ErrorAction Stop
         }
     }
 }

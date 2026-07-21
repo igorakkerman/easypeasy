@@ -133,12 +133,12 @@ Describe 'Get-SystemPath' {
 
         It 'rejects an invalid regex, reporting the pattern and the reason' {
             { Get-SystemPath -Match '(' } |
-                Should -Throw -ExpectedMessage "*'(' is not a valid regular expression: *Not enough*"
+                Should -Throw -ExpectedMessage "*Invalid regular expression. pattern: '('*Not enough*"
         }
 
         It 'rejects an invalid regex among valid ones' {
             { Get-SystemPath -Match 'bin$', '(' } |
-                Should -Throw -ExpectedMessage "*'(' is not a valid regular expression*"
+                Should -Throw -ExpectedMessage "*Invalid regular expression. pattern: '('*"
         }
     }
 
