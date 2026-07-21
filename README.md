@@ -173,31 +173,31 @@ in a specific scope (machine 🅰️ or user) \
 #### Create a shortcut for MyApp in the Start Menu
 
 for the current user (**default**) or all users (`-AllUsers`) 🅰️ \
-The shortcut will be created as `MyApp` in the `MyApp` programs folder.
+The shortcut will be created as `MyApp` in the Start Menu Programs root; pass `-Folder` to place it in a containing folder.
 The argument `-Debug` will be passed to the executable.
 ```powershell
 > New-StartMenuShortcut `
-        -AppName MyApp `
+        -Name MyApp `
         -Executable "C:\Program Files\MyApp\MyApp.exe" `
         -Arguments "-Debug" `
         -IconLocation "C:\Program Files\MyApp\MyBeautifulIcon.ico"
 
-> New-StartMenuShortcut -AllUsers -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"  # all users, needs admin
+> New-StartMenuShortcut -AllUsers -Name MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"  # all users, needs admin
 ```
 
 The icon file may hold several icons; `-IconIndex` picks one (**default**: `0`).
 Alternatively, `-Icon` takes the combined `file,index` form. `-Icon` and `-IconLocation` / `-IconIndex` are mutually exclusive.
 ```powershell
-> New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
+> New-StartMenuShortcut -Name MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
         -IconLocation "C:\Program Files\MyApp\MyApp.exe" -IconIndex 3
 
-> New-StartMenuShortcut -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
+> New-StartMenuShortcut -Name MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
         -Icon "C:\Program Files\MyApp\MyApp.exe,3"
 ```
 
 An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it.
 ```powershell
-> New-StartMenuShortcut -Force -AppName MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"
+> New-StartMenuShortcut -Force -Name MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"
 ```
 
 #### Remove a Start Menu shortcut
@@ -214,10 +214,10 @@ The shortcut's containing folder is removed too when it becomes empty. A termina
 
 ```powershell
 > New-PowershellStartMenuShortcut `
-       -AppName "Kill Node.js" ` 
+       -Name "Kill Node.js" ` 
        -Command "Stop-Process -Name node -Force"
 
-> New-PowershellStartMenuShortcut -AppName "Run System Update" `
+> New-PowershellStartMenuShortcut -Name "Run System Update" `
        -Script "C:\Scripts\system-update.ps1" `
        -Maximized -KeepOpen -Admin
 ```
@@ -288,6 +288,10 @@ To install the *easypeasy* module, follow these steps:
 1. Copy the *easypeasy* module folder to one of the paths listed in the output of the previous command, e.g. the user's module path: `$HOME\Documents\WindowsPowerShell\Modules\`
 
 1. Open a new PowerShell session or reload your profile to make the module available. You can check if the module is available by running: `Get-Module -ListAvailable`
+
+## Upgrading
+
+Version 2 renames commands, parameters and aliases, changes defaults and removes a few components. See [UPGRADING.md](UPGRADING.md) for the v1 → v2 migration guide.
 
 ## Contributing
 Please contribute to the *easypeasy* module. Issues and pull requests are very welcome. Thank you!
