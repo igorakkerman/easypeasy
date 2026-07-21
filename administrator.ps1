@@ -18,11 +18,11 @@ function Invoke-Elevated {
         Runs a command as administrator.
 
     .DESCRIPTION
-        Runs the given command with its arguments in an elevated PowerShell session via
-        Start-Process -Verb RunAs. Windows prompts for confirmation with a User Account Control
-        dialog and the elevated session runs in its own window. Waits for the session to finish and
-        reports a terminating error if the elevated command fails - a terminating error or a non-zero
-        exit code, but not a non-terminating error on its own.
+        Runs the given command with its arguments as administrator through the Windows sudo command,
+        forced into inline mode (sudo --inline) so it runs in the current terminal instead of a
+        separate window, whatever mode sudo is configured for. Windows prompts for confirmation with a
+        User Account Control dialog. Waits for the command to finish and reports a terminating error if
+        it fails - a terminating error or a non-zero exit code, but not a non-terminating error on its own.
 
         Arguments are passed through as typed. An argument that contains whitespace is single-quoted
         so it reaches the elevated session as a single token.
@@ -38,6 +38,7 @@ function Invoke-Elevated {
 
     .NOTES
         Aliases: sudops, sups
+        Requires the Windows sudo feature.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -53,10 +54,10 @@ function Invoke-Elevated {
         $script = "$line; exit `$LASTEXITCODE"
         $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($script))
         $powershell = (Get-Process -Id $PID).Path
-        $process = Start-Process -FilePath $powershell -Verb RunAs -Wait -PassThru `
-            -ArgumentList "-NoProfile", "-EncodedCommand", $encodedCommand
-        if ($process.ExitCode -ne 0) {
-            Write-Error "Elevated command failed with exit code $($process.ExitCode): $line" -ErrorAction Stop
+        # --inline forces sudo to run in the current terminal, whatever mode the system is configured for
+        sudo --inline $powershell -NoProfile -EncodedCommand $encodedCommand
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Elevated command failed with exit code ${LASTEXITCODE}: $line" -ErrorAction Stop
         }
     }
 }

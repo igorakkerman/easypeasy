@@ -32,7 +32,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `Get-Environment` — returns environment variables as records carrying scope, name and value; both scopes by default, or `-Machine` / `-User`.
 - **Fixed:** `Remove-EnvironmentVariable` deletes registry value instead of leaving empty tombstone.
 - **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error.
-- **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` elevate via `Start-Process -Verb RunAs`; `sudo` no longer required.
+- **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` force inline execution in the current terminal via `sudo --inline`, and report a terminating error on failure.
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
