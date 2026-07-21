@@ -1,4 +1,4 @@
-function local:Test-Elevated {
+function Test-Elevated {
     $identity = [Security.Principal.WindowsPrincipal] [System.Security.Principal.WindowsIdentity]::GetCurrent()
     return $identity.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }

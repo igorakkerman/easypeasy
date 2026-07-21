@@ -34,6 +34,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error.
 - **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` force inline execution in the current terminal via `sudo --inline`, and report a terminating error on failure.
 - **Changed:** `Assert-Administrator` renamed to `Assert-Elevated`.
+- **Added:** `Test-Elevated` — returns whether the current session is elevated.
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
