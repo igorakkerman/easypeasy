@@ -6,6 +6,8 @@ This file provides guidance to coding agents when working with code in this repo
 
 `easypeasy` is a PowerShell 7 (Core-only) module published to the PowerShell Gallery. It wraps common Windows system-administration tasks (system PATH, environment variables, Start Menu shortcuts, scheduled tasks, timestamps, admin checks) behind `Verb-Noun` functions plus short aliases.
 
+Consumer-facing breaking changes and the v1 → v2 migration steps are documented in `UPGRADING.md`; keep it in sync when renaming or removing a public function, parameter or alias.
+
 ## Architecture
 
 - `easypeasy.psm1` is the root **module**. It does nothing but dot-source each domain `.ps1` file in `$PSScriptRoot`. Load order matters: helpers like `timestamp.ps1`, `elevate.ps1`, and `environment.ps1` are sourced before the files that depend on them.
