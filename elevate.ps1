@@ -49,6 +49,9 @@ function Invoke-Elevated {
     $line = ($Command | ForEach-Object { if ($_ -match '\s') { "'$_'" } else { $_ } }) -join ' '
 
     if ($PSCmdlet.ShouldProcess($line, "Run elevated")) {
+        if (-not (Get-Command sudo -ErrorAction SilentlyContinue)) {
+            Write-Error "Elevation requires sudo. Enable Windows sudo feature." -ErrorAction Stop
+        }
         # exit $LASTEXITCODE so only a real failure - a terminating error or a native non-zero exit -
         # sets the exit code; a non-terminating error alone would otherwise make -Command exit 1
         $script = "$line; exit `$LASTEXITCODE"

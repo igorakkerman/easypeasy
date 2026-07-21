@@ -67,6 +67,14 @@ Describe 'Invoke-Elevated' {
         { Invoke-Elevated Write-Error non-terminating } | Should -Not -Throw
     }
 
+    It 'reports a terminating error when sudo is not available' {
+        Mock -ModuleName easypeasy Get-Command { } -ParameterFilter { $Name -eq 'sudo' }
+        Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
+
+        { Invoke-Elevated addpath -Machine 'C:\Tools' } | Should -Throw '*sudo*'
+        Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
+    }
+
     It 'does not elevate under -WhatIf' -Skip:(-not $hasSudo) {
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
 
