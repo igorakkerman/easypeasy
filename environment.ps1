@@ -114,8 +114,19 @@ function Get-EnvironmentVariable() {
         (Get-Item env:$Name -ErrorAction SilentlyContinue)?.Value
     }
 
-    if (! $value) {
-        Write-Error "Environment variable '$Name' not found."
+    if ($null -eq $value) {
+        $errorRecord = [System.Management.Automation.ErrorRecord]::new(
+            [System.Management.Automation.ItemNotFoundException]::new("Environment variable not found: $Name"),
+            "EnvironmentVariableNotFound",
+            [System.Management.Automation.ErrorCategory]::ObjectNotFound,
+            $Name
+        )
+        $PSCmdlet.WriteError($errorRecord)
+        return
+    }
+
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        Write-Warning "Environment variable has a blank value. name: $Name, value: '$value'"
     }
 
     return $value
