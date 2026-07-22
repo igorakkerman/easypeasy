@@ -29,9 +29,9 @@ class SystemPathLocation {
 
     <#
     .SYNOPSIS
-        A folder location on the system path and the scope it belongs to.
+        A folder location on the system Path and the scope it belongs to.
     .DESCRIPTION
-        Holds a folder location on the system path together with its scope:
+        Holds a folder location on the system Path together with its scope:
         'Machine' (local machine), 'User' (current user) or 'Process' (local to the current shell).
     .EXAMPLE
         $location = [SystemPathLocation]::new("Machine", "C:\Program Files\Git\bin")
@@ -41,9 +41,9 @@ class SystemPathLocation {
 function Backup-SystemPath {
     <# 
     .SYNOPSIS
-        Backs up the system path to a file in the temp folder.
+        Backs up the system Path to a file in the temp folder.
     .DESCRIPTION
-        Backs up the system path to a file in the temp folder.
+        Backs up the system Path to a file in the temp folder.
     .EXAMPLE
         Backup-SystemPath
     #>
@@ -52,7 +52,7 @@ function Backup-SystemPath {
     
     $backupFile = "$env:TEMP\PATH-$(Get-Timestamp).txt"
 
-    if ($PSCmdlet.ShouldProcess($backupFile, "Backup system path")) {
+    if ($PSCmdlet.ShouldProcess($backupFile, "Backup system Path")) {
         $env:PATH > $backupFile
     }
 }
@@ -190,11 +190,11 @@ function local:Remove-DuplicatePathLocation {
 function local:Get-PathScopeCounts {
     <#
     .SYNOPSIS
-        Returns how often each location occurs on a persisted scope path.
+        Returns how often each location occurs on a persisted scope Path.
     .DESCRIPTION
         Reads the Path environment variable for the given scope and returns a case-insensitive dictionary
         mapping each trailing-backslash-trimmed location key to the number of times it occurs. Used to tag
-        the effective path's locations by consuming these counts in order.
+        the effective Path's locations by consuming these counts in order.
     .PARAMETER Scope
         The scope to read, either "Machine" or "User".
     .OUTPUTS
@@ -298,25 +298,25 @@ function local:Test-LocationCriteria {
 function Get-SystemPath {
     <#
     .SYNOPSIS
-        Retrieves the system path.
+        Retrieves the system Path.
     .DESCRIPTION
-        Retrieves the system path, either for the current user, for the local machine
-        or the system path in effect in the current context.
-        The path is returned as an array of SystemPathLocation objects by default, each carrying its Location and Scope.
-        For the effective path (the default) each location is tagged with its origin scope: 'Machine' or 'User' when the
-        location is on the corresponding persisted path, or 'Process' when it is only on the current shell's path.
+        Retrieves the system Path, either for the current user, for the local machine
+        or the system Path in effect in the current context.
+        The Path is returned as an array of SystemPathLocation objects by default, each carrying its Location and Scope.
+        For the effective Path (the default) each location is tagged with its origin scope: 'Machine' or 'User' when the
+        location is on the corresponding persisted Path, or 'Process' when it is only on the current shell's Path.
         For -Machine or -User every location carries that scope.
-        If the -Join switch is specified, the path is returned as a semicolon-separated string of locations instead.
+        If the -Join switch is specified, the Path is returned as a semicolon-separated string of locations instead.
         The -Contains, -Filter and -Match criteria select locations. Multiple criteria, of the same kind or of
         different kinds, must all be satisfied. Without any criterion, every location is returned.
     .PARAMETER Machine
-        If specified, the system path for the local machine is returned.
+        If specified, the system Path for the local machine is returned.
     .PARAMETER User
-        If specified, the system path for the current user is returned.
+        If specified, the system Path for the current user is returned.
     .PARAMETER Effective
-        Default; if specified, the effective system path is returned. The effective system path is the path in effect in the current shell.
+        Default; if specified, the effective system Path is returned. The effective system Path is the Path in effect in the current shell.
     .PARAMETER Join
-        If specified, the system path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
+        If specified, the system Path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
     .PARAMETER Contains
         Substrings, positional; only locations containing all of them are returned. Taken literally: wildcard and
         regex characters carry no meaning. Matching is case-insensitive and ignores trailing backslashes.
@@ -384,8 +384,8 @@ function Get-SystemPath {
         | ForEach-Object { [SystemPathLocation]::new("User", $_) }
     }
     else {
-        # effective: the live shell path, each location tagged with the persisted scope it originates from.
-        # The process path lists machine locations before user locations, so consume the machine occurrences
+        # effective: the live shell Path, each location tagged with the persisted scope it originates from.
+        # The process Path lists machine locations before user locations, so consume the machine occurrences
         # first, then user; a location on both scopes therefore appears once as Machine and once as User.
         $machineRemaining = Get-PathScopeCounts -Scope Machine
         $userRemaining = Get-PathScopeCounts -Scope User
@@ -421,15 +421,15 @@ New-Alias -Name path -Value Get-SystemPath -ErrorAction SilentlyContinue | Out-N
 function local:Set-SystemPath {
     <#
     .SYNOPSIS
-        Modifies the system path.
+        Modifies the system Path.
     .DESCRIPTION
-        Sets the system path to the specified path, either for the current user or for the local machine. 
+        Sets the system Path to the specified path, either for the current user or for the local machine. 
     .PARAMETER Path
         Semiocolon separated path to set.
     .PARAMETER Machine
-        If specified, the system path for the local machine is used.
+        If specified, the system Path for the local machine is used.
     .PARAMETER User
-        If specified, the system path for the current user is used.
+        If specified, the system Path for the current user is used.
     .EXAMPLE
         Set-SystemPath -Path "C:\Windows;C:\Windows\System32"
     .EXAMPLE
@@ -464,19 +464,19 @@ function local:Set-SystemPath {
 function Add-SystemPathLocation {
     <#
     .SYNOPSIS
-        Adds a location to the system path.
+        Adds a location to the system Path.
     .DESCRIPTION
-        Adds the specified location to the system path, either for the current user or for the local machine.
-        Adding is idempotent: if the location is already present, the path is left unchanged and a warning is reported.
-        If the location is already present and -First is specified, it is moved to the beginning of the path.
+        Adds the specified location to the system Path, either for the current user or for the local machine.
+        Adding is idempotent: if the location is already present, the Path is left unchanged and a warning is reported.
+        If the location is already present and -First is specified, it is moved to the beginning of the Path.
     .PARAMETER Location
-        Folder location to add to the system path.
+        Folder location to add to the system Path.
     .PARAMETER Machine
-        If specified, the system path for the local machine is used.
+        If specified, the system Path for the local machine is used.
     .PARAMETER User
-        If specified, the system path for the current user is used. (Default.)
+        If specified, the system Path for the current user is used. (Default.)
     .PARAMETER First
-        If specified, the location is added to the beginning of the path. Otherwise, it is added to the end.
+        If specified, the location is added to the beginning of the Path. Otherwise, it is added to the end.
         If the location is already present, -First moves it to the beginning.
         Alias: Front.
     .NOTES
@@ -515,11 +515,11 @@ function Add-SystemPathLocation {
 
     # idempotent: nothing changed means the location is already present
     if ($newPath -eq $currentPath) {
-        Write-Warning "Location is already on the system path: '$Location'"
+        Write-Warning "Location is already on the system Path: '$Location'"
         return
     }
 
-    if ($PSCmdlet.ShouldProcess($Location, "Add location to system path")) {
+    if ($PSCmdlet.ShouldProcess($Location, "Add location to system Path")) {
         Set-SystemPath @context -Path $newPath
 
         # enable new location immediately
@@ -530,16 +530,16 @@ function Add-SystemPathLocation {
 function Remove-SystemPathLocation {
     <#
     .SYNOPSIS
-        Removes a location from the system path.
+        Removes a location from the system Path.
     .DESCRIPTION
-        Removes the specified location from the system path, either for the current user or for the local machine.
-        Removing is idempotent: if the location is not present, the path is left unchanged and a warning is reported.
+        Removes the specified location from the system Path, either for the current user or for the local machine.
+        Removing is idempotent: if the location is not present, the Path is left unchanged and a warning is reported.
     .PARAMETER Location
-        Folder location to remove from the system path.
+        Folder location to remove from the system Path.
     .PARAMETER Machine
-        If specified, the system path for the local machine is used.
+        If specified, the system Path for the local machine is used.
     .PARAMETER User
-        If specified, the system path for the current user is used. (Default.)
+        If specified, the system Path for the current user is used. (Default.)
     .NOTES
         Alias: rmpath
         Default scope is User.
@@ -570,11 +570,11 @@ function Remove-SystemPathLocation {
 
     # idempotent: nothing changed means the location is not present
     if ($newPath -eq $currentPath) {
-        Write-Warning "Location is not on the system path: '$Location'"
+        Write-Warning "Location is not on the system Path: '$Location'"
         return
     }
 
-    if ($PSCmdlet.ShouldProcess($Location, "Remove location from system path")) {
+    if ($PSCmdlet.ShouldProcess($Location, "Remove location from system Path")) {
         Set-SystemPath @context -Path $newPath
         # disable location immediately
         # TODO: remove only if not present in the other context
@@ -585,21 +585,21 @@ function Remove-SystemPathLocation {
 function Remove-DuplicateSystemPathLocations {
     <#
     .SYNOPSIS
-        Removes duplicate locations from the system path.
+        Removes duplicate locations from the system Path.
     .DESCRIPTION
-        Removes duplicate locations from the system path, for the local machine, for the current user, or both combined.
+        Removes duplicate locations from the system Path, for the local machine, for the current user, or both combined.
         Within a scope, only the first occurrence of each location is kept.
         When both scopes are cleaned (the default, when neither -Machine nor -User is specified), a location present on
-        both scopes is kept on only one: the machine path by default, or the user path if -KeepUser is specified.
-        Removing duplicates is idempotent: if there are no duplicates, the path is left unchanged.
+        both scopes is kept on only one: the machine Path by default, or the user Path if -KeepUser is specified.
+        Removing duplicates is idempotent: if there are no duplicates, the Path is left unchanged.
     .PARAMETER Machine
-        If specified, only the local machine system path is cleaned.
+        If specified, only the local machine system Path is cleaned.
     .PARAMETER User
-        If specified, only the current user system path is cleaned.
+        If specified, only the current user system Path is cleaned.
     .PARAMETER KeepMachine
-        Default. When cleaning both scopes, a location present on both is kept on the machine path and removed from the user path.
+        Default. When cleaning both scopes, a location present on both is kept on the machine Path and removed from the user Path.
     .PARAMETER KeepUser
-        When cleaning both scopes, a location present on both is kept on the user path and removed from the machine path.
+        When cleaning both scopes, a location present on both is kept on the user Path and removed from the machine Path.
     .NOTES
         Alias: cleanpath
     .EXAMPLE
@@ -650,12 +650,12 @@ function Remove-DuplicateSystemPathLocations {
             }
         }
 
-        if ($machineDeduped -ne $machinePath -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system path")) {
+        if ($machineDeduped -ne $machinePath -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system Path")) {
             Set-SystemPath -Machine -Path $machineDeduped
             $changed = $true
         }
 
-        if ($userDeduped -ne $userPath -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system path")) {
+        if ($userDeduped -ne $userPath -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system Path")) {
             Set-SystemPath -User -Path $userDeduped
             $changed = $true
         }
@@ -667,13 +667,13 @@ function Remove-DuplicateSystemPathLocations {
         $currentPath = Get-SystemPath @context -Join
         $deduped = Remove-DuplicatePathLocation -Path $currentPath
 
-        if ($deduped -ne $currentPath -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system path")) {
+        if ($deduped -ne $currentPath -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system Path")) {
             Set-SystemPath @context -Path $deduped
             $changed = $true
         }
     }
 
-    # keep the current process path free of duplicates too
+    # keep the current process Path free of duplicates too
     if ($changed) {
         $env:PATH = Remove-DuplicatePathLocation -Path "$env:PATH"
     }
@@ -682,20 +682,20 @@ function Remove-DuplicateSystemPathLocations {
 function Move-SystemPathLocation {
     <#
     .SYNOPSIS
-        Moves a location between the machine and user system paths.
+        Moves a location between the machine and user system Paths.
     .DESCRIPTION
-        Moves the specified location from the machine system path to the user system path (-ToUser),
-        or from the user system path to the machine system path (-ToMachine).
-        The location is removed from the source path and added to the target path.
-        If the location is not on the source path - whether it is already on the target path or on neither -
+        Moves the specified location from the machine system Path to the user system Path (-ToUser),
+        or from the user system Path to the machine system Path (-ToMachine).
+        The location is removed from the source Path and added to the target Path.
+        If the location is not on the source Path - whether it is already on the target Path or on neither -
         nothing is moved and a warning is reported.
-        Moving to or from the machine path requires administrator privileges.
+        Moving to or from the machine Path requires administrator privileges.
     .PARAMETER Location
         Folder location to move, positional.
     .PARAMETER ToUser
-        Move the location from the machine system path to the user system path.
+        Move the location from the machine system Path to the user system Path.
     .PARAMETER ToMachine
-        Move the location from the user system path to the machine system path.
+        Move the location from the user system Path to the machine system Path.
     .NOTES
         Alias: movepath
     .EXAMPLE
@@ -728,12 +728,12 @@ function Move-SystemPathLocation {
     $sourcePath = Get-SystemPath @source -Join
     $newSource = Remove-PathLocation -Path $sourcePath -Location $Location
 
-    # not on the source path: nothing to move
+    # not on the source Path: nothing to move
     if ($newSource -eq $sourcePath) {
         $onTarget = (Get-SystemPath @target -Join) -split ";" `
         | Where-Object { $_ -and $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
 
-        $reason = $onTarget ? "already on the $targetName path" : "not on the $sourceName path"
+        $reason = $onTarget ? "already on the $targetName Path" : "not on the $sourceName Path"
         Write-Warning "Nothing to move. reason: $reason, location: '$Location'"
         return
     }
@@ -741,7 +741,7 @@ function Move-SystemPathLocation {
     $targetPath = Get-SystemPath @target -Join
     $newTarget = Add-PathLocation -Path $targetPath -Location $Location -First:$false
 
-    if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system path")) {
+    if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system Path")) {
         return
     }
 
@@ -755,12 +755,12 @@ function Move-SystemPathLocation {
 function Get-SystemPathLocation {
     <#
     .SYNOPSIS
-        Finds a location on the system path.
+        Finds a location on the system Path.
     .DESCRIPTION
-        Returns the locations on the system path that satisfy the given criteria,
-        either for the current user, for the local machine or the system path in effect in the current context.
+        Returns the locations on the system Path that satisfy the given criteria,
+        either for the current user, for the local machine or the system Path in effect in the current context.
         Each result carries the matched location and the scope it was found in: 'Machine' or 'User', or - for the
-        effective path - 'Process' when the location is only on the current shell's path.
+        effective Path - 'Process' when the location is only on the current shell's Path.
         Multiple criteria, of the same kind or of different kinds, must all be satisfied. At least one of
         -Location, -Contains, -Filter and -Match is required.
         Matching is case-insensitive and ignores trailing backslashes. Nothing is returned when no location matches.
@@ -775,9 +775,9 @@ function Get-SystemPathLocation {
         Regular expressions; only locations matching all of them are returned.
         An invalid regular expression is a terminating error.
     .PARAMETER Machine
-        If specified, the system path for the local machine is searched.
+        If specified, the system Path for the local machine is searched.
     .PARAMETER User
-        If specified, the system path for the current user is searched.
+        If specified, the system Path for the current user is searched.
     .OUTPUTS
         For each match, an object with a Location and a Scope property.
     .EXAMPLE
@@ -839,10 +839,10 @@ function Get-SystemPathLocation {
 function Test-SystemPathLocation {
     <#
     .SYNOPSIS
-        Tests whether a location is on the system path.
+        Tests whether a location is on the system Path.
     .DESCRIPTION
-        Returns $true if a location satisfying the given criteria is present on the system path,
-        either for the current user, for the local machine or the system path in effect in the current context.
+        Returns $true if a location satisfying the given criteria is present on the system Path,
+        either for the current user, for the local machine or the system Path in effect in the current context.
         Multiple criteria, of the same kind or of different kinds, must all be satisfied. At least one of
         -Location, -Contains, -Filter and -Match is required.
         Matching is case-insensitive and ignores trailing backslashes.
@@ -856,9 +856,9 @@ function Test-SystemPathLocation {
     .PARAMETER Match
         Regular expressions the location must match. An invalid regular expression is a terminating error.
     .PARAMETER Machine
-        If specified, the system path for the local machine is searched.
+        If specified, the system Path for the local machine is searched.
     .PARAMETER User
-        If specified, the system path for the current user is searched.
+        If specified, the system Path for the current user is searched.
     .OUTPUTS
         Boolean indicating whether a matching location is present.
     .EXAMPLE

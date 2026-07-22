@@ -5,7 +5,7 @@
 **Productivity boost for Windows using PowerShell**
 
 The *easypeasy* PowerShell module simplifies and automates common tasks in Windows environments:
-- manage locations on the system path
+- manage locations on the system Path
 - manage environment variables
 - create and remove start menu shortcuts
 - create scheduled tasks
@@ -17,8 +17,8 @@ ___
 ## Examples
 🅰️ = elevates the process through a UAC prompt
 
-### System PATH
-#### List the folders in the system PATH
+### System Path
+#### List the folders in the system Path
 
 in a specific scope (machine or user) \
 **default**: **effective** in current shell
@@ -38,9 +38,9 @@ Process    C:\Program Files\PowerShell\7
 ```
 
 `path` is an alias for `Get-SystemPath`, which you should use in scripts. \
-Each location is tagged with its **scope**: `Machine`, `User`, or `Process` — the last for entries present only in the current shell's PATH and not persisted.
+Each location is tagged with its **scope**: `Machine`, `User`, or `Process` — the last for entries present only in the current shell's Path and not persisted.
 
-#### Find a folder in the system PATH
+#### Find a folder in the system Path
 
 ```powershell
 > path Windows
@@ -63,7 +63,7 @@ Three kinds of criteria are available, and a location must satisfy **all** of th
 > path Git -Filter "*\bin"        # contains Git AND matches the wildcard
 ```
 
-#### Find a folder on the system PATH and the scope it lives in
+#### Find a folder on the system Path and the scope it lives in
 
 ```powershell
 > Get-SystemPathLocation Windows
@@ -77,7 +77,7 @@ Machine    C:\Windows
 
 Both commands take the same criteria as `Get-SystemPath` — `-Contains` (positional), `-Filter` and `-Match` — plus an exact `-Location`, and the scope switches `-Machine` and `-User`. At least one criterion is required. Each result carries the scope it was found in: `Machine`, `User`, or `Process`.
 
-#### Test whether a folder is on the system PATH
+#### Test whether a folder is on the system Path
 
 in a specific scope (machine or user) \
 **default**: **effective** in current shell
@@ -90,7 +90,7 @@ in a specific scope (machine or user) \
 True
 ```
 
-#### Add or remove a folder to/from the system PATH permanently
+#### Add or remove a folder to/from the system Path permanently
 
 in a specific scope (machine 🅰️ or user) \
 **default**: **user** scope
@@ -105,23 +105,23 @@ in a specific scope (machine 🅰️ or user) \
 
 `addpath` and `rmpath` are aliases for `Add-SystemPathLocation` and `Remove-SystemPathLocation` respectively, which you should use in scripts.
 
-#### Remove duplicate folders from the system PATH
+#### Remove duplicate folders from the system Path
 
 in a specific scope (machine 🅰️ or user), or both combined \
-**default**: **both**, keeping a cross-scope duplicate on the machine PATH
+**default**: **both**, keeping a cross-scope duplicate on the machine Path
 
 ```powershell
 > cleanpath                # both scopes; keeps machine on overlap
 > cleanpath -KeepMachine   # both scopes; keeps machine on overlap (explicit)
 > cleanpath -KeepUser      # both scopes; keeps user on overlap
-> cleanpath -Machine       # machine PATH only
-> cleanpath -User          # user PATH only
+> cleanpath -Machine       # machine Path only
+> cleanpath -User          # user Path only
 ```
 
 `cleanpath` is an alias for `Remove-DuplicateSystemPathLocations`, which you should use in scripts. \
 Within a scope, the first occurrence of each folder is kept.
 
-#### Move a folder between the machine and user system PATH 🅰️
+#### Move a folder between the machine and user system Path 🅰️
 
 ```powershell
 > movepath "C:\Program Files\Git\bin" -ToUser     # machine -> user
@@ -129,9 +129,9 @@ Within a scope, the first occurrence of each folder is kept.
 ```
 
 `movepath` is an alias for `Move-SystemPathLocation`, which you should use in scripts. \
-The folder is removed from the source PATH and added to the target PATH.
+The folder is removed from the source Path and added to the target Path.
 
-#### Back up the effective system PATH environment variable to a file in the temp folder
+#### Back up the effective system Path environment variable to a file in the temp folder
 
 ```powershell
 > Backup-SystemPath

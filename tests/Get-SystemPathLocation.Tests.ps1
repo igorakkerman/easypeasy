@@ -4,7 +4,7 @@ BeforeAll {
 
 Describe 'Get-SystemPathLocation' {
 
-    Context 'effective path (default)' {
+    Context 'effective Path (default)' {
 
         BeforeAll { $script:originalPath = $env:PATH }
         AfterAll { $env:PATH = $script:originalPath }
@@ -88,7 +88,7 @@ Describe 'Get-SystemPathLocation' {
 
     Context 'scoped lookups' {
 
-        It 'reports Machine scope and reads the machine path' {
+        It 'reports Machine scope and reads the machine Path' {
             Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Windows;C:\Tools' }
 
             $result = Get-SystemPathLocation -Location 'C:\Tools' -Machine
@@ -98,7 +98,7 @@ Describe 'Get-SystemPathLocation' {
                 -ParameterFilter { $Machine }
         }
 
-        It 'reports User scope and reads the user path' {
+        It 'reports User scope and reads the user Path' {
             Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Users\me\bin' }
 
             (Get-SystemPathLocation -Location 'C:\Users\me\bin' -User).Scope | Should -Be 'User'

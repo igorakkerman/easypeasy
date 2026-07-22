@@ -28,8 +28,8 @@ function local:Sync-ProcessEnvironmentVariable {
     .DESCRIPTION
         Recomputes the value a fresh process would resolve - the user value over the machine value -
         and applies it to the current process, so a persisted change takes effect immediately.
-        PATH is left untouched: it is composed of several scopes and may carry process-only entries,
-        so the system-path functions keep the current process PATH in sync themselves.
+        Path is left untouched: it is composed of several scopes and may carry process-only entries,
+        so the system-path functions keep the current process Path in sync themselves.
     #>
     param(
         [Parameter(Mandatory = $true)]
@@ -141,7 +141,7 @@ function Get-Environment() {
         Returns environment variables as EnvironmentVariable records, each carrying its Name, Value and Scope.
         Both the machine and the user environment are returned by default; pass -Machine or -User for one scope.
         Records are ordered by name; where both scopes define a variable the user record comes first,
-        since the user value is the one in effect. PATH is the exception - the machine and user paths are
+        since the user value is the one in effect. Path is the exception - the machine and user Paths are
         combined, machine first.
 
     .PARAMETER Machine

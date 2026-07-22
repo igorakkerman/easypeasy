@@ -4,7 +4,7 @@ BeforeAll {
 
 Describe 'Get-SystemPath' {
 
-    Context 'effective path (default)' {
+    Context 'effective Path (default)' {
 
         BeforeAll { $script:originalPath = $env:PATH }
         AfterAll { $env:PATH = $script:originalPath }

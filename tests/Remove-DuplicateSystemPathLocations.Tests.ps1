@@ -18,7 +18,7 @@ Describe 'Remove-DuplicateSystemPathLocations' {
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\B;C:\C;C:\C' }
         }
 
-        It 'dedups each scope and keeps cross-scope duplicates on the machine path by default' {
+        It 'dedups each scope and keeps cross-scope duplicates on the machine Path by default' {
             Remove-DuplicateSystemPathLocations
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
@@ -27,7 +27,7 @@ Describe 'Remove-DuplicateSystemPathLocations' {
                 -ParameterFilter { $User -and $Path -eq 'C:\C' }
         }
 
-        It 'keeps cross-scope duplicates on the user path with -KeepUser' {
+        It 'keeps cross-scope duplicates on the user Path with -KeepUser' {
             Remove-DuplicateSystemPathLocations -KeepUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
@@ -62,7 +62,7 @@ Describe 'Remove-DuplicateSystemPathLocations' {
 
     Context 'single scope' {
 
-        It 'dedups only the machine path with -Machine' {
+        It 'dedups only the machine Path with -Machine' {
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A;C:\B;C:\A' }
 
             Remove-DuplicateSystemPathLocations -Machine

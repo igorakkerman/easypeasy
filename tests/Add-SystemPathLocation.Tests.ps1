@@ -60,7 +60,7 @@ Describe 'Add-SystemPathLocation' {
 
         It 'warns that the location is already present' {
             Add-SystemPathLocation -Location 'C:\Exists' -User -WarningVariable warning -WarningAction SilentlyContinue
-            $warning | Should -Match 'already on the system path'
+            $warning | Should -Match 'already on the system Path'
         }
 
         It 'does not persist when the location is already present' {

@@ -60,7 +60,7 @@ Describe 'Remove-SystemPathLocation' {
 
         It 'warns that the location is not present' {
             Remove-SystemPathLocation -Location 'C:\Gone' -User -WarningVariable warning -WarningAction SilentlyContinue
-            $warning | Should -Match 'not on the system path'
+            $warning | Should -Match 'not on the system Path'
         }
 
         It 'does not persist when the location is absent' {

@@ -4,7 +4,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## What this is
 
-`easypeasy` is a PowerShell 7 (Core-only) module published to the PowerShell Gallery. It wraps common Windows system-administration tasks (system PATH, environment variables, Start Menu shortcuts, scheduled tasks, timestamps, admin checks) behind `Verb-Noun` functions plus short aliases.
+`easypeasy` is a PowerShell 7 (Core-only) module published to the PowerShell Gallery. It wraps common Windows system-administration tasks (system Path, environment variables, Start Menu shortcuts, scheduled tasks, timestamps, admin checks) behind `Verb-Noun` functions plus short aliases.
 
 Consumer-facing breaking changes and the v1 → v2 migration steps are documented in `UPGRADING.md`; keep it in sync when renaming or removing a public function, parameter or alias.
 
@@ -13,7 +13,7 @@ Consumer-facing breaking changes and the v1 → v2 migration steps are documente
 - `easypeasy.psm1` is the root **module**. It does nothing but dot-source each domain `.ps1` file in `$PSScriptRoot`. Load order matters: helpers like `timestamp.ps1`, `elevate.ps1`, and `environment.ps1` are sourced before the files that depend on them.
 - `easypeasy.psd1` is the manifest. **`FunctionsToExport` and `AliasesToExport` are explicit lists (no wildcards).** A new public function or alias is invisible to module consumers until its name is added here — keep these in sync when adding/renaming exports.
 - Each `.ps1` is one domain, e.g. `systempath.ps1`, `environment.ps1`, `startmenu.ps1`, `shortcut.ps1`, `task.ps1`, `specialfolder.ps1`, `explorer.ps1`, `elevate.ps1`, `timestamp.ps1`.
-- Layering: `systempath.ps1` builds on `environment.ps1` (PATH is just an env var); `startmenu.ps1` dot-sources `shortcut.ps1`; a `-Machine` write that is not already elevated re-runs itself through `Invoke-Elevated` (from `elevate.ps1`). `Assert-Elevated` stays exported for callers that want a hard admin check.
+- Layering: `systempath.ps1` builds on `environment.ps1` (Path is just an env var); `startmenu.ps1` dot-sources `shortcut.ps1`; a `-Machine` write that is not already elevated re-runs itself through `Invoke-Elevated` (from `elevate.ps1`). `Assert-Elevated` stays exported for callers that want a hard admin check.
 
 ## Conventions (match these when editing)
 
@@ -21,7 +21,7 @@ Consumer-facing breaking changes and the v1 → v2 migration steps are documente
 - **Aliases** are registered at the bottom of each file: `New-Alias -Name x -Value Verb-Noun -ErrorAction SilentlyContinue | Out-Null`. The alias must also be listed in `AliasesToExport` in the manifest. Document the alias in the function's help under `.NOTES` (`Alias: x`) — comment-based help has no keyword for aliases.
 - **Machine / User / Effective parameter-set pattern**: read functions offer `-Machine`, `-User`, and a default `-Effective` (current-process value); write functions offer `-Machine` and `-User` (the default). Inside its `ShouldProcess` block a write checks `Test-Elevated`; a `-Machine` write that is not already elevated calls `Invoke-Elevated <self> <args>`, which runs the command elevated inline in the current terminal (`sudo --inline`) instead of writing in-process. Either way the parent syncs its own process afterward.
 - **State-changing functions use `[CmdletBinding(SupportsShouldProcess)]`** and gate the mutation behind `if ($PSCmdlet.ShouldProcess(...))`, so `-WhatIf`/`-Confirm` work. Preserve this when adding side effects.
-- PATH edits keep the current process (`$env:PATH`) and the persisted registry value in sync; location comparisons ignore trailing backslashes.
+- Path edits keep the current process (`$env:PATH`) and the persisted registry value in sync; location comparisons ignore trailing backslashes.
 - **Message format** (errors, warnings, and any other log output): name the subject, then attach data as `field: value` pairs. A single value is appended after a colon (`Environment variable not found: $Name`); multiple values are a period-terminated sentence followed by comma-separated pairs (`Environment variable has a blank value. name: $Name, value: '$value'`). Quote values that may be empty or blank. Emit a not-found condition as a categorized `ErrorRecord` through `$PSCmdlet.WriteError` (e.g. `ObjectNotFound` / `ItemNotFoundException`, `TargetObject` set), not a bare `Write-Error` string.
 
 ## Developing

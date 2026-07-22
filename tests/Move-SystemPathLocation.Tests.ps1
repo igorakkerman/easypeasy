@@ -18,7 +18,7 @@ Describe 'Move-SystemPathLocation' {
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\B' }
         }
 
-        It 'removes from the machine path and adds to the user path' {
+        It 'removes from the machine Path and adds to the user Path' {
             Move-SystemPathLocation 'C:\X' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
@@ -40,7 +40,7 @@ Describe 'Move-SystemPathLocation' {
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A' }
         }
 
-        It 'removes from the user path and adds to the machine path' {
+        It 'removes from the user Path and adds to the machine Path' {
             Move-SystemPathLocation 'C:\X' -ToMachine
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
@@ -75,17 +75,17 @@ Describe 'Move-SystemPathLocation' {
 
             Move-SystemPathLocation 'C:\X' -ToUser -WarningVariable warning -WarningAction SilentlyContinue
 
-            $warning | Should -Match 'already on the user path'
+            $warning | Should -Match 'already on the user Path'
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
 
-        It 'warns and does not persist when the location is on neither path' {
+        It 'warns and does not persist when the location is on neither Path' {
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A' }
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\B' }
 
             Move-SystemPathLocation 'C:\Z' -ToUser -WarningVariable warning -WarningAction SilentlyContinue
 
-            $warning | Should -Match 'not on the machine path'
+            $warning | Should -Match 'not on the machine Path'
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
     }

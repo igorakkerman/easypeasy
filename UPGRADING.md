@@ -10,7 +10,7 @@ write the **canonical** name, never an alias.
   `Add-SystemPathLocation`, not `addpath`; `Set-EnvironmentVariable`, not `setenv`.
 - **Prefer canonical parameter names over aliases**: `-First` not `-Front`, `-Folder` not the
   removed group aliases, `-Shortcut` not `-Path`, `-Name` not the removed app aliases.
-- **User scope is the default now.** PATH and environment writes target the current user; pass
+- **User scope is the default now.** Path and environment writes target the current user; pass
   `-Machine` only when a machine-wide change is intended. Do not add `-Machine` by reflex.
 - **Administrator is no longer required by default.** A `-Machine` write auto-elevates through
   UAC (`Invoke-Elevated` → `sudo --inline`), so drop any "run as admin" wrapping around user-scope

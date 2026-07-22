@@ -21,7 +21,7 @@ Describe 'Backup-SystemPath' {
         Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    It 'writes the current PATH to a timestamped file in TEMP' {
+    It 'writes the current Path to a timestamped file in TEMP' {
         Backup-SystemPath
 
         $backup = Join-Path $tempDir 'PATH-STAMP.txt'
