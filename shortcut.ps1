@@ -57,3 +57,67 @@ function Get-ShortcutIcon {
 
     return $shortcutObject.IconLocation
 }
+
+function Get-ShortcutTarget {
+    <#
+    .SYNOPSIS
+        Returns the target location of a shortcut.
+
+    .DESCRIPTION
+        Returns the target location of the specified shortcut.
+
+    .PARAMETER Shortcut
+        The location of the shortcut to read the target location from.
+
+    .OUTPUTS
+        string - The target location of the shortcut.
+
+    .EXAMPLE
+        Get-ShortcutTarget -Shortcut "C:\Users\UserName\Desktop\MyShortcut.lnk"
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Shortcut
+    )
+
+    $wshShell = New-Object -ComObject WScript.Shell
+    $shortcutObject = $wshShell.CreateShortcut($Shortcut)
+
+    return $shortcutObject.TargetPath
+}
+
+function Set-ShortcutTarget {
+    <#
+    .SYNOPSIS
+        Sets the target location of a shortcut.
+
+    .DESCRIPTION
+        Sets the target location of the specified shortcut.
+
+    .PARAMETER Shortcut
+        The location of the shortcut to set the target location on.
+
+    .PARAMETER Target
+        The target location to set on the shortcut.
+
+    .EXAMPLE
+        Set-ShortcutTarget -Shortcut "C:\Users\UserName\Desktop\MyShortcut.lnk" -Target "C:\Windows\notepad.exe"
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Shortcut,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Target
+    )
+
+    $wshShell = New-Object -ComObject WScript.Shell
+    $shortcutObject = $wshShell.CreateShortcut($Shortcut)
+    $shortcutObject.TargetPath = $Target
+
+    if ($PSCmdlet.ShouldProcess($Shortcut, "Set target: '$Target'")) {
+        $shortcutObject.Save()
+    }
+}

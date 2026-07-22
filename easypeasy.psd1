@@ -88,6 +88,8 @@
         'Remove-EnvironmentVariable',
         'Set-ShortcutRunAsAdministrator',
         'Get-ShortcutIcon',
+        'Get-ShortcutTarget',
+        'Set-ShortcutTarget',
         'New-StartMenuShortcut',
         'Remove-StartMenuShortcut',
         'New-PowershellStartMenuShortcut',
