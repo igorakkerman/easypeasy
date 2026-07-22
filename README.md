@@ -15,7 +15,7 @@ The *easypeasy* PowerShell module simplifies and automates common tasks in Windo
 
 ___
 ## Examples
-🅰️ = requires Administrator privileges
+🅰️ = elevates the process through a UAC prompt
 
 ### System PATH
 #### List the folders in the system PATH
@@ -172,7 +172,7 @@ in a specific scope (machine 🅰️ or user) \
 
 #### Create a shortcut for MyApp in the Start Menu
 
-for the current user (**default**) or all users (`-AllUsers`) 🅰️ \
+for the current user (**default**) or all users (`-AllUsers`, requires administrator) \
 The shortcut will be created as `MyApp` in the Start Menu Programs root; pass `-Folder` to place it in a containing folder.
 The argument `-Debug` will be passed to the executable.
 ```powershell
@@ -202,7 +202,7 @@ An existing shortcut is left untouched and a terminating error is reported, unle
 
 #### Remove a Start Menu shortcut
 
-in the current user's (**default**) or the all-users (`-AllUsers`) 🅰️ Start Menu
+in the current user's (**default**) or the all-users (`-AllUsers`, requires administrator) Start Menu
 ```powershell
 > Remove-StartMenuShortcut MyApp
 > Remove-StartMenuShortcut -AllUsers MyApp
@@ -228,7 +228,7 @@ Both accept `-Force` to overwrite an existing shortcut.
 
 ### Start an application at logon 
 
-equivalent to checking [Process Explorer](https://learn.microsoft.com/de-de/sysinternals/downloads/process-explorer)'s menu item *Options > Run At Logon* 🅰️
+equivalent to checking [Process Explorer](https://learn.microsoft.com/de-de/sysinternals/downloads/process-explorer)'s menu item *Options > Run At Logon* (requires administrator)
 ```powershell
 Register-LogonTask `
     -Name "Process Explorer-${env:\USERDOMAIN}-${env:USERNAME}" `
