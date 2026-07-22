@@ -1,13 +1,27 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
+
+    # Pester's Mock needs 'sudo' discoverable; the Windows sudo feature is absent on
+    # Server-based CI runners. Provide a stub on PATH so mocks resolve — it never runs.
+    if (-not (Get-Command sudo -ErrorAction SilentlyContinue)) {
+        $script:sudoStub = Join-Path ([IO.Path]::GetTempPath()) "sudostub-$([guid]::NewGuid())"
+        New-Item -ItemType Directory -Path $script:sudoStub | Out-Null
+        Set-Content -Path (Join-Path $script:sudoStub 'sudo.cmd') -Value '@echo off'
+        $env:PATH = "$script:sudoStub$([IO.Path]::PathSeparator)$env:PATH"
+    }
+}
+
+AfterAll {
+    if ($script:sudoStub) {
+        $env:PATH = ($env:PATH -split [IO.Path]::PathSeparator |
+            Where-Object { $_ -ne $script:sudoStub }) -join [IO.Path]::PathSeparator
+        Remove-Item $script:sudoStub -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
 Describe 'Invoke-Elevated' {
 
-    # mocking sudo requires the command to exist; CI runners may not ship it
-    $script:hasSudo = [bool] (Get-Command sudo -ErrorAction SilentlyContinue)
-
-    It 'runs the command inline as administrator via sudo' -Skip:(-not $hasSudo) {
+    It 'runs the command inline as administrator via sudo' {
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
 
         Invoke-Elevated addpath -machine 'C:\Tools'
@@ -20,7 +34,7 @@ Describe 'Invoke-Elevated' {
         }
     }
 
-    It 'single-quotes arguments that contain whitespace' -Skip:(-not $hasSudo) {
+    It 'single-quotes arguments that contain whitespace' {
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
 
         Invoke-Elevated New-Item 'C:\Program Files\X'
@@ -30,7 +44,7 @@ Describe 'Invoke-Elevated' {
         }
     }
 
-    It 'is exposed through the <alias> alias' -Skip:(-not $hasSudo) -ForEach @(
+    It 'is exposed through the <alias> alias' -ForEach @(
         @{ alias = 'sudops' }
         @{ alias = 'sups' }
     ) {
@@ -43,13 +57,13 @@ Describe 'Invoke-Elevated' {
         }
     }
 
-    It 'reports a terminating error when the elevated command exits non-zero' -Skip:(-not $hasSudo) {
+    It 'reports a terminating error when the elevated command exits non-zero' {
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 1 }
 
         { Invoke-Elevated addpath -Machine 'C:\Tools' } | Should -Throw '*exitCode: 1*'
     }
 
-    It 'treats a non-terminating error in the elevated command as success' -Skip:(-not $hasSudo) {
+    It 'treats a non-terminating error in the elevated command as success' {
         # run the payload in a normal child process to exercise the real exit-code logic
         Mock -ModuleName easypeasy sudo {
             $stderr = New-TemporaryFile
@@ -75,7 +89,7 @@ Describe 'Invoke-Elevated' {
         Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
     }
 
-    It 'does not elevate under -WhatIf' -Skip:(-not $hasSudo) {
+    It 'does not elevate under -WhatIf' {
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
 
         Invoke-Elevated -WhatIf addpath
