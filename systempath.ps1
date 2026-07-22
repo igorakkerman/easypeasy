@@ -1,3 +1,5 @@
+$systemPathSeparator = [IO.Path]::PathSeparator
+
 class ValidRegexAttribute : System.Management.Automation.ValidateEnumeratedArgumentsAttribute {
 
     [void] ValidateElement([object] $element) {
@@ -95,7 +97,7 @@ function local:Add-PathLocation {
         [bool] $First
     )
 
-    $oldLocations = $Path -split ";"
+    $oldLocations = $Path -split $systemPathSeparator
 
     $alreadyPresent = $oldLocations | Where-Object { $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
 
@@ -107,12 +109,14 @@ function local:Add-PathLocation {
 
         # move the existing location to the front
         $remaining = Remove-PathLocation -Path $Path -Location $Location
-        return $remaining ? "$Location;$remaining" : $Location
+        return $remaining ? (($Location, $remaining) -join $systemPathSeparator) : $Location
     }
 
-    $pathWithoutSemicolon = $Path.TrimEnd(";")
+    $pathWithoutSeparator = $Path.TrimEnd($systemPathSeparator)
 
-    return $First ? "$Location;$pathWithoutSemicolon" : "$pathWithoutSemicolon;$Location"
+    return $First `
+        ? (($Location, $pathWithoutSeparator) -join $systemPathSeparator) `
+        : (($pathWithoutSeparator, $Location) -join $systemPathSeparator)
 }
 
 function local:Remove-PathLocation {
@@ -150,9 +154,9 @@ function local:Remove-PathLocation {
         [string] $Location
     )
   
-    $newPath = $Path -split ";" `
+    $newPath = $Path -split $systemPathSeparator `
     | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
-    | Join-String -Separator ";"
+    | Join-String -Separator $systemPathSeparator
 
     return $newPath
 }
@@ -181,10 +185,10 @@ function local:Remove-DuplicatePathLocation {
 
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    $unique = $Path -split ";" `
+    $unique = $Path -split $systemPathSeparator `
     | Where-Object { $_ -and $seen.Add($_.TrimEnd("\")) }
 
-    return $unique -join ";"
+    return $unique -join $systemPathSeparator
 }
 
 function local:Get-PathScopeCounts {
@@ -211,7 +215,7 @@ function local:Get-PathScopeCounts {
     $counts = @{}
 
     $context = @{ $Scope = $true }
-    (Get-EnvironmentVariable @context -Name Path -ErrorAction SilentlyContinue) -split ";" `
+    (Get-EnvironmentVariable @context -Name Path -ErrorAction SilentlyContinue) -split $systemPathSeparator `
     | Where-Object { $_ } `
     | ForEach-Object {
         $key = $_.TrimEnd("\")
@@ -374,12 +378,12 @@ function Get-SystemPath {
 
     $allLocations =
     if ($Machine) {
-        (Get-EnvironmentVariable -Machine -Name Path) -split ";" `
+        (Get-EnvironmentVariable -Machine -Name Path) -split $systemPathSeparator `
         | Where-Object { $_ } `
         | ForEach-Object { [SystemPathLocation]::new("Machine", $_) }
     }
     elseif ($User) {
-        (Get-EnvironmentVariable -User -Name Path) -split ";" `
+        (Get-EnvironmentVariable -User -Name Path) -split $systemPathSeparator `
         | Where-Object { $_ } `
         | ForEach-Object { [SystemPathLocation]::new("User", $_) }
     }
@@ -390,7 +394,7 @@ function Get-SystemPath {
         $machineRemaining = Get-PathScopeCounts -Scope Machine
         $userRemaining = Get-PathScopeCounts -Scope User
 
-        $env:PATH -split ";" `
+        $env:PATH -split $systemPathSeparator `
         | Where-Object { $_ } `
         | ForEach-Object {
             $key = $_.TrimEnd("\")
@@ -412,7 +416,7 @@ function Get-SystemPath {
     $selectedLocations = $allLocations | Where-Object { Test-LocationCriteria -Location $_.Location @criteria }
 
     return $Join `
-        ? (($selectedLocations | ForEach-Object { $_.Location }) -join ";") `
+        ? (($selectedLocations | ForEach-Object { $_.Location }) -join $systemPathSeparator) `
         : $selectedLocations
 }
 
@@ -640,12 +644,12 @@ function Remove-DuplicateSystemPathLocations {
 
         # cross-scope: drop from the non-kept scope every location present in the kept scope
         if ($KeepUser) {
-            foreach ($location in ($userDeduped -split ";")) {
+            foreach ($location in ($userDeduped -split $systemPathSeparator)) {
                 if ($location) { $machineDeduped = Remove-PathLocation -Path $machineDeduped -Location $location }
             }
         }
         else {
-            foreach ($location in ($machineDeduped -split ";")) {
+            foreach ($location in ($machineDeduped -split $systemPathSeparator)) {
                 if ($location) { $userDeduped = Remove-PathLocation -Path $userDeduped -Location $location }
             }
         }
@@ -730,7 +734,7 @@ function Move-SystemPathLocation {
 
     # not on the source Path: nothing to move
     if ($newSource -eq $sourcePath) {
-        $onTarget = (Get-SystemPath @target -Join) -split ";" `
+        $onTarget = (Get-SystemPath @target -Join) -split $systemPathSeparator `
         | Where-Object { $_ -and $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
 
         $reason = $onTarget ? "already on the $targetName Path" : "not on the $sourceName Path"

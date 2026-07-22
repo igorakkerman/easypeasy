@@ -1,20 +1,22 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
 
+    $script:systemPathSeparator = [IO.Path]::PathSeparator
+
     # Pester's Mock needs 'sudo' discoverable; the Windows sudo feature is absent on
     # Server-based CI runners. Provide a stub on Path so mocks resolve — it never runs.
     if (-not (Get-Command sudo -ErrorAction SilentlyContinue)) {
         $script:sudoStub = Join-Path ([IO.Path]::GetTempPath()) "sudostub-$([guid]::NewGuid())"
         New-Item -ItemType Directory -Path $script:sudoStub | Out-Null
         Set-Content -Path (Join-Path $script:sudoStub 'sudo.cmd') -Value '@echo off'
-        $env:PATH = "$script:sudoStub$([IO.Path]::PathSeparator)$env:PATH"
+        $env:PATH = "$script:sudoStub$($script:systemPathSeparator)$env:PATH"
     }
 }
 
 AfterAll {
     if ($script:sudoStub) {
-        $env:PATH = ($env:PATH -split [IO.Path]::PathSeparator |
-            Where-Object { $_ -ne $script:sudoStub }) -join [IO.Path]::PathSeparator
+        $env:PATH = ($env:PATH -split $script:systemPathSeparator |
+            Where-Object { $_ -ne $script:sudoStub }) -join $script:systemPathSeparator
         Remove-Item $script:sudoStub -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
