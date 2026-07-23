@@ -15,6 +15,8 @@ Describe 'Get-ShortcutTarget' {
     AfterAll { Remove-Item $lnk -Force -ErrorAction SilentlyContinue }
 
     It 'returns the target path of a shortcut' {
-        Get-ShortcutTarget -Shortcut $lnk | Should -Be 'C:\Windows\notepad.exe'
+        InModuleScope easypeasy -Parameters @{ Lnk = $lnk } {
+            Get-ShortcutTarget -Shortcut $Lnk | Should -Be 'C:\Windows\notepad.exe'
+        }
     }
 }

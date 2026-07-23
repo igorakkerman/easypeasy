@@ -168,18 +168,6 @@ in a specific scope (machine 🅰️ or user) \
 
 `setenv` and `rmenv` are aliases for `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` respectively, which you should use in scripts.
 
-### Shortcuts
-
-#### Read or set a shortcut's target
-
-```powershell
-> Get-ShortcutTarget -Shortcut "C:\Users\me\Desktop\MyApp.lnk"
-C:\Program Files\MyApp\MyApp.exe
-
-> Set-ShortcutTarget -Shortcut "C:\Users\me\Desktop\MyApp.lnk" `
-        -Target "C:\Program Files\MyApp\MyApp.exe"
-```
-
 ### Start Menu Shortcuts
 
 #### Create a shortcut for MyApp in the Start Menu

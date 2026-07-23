@@ -17,9 +17,10 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Removed:** Aliases `-AppName` and `-Folder` on `New-StartMenuProgramsFolder` — pass `-Name`.
 - **Removed:** Aliases `-App` and `-AppName` on the shortcut functions — pass `-Name`.
 - **Changed:** `Get-StartMenuProgramsPath` renamed to `Get-StartMenuProgramsLocation`.
-- **Changed:** `Set-ShortcutRunAsAdministrator` parameter `-ShortcutPath` renamed to `-Shortcut`; alias `-Path` removed.
-- **Changed:** `Get-ShortcutIconLocation` renamed to `Get-ShortcutIcon`; parameter `-Path` renamed to `-Shortcut`.
-- **Added:** `Get-ShortcutTarget` and `Set-ShortcutTarget` — read and set shortcut target location.
+
+### Shortcut
+- New interface for shortcut functionality in progress.
+- Shortcut functions unpublished for this release.
 
 ### System PATH and environment variables
 - **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.

@@ -15,14 +15,18 @@ Describe 'Set-ShortcutTarget' {
     AfterEach { Remove-Item $lnk -Force -ErrorAction SilentlyContinue }
 
     It 'sets the target path of a shortcut' {
-        Set-ShortcutTarget -Shortcut $lnk -Target 'C:\Windows\regedit.exe'
+        InModuleScope easypeasy -Parameters @{ Lnk = $lnk } {
+            Set-ShortcutTarget -Shortcut $Lnk -Target 'C:\Windows\regedit.exe'
+        }
 
         $wsh = New-Object -ComObject WScript.Shell
         $wsh.CreateShortcut($lnk).TargetPath | Should -Be 'C:\Windows\regedit.exe'
     }
 
     It 'leaves the shortcut untouched under -WhatIf' {
-        Set-ShortcutTarget -Shortcut $lnk -Target 'C:\Windows\regedit.exe' -WhatIf
+        InModuleScope easypeasy -Parameters @{ Lnk = $lnk } {
+            Set-ShortcutTarget -Shortcut $Lnk -Target 'C:\Windows\regedit.exe' -WhatIf
+        }
 
         $wsh = New-Object -ComObject WScript.Shell
         $wsh.CreateShortcut($lnk).TargetPath | Should -Be 'C:\Windows\notepad.exe'

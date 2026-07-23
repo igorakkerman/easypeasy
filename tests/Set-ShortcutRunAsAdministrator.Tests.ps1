@@ -12,14 +12,18 @@ Describe 'Set-ShortcutRunAsAdministrator' {
     AfterEach { Remove-Item $lnk -Force -ErrorAction SilentlyContinue }
 
     It 'sets the run-as-administrator flag (byte 0x15, bit 0x20)' {
-        Set-ShortcutRunAsAdministrator -Shortcut $lnk
+        InModuleScope easypeasy -Parameters @{ Lnk = $lnk } {
+            Set-ShortcutRunAsAdministrator -Shortcut $Lnk
+        }
 
         $bytes = [System.IO.File]::ReadAllBytes($lnk)
         ($bytes[0x15] -band 0x20) | Should -Be 0x20
     }
 
     It 'leaves the file untouched under -WhatIf' {
-        Set-ShortcutRunAsAdministrator -Shortcut $lnk -WhatIf
+        InModuleScope easypeasy -Parameters @{ Lnk = $lnk } {
+            Set-ShortcutRunAsAdministrator -Shortcut $Lnk -WhatIf
+        }
 
         $bytes = [System.IO.File]::ReadAllBytes($lnk)
         ($bytes[0x15] -band 0x20) | Should -Be 0

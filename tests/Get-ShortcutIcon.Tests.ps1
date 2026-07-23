@@ -16,6 +16,8 @@ Describe 'Get-ShortcutIcon' {
     AfterAll { Remove-Item $lnk -Force -ErrorAction SilentlyContinue }
 
     It 'returns the icon location of a shortcut' {
-        Get-ShortcutIcon -Shortcut $lnk | Should -Be 'C:\Windows\notepad.exe,0'
+        InModuleScope easypeasy -Parameters @{ Lnk = $lnk } {
+            Get-ShortcutIcon -Shortcut $Lnk | Should -Be 'C:\Windows\notepad.exe,0'
+        }
     }
 }
