@@ -1,3 +1,4 @@
+. "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\timestamp.ps1"
 . "$PSScriptRoot\elevate.ps1"
 . "$PSScriptRoot\environment.ps1"

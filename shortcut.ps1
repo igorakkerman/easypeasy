@@ -52,7 +52,6 @@ function Get-ShortcutIcon {
         [string] $Shortcut
     )
 
-    $wshShell = New-Object -ComObject WScript.Shell
     $shortcutObject = $wshShell.CreateShortcut($Shortcut)
 
     return $shortcutObject.IconLocation
@@ -81,7 +80,6 @@ function Get-ShortcutTarget {
         [string] $Shortcut
     )
 
-    $wshShell = New-Object -ComObject WScript.Shell
     $shortcutObject = $wshShell.CreateShortcut($Shortcut)
 
     return $shortcutObject.TargetPath
@@ -113,7 +111,6 @@ function Set-ShortcutTarget {
         [string] $Target
     )
 
-    $wshShell = New-Object -ComObject WScript.Shell
     $shortcutObject = $wshShell.CreateShortcut($Shortcut)
     $shortcutObject.TargetPath = $Target
 

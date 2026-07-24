@@ -28,7 +28,6 @@ function Get-MyDocumentsFolder {
     [CmdletBinding()]
     Param()
     
-    $wshShell = New-Object -ComObject WScript.Shell
     return $wshShell.SpecialFolders("MyDocuments")
 }
 

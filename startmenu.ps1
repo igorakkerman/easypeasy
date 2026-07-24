@@ -1,6 +1,5 @@
 . "$PSScriptRoot\shortcut.ps1"
 
-$wshShell = New-Object -ComObject WScript.Shell
 $allUsersProgramsLocation = $wshShell.SpecialFolders("AllUsersPrograms")
 $userProgramsLocation = $wshShell.SpecialFolders("Programs")
 
