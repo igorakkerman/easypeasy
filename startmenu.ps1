@@ -1,5 +1,3 @@
-. "$PSScriptRoot\shortcut.ps1"
-
 $allUsersProgramsLocation = $wshShell.SpecialFolders("AllUsersPrograms")
 $userProgramsLocation = $wshShell.SpecialFolders("Programs")
 

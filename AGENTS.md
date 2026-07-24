@@ -10,10 +10,10 @@ Consumer-facing breaking changes and the v1 → v2 migration steps are documente
 
 ## Architecture
 
-- `easypeasy.psm1` is the root **module**. It does nothing but dot-source each domain `.ps1` file in `$PSScriptRoot`. Load order matters: helpers like `timestamp.ps1`, `elevate.ps1`, and `environment.ps1` are sourced before the files that depend on them.
+- `easypeasy.psm1` is the root **module**. It does nothing but dot-source each `.ps1` file in `$PSScriptRoot`, and is the only place load order is decided — no file dot-sources another. Order matters: `common.ps1` comes first, then helpers like `timestamp.ps1`, `elevate.ps1` and `environment.ps1` before the files that depend on them, and `shortcut.ps1` before `startmenu.ps1`.
 - `easypeasy.psd1` is the manifest. **`FunctionsToExport` and `AliasesToExport` are explicit lists (no wildcards).** A new public function or alias is invisible to module consumers until its name is added here — keep these in sync when adding/renaming exports.
-- Each `.ps1` is one domain, e.g. `systempath.ps1`, `environment.ps1`, `startmenu.ps1`, `shortcut.ps1`, `task.ps1`, `specialfolder.ps1`, `explorer.ps1`, `elevate.ps1`, `timestamp.ps1`.
-- Layering: `systempath.ps1` builds on `environment.ps1` (Path is just an env var); `startmenu.ps1` dot-sources `shortcut.ps1`; a `-Machine` write that is not already elevated re-runs itself through `Invoke-Elevated` (from `elevate.ps1`). `Assert-Elevated` stays exported for callers that want a hard admin check.
+- Each `.ps1` is one domain, e.g. `systempath.ps1`, `environment.ps1`, `startmenu.ps1`, `shortcut.ps1`, `task.ps1`, `specialfolder.ps1`, `explorer.ps1`, `elevate.ps1`, `timestamp.ps1`. The exception is `common.ps1`, which holds what is shared across domains: the single `$wshShell` WScript.Shell COM object used by the shortcut, Start Menu and special folder functions.
+- Layering: `systempath.ps1` builds on `environment.ps1` (Path is just an env var); `startmenu.ps1` builds on `shortcut.ps1` for `Set-ShortcutRunAsAdministrator`; a `-Machine` write that is not already elevated re-runs itself through `Invoke-Elevated` (from `elevate.ps1`). `Assert-Elevated` stays exported for callers that want a hard admin check.
 
 ## Conventions (match these when editing)
 
