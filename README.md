@@ -168,6 +168,36 @@ in a specific scope (machine 🅰️ or user) \
 
 `setenv` and `rmenv` are aliases for `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` respectively, which you should use in scripts.
 
+### Shortcuts
+
+#### Read a shortcut
+
+```powershell
+> Get-Shortcut "C:\Users\me\Desktop\MyApp.lnk"
+
+Shortcut           : C:\Users\me\Desktop\MyApp.lnk
+Target             : C:\Program Files\MyApp\MyApp.exe
+Arguments          : --profile Default
+StartIn            : C:\Program Files\MyApp
+Description        : My favourite app
+Icon               : C:\Program Files\MyApp\MyApp.exe,3
+Hotkey             : Alt+Ctrl+M
+WindowStyle        : Maximized
+RunAsAdministrator : False
+```
+
+`Icon` splits into its parts, and is `$null` when the shortcut carries no icon:
+
+```powershell
+> (Get-Shortcut "C:\Users\me\Desktop\MyApp.lnk").Icon.Location
+C:\Program Files\MyApp\MyApp.exe
+
+> (Get-Shortcut "C:\Users\me\Desktop\MyApp.lnk").Icon.Index
+3
+```
+
+`WindowStyle` is `Normal`, `Maximized` or `Minimized`.
+
 ### Start Menu Shortcuts
 
 #### Create a shortcut for MyApp in the Start Menu

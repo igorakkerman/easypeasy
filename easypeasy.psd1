@@ -86,6 +86,7 @@
         'Get-Environment',
         'Set-EnvironmentVariable',
         'Remove-EnvironmentVariable',
+        'Get-Shortcut',
         'New-StartMenuShortcut',
         'Remove-StartMenuShortcut',
         'New-PowershellStartMenuShortcut',

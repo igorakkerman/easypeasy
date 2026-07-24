@@ -38,6 +38,48 @@
       </TableControl>
     </View>
     <View>
+      <Name>Shortcut</Name>
+      <ViewSelectedBy>
+        <TypeName>Shortcut</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <PropertyName>Shortcut</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Target</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Arguments</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>StartIn</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Description</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Icon</Label>
+                <ScriptBlock>$_.Icon.Value</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Hotkey</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>WindowStyle</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>RunAsAdministrator</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <View>
       <Name>SystemPathLocation</Name>
       <ViewSelectedBy>
         <TypeName>SystemPathLocation</TypeName>

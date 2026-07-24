@@ -22,14 +22,12 @@ write the **canonical** name, never an alias.
 |---|---|
 | `Assert-Administrator` | `Assert-Elevated` |
 | `Get-StartMenuProgramsPath` | `Get-StartMenuProgramsLocation` |
-| `Get-ShortcutIconLocation` | `Get-ShortcutIcon` |
 
 ## Renamed parameters
 
 | Command | v1 parameter | v2 parameter |
 |---|---|---|
 | `Set-ShortcutRunAsAdministrator` | `-ShortcutPath` (alias `-Path`) | `-Shortcut` |
-| `Get-ShortcutIcon` | `-Path` | `-Shortcut` |
 | `Add-SystemPathLocation` | `-Front` | `-First` (`-Front` kept as alias — prefer `-First`) |
 
 ## Removed parameters and aliases → use the canonical name
@@ -70,9 +68,13 @@ write the **canonical** name, never an alias.
 |---|---|
 | `Get-Theme`, `Set-Theme`, `Switch-Theme`, alias `theme` | none in this module (theme app is separate) |
 | `Get-Usage`, alias `du` | `du` from Microsoft [Coreutils for Windows](https://github.com/microsoft/coreutils) |
+| `Get-ShortcutIconLocation` | `Get-Shortcut`, then read `.Icon.Value`, `.Icon.Location` or `.Icon.Index` |
 
 ## New in v2 — prefer where applicable
 
+- `Get-Shortcut` — every readable field of a shortcut as one record: `Shortcut`, `Target`, `Arguments`,
+  `StartIn`, `Description`, `Icon` (`Value`, `Location`, `Index`, or `$null` when there is no icon),
+  `Hotkey`, `WindowStyle` and `RunAsAdministrator`.
 - `Get-Environment` — environment variables as records (scope, name, value); both scopes by default,
   or `-Machine` / `-User`.
 - `Test-Elevated` — whether the current session is elevated.

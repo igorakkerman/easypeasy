@@ -1,11 +1,6 @@
 $allUsersProgramsLocation = $wshShell.SpecialFolders("AllUsersPrograms")
 $userProgramsLocation = $wshShell.SpecialFolders("Programs")
 
-# https://www.vbsedit.com/html/a239a3ac-e51c-4e70-859e-d2d8c2eb3135.asp
-# $windowStyleDefault = 1
-$windowStyleMaximized = 3
-$windowStyleMinimized = 7
-
 function Get-StartMenuProgramsLocation {
     <#
     .SYNOPSIS
@@ -378,10 +373,10 @@ function New-PowershellStartMenuShortcut {
     $shortcut.TargetPath = "pwsh"
     $shortcut.Arguments = $arguments -join ' '
     if (-not $Visible) {
-        $shortcut.WindowStyle = $windowStyleMinimized
+        $shortcut.WindowStyle = [ShortcutWindowStyle]::Minimized
     }
     if ($Maximized) {
-        $shortcut.WindowStyle = $windowStyleMaximized
+        $shortcut.WindowStyle = [ShortcutWindowStyle]::Maximized
     }
 
     if ($Icon) {
