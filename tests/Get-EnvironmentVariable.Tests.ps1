@@ -25,4 +25,33 @@ Describe 'Get-EnvironmentVariable' {
             Get-EnvironmentVariable windir -Machine | Should -Not -BeNullOrEmpty
         }
     }
+
+    Context '-Expandable (unexpanded value)' {
+
+        BeforeEach {
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expandable
+        }
+
+        AfterEach {
+            [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', $null, 'User')
+            Remove-Item -Path env:EASYPEASY_TEST -ErrorAction SilentlyContinue
+        }
+
+        It 'returns the stored %...% reference unevaluated' {
+            Get-EnvironmentVariable EASYPEASY_TEST -User -Expandable | Should -Be '%SystemRoot%\tools'
+        }
+
+        It 'expands the reference without -Expandable' {
+            Get-EnvironmentVariable EASYPEASY_TEST -User | Should -Be "$env:SystemRoot\tools"
+        }
+
+        It 'returns the effective value unevaluated, user over machine' {
+            Get-EnvironmentVariable EASYPEASY_TEST -Expandable | Should -Be '%SystemRoot%\tools'
+        }
+
+        It 'errors when the variable is not set' {
+            { Get-EnvironmentVariable EASYPEASY_MISSING_XYZ -Expandable -ErrorAction Stop } |
+                Should -Throw '*not found*'
+        }
+    }
 }

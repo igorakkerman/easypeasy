@@ -68,6 +68,11 @@ function Get-EnvironmentVariable() {
     .PARAMETER Effective
         If specified, the value of the environment variable is returned which is in effect. (Default.)
 
+    .PARAMETER Expandable
+        If specified, the stored expandable (REG_EXPAND_SZ) value is returned without evaluating
+        its %...% references, so %USERPROFILE%\tmp is returned as the literal indirection rather
+        than expanded. Without it, a %...% reference is expanded on read.
+
     .OUTPUTS string - The value of the environment variable.
 
     .NOTES
@@ -75,6 +80,9 @@ function Get-EnvironmentVariable() {
 
     .EXAMPLE
         Get-EnvironmentVariable "TEMP"
+
+    .EXAMPLE
+        Get-EnvironmentVariable "TMP" -Expandable
 
     .EXAMPLE
         Get-EnvironmentVariable "TEMP" -Effective
@@ -100,15 +108,22 @@ function Get-EnvironmentVariable() {
         [switch] $User,
 
         [Parameter(Mandatory = $false, ParameterSetName = "Effective")]
-        [switch] $Effective
+        [switch] $Effective,
+
+        [switch] $Expandable
     )
 
-    $value = 
-    if ($Machine) {
+    $value =
+    if ($Expandable) {
+        # stored expandable form, %...% left unevaluated
+        $scopeSwitch = $Machine ? @{ Machine = $true } : ($User ? @{ User = $true } : @{})
+        Get-EnvironmentVariableExpandable -Name $Name @scopeSwitch
+    }
+    elseif ($Machine) {
         [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::Machine)
     }
     elseif ($User) {
-        [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)        
+        [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)
     }
     else {
         (Get-Item env:$Name -ErrorAction SilentlyContinue)?.Value
@@ -350,11 +365,77 @@ New-Alias -Name getenv -Value Get-EnvironmentVariable -ErrorAction SilentlyConti
 New-Alias -Name setenv -Value Set-EnvironmentVariable -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name rmenv -Value Remove-EnvironmentVariable -ErrorAction SilentlyContinue | Out-Null
 
-# --- expandable (REG_EXPAND_SZ) writes ------------------------------------------
+# --- expandable (REG_EXPAND_SZ) reads and writes --------------------------------
 #
-# Writing an environment variable as REG_EXPAND_SZ. [Environment]::SetEnvironmentVariable
-# can only ever write REG_SZ, so the persist step goes directly against the registry, and
-# the WM_SETTINGCHANGE broadcast that .NET gave for free is re-added by hand.
+# Reading and writing an environment variable as REG_EXPAND_SZ against the registry
+# directly. [Environment]::SetEnvironmentVariable can only ever write REG_SZ, so the
+# persist step goes directly against the registry, and the WM_SETTINGCHANGE broadcast
+# that .NET gave for free is re-added by hand. [Environment]::GetEnvironmentVariable
+# expands REG_EXPAND_SZ on read, so the unevaluated form is likewise read from the
+# registry, with DoNotExpandEnvironmentNames.
+
+function local:Get-EnvironmentVariableExpandable {
+    <#
+    .SYNOPSIS
+        Returns an environment variable's stored value without evaluating %...% references.
+
+    .DESCRIPTION
+        Reads the environment variable straight from the registry with
+        DoNotExpandEnvironmentNames, so a value persisted as REG_EXPAND_SZ (for example
+        %USERPROFILE%\tmp) is returned as the literal indirection rather than expanded.
+        [Environment]::GetEnvironmentVariable expands REG_EXPAND_SZ on read and so cannot
+        do this. Machine and User read their own scope; Effective (default) returns the
+        user value over the machine value, as a fresh process would resolve it.
+        A value that is not set in the requested scope yields $null.
+
+    .PARAMETER Name
+        The name of the environment variable.
+
+    .PARAMETER Machine
+        If specified, the value stored in the machine scope is returned.
+
+    .PARAMETER User
+        If specified, the value stored in the user scope is returned.
+
+    .PARAMETER Effective
+        If specified, the user value over the machine value is returned. (Default.)
+
+    .EXAMPLE
+        Get-EnvironmentVariableExpandable -Name TMP -User
+
+    .EXAMPLE
+        Get-EnvironmentVariableExpandable -Name MYTOOL_HOME -Machine
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string] $Name,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [switch] $Machine,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Effective")]
+        [switch] $Effective
+    )
+
+    $machineKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+    $userKey = "HKCU:\Environment"
+
+    # read the raw (unevaluated) value straight from a registry key; keys always exist,
+    # so ?. only guards the unexpected. $Name is read from the enclosing scope.
+    $readRaw = {
+        param([string] $keyPath)
+        (Get-Item -LiteralPath $keyPath -ErrorAction SilentlyContinue)?.GetValue(
+            $Name, $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+    }
+
+    if ($Machine) { & $readRaw $machineKey }
+    elseif ($User) { & $readRaw $userKey }
+    else { (& $readRaw $userKey) ?? (& $readRaw $machineKey) }  # user over machine
+}
 
 function local:Set-EnvironmentVariableExpandable {
     <#

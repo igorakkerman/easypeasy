@@ -80,5 +80,7 @@ write the **canonical** name, never an alias.
 - `Test-Elevated` — whether the current session is elevated.
 - `Set-EnvironmentVariable -Expandable` — write an expandable (`REG_EXPAND_SZ`) value so a `%…%`
   reference stays as indirection; without it the value is written verbatim as `REG_SZ`.
+- `Get-EnvironmentVariable -Expandable` — read the stored expandable value without evaluating its
+  `%…%` references.
 - `-Contains` / `-Filter` / `-Match` on `Get-SystemPath`, `Get-SystemPathLocation`,
   `Test-SystemPathLocation` — literal substring, wildcard, regular expression.
