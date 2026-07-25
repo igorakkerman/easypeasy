@@ -538,6 +538,40 @@ function Get-SystemPath {
 
 New-Alias -Name path -Value Get-SystemPath -ErrorAction SilentlyContinue | Out-Null
 
+function Sync-SystemPath {
+    <#
+    .SYNOPSIS
+        Updates the system Path of the current shell to the persisted Path.
+    .DESCRIPTION
+        Rebuilds the Path of the current shell from the machine Path followed by the user Path, the way a
+        fresh shell is given one, so a change made elsewhere - in the Windows settings, in another shell,
+        by an installer - takes effect without opening a new shell. A location carried by both scopes is
+        listed once per scope, and a %...% reference is expanded, as Windows leaves them.
+        Locations only this shell knows, such as those a virtual environment added, are kept in place.
+        A location no scope carries any more is one of those as far as this shell can tell, so a removal
+        made elsewhere is not picked up - open a new shell for that. An addition is.
+        The system-path functions rebuild the Path themselves, so this is only needed for a change
+        easypeasy did not make.
+    .NOTES
+        Alias: syncpath
+    .EXAMPLE
+        Sync-SystemPath
+    .EXAMPLE
+        syncpath
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param ()
+
+    if ($PSCmdlet.ShouldProcess("system Path of the current shell", "Update to the persisted Path")) {
+        # nothing is being written, so what is process-only now is what should stay process-only
+        $processLocations = Get-ProcessOnlyPathLocations
+
+        Sync-ProcessPath @processLocations
+    }
+}
+
+New-Alias -Name syncpath -Value Sync-SystemPath -ErrorAction SilentlyContinue | Out-Null
+
 function local:Set-SystemPath {
     <#
     .SYNOPSIS

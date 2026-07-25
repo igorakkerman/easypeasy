@@ -145,6 +145,17 @@ Within a scope, the first occurrence of each folder is kept.
 `movepath` is an alias for `Move-SystemPathLocation`, which you should use in scripts. \
 The folder is removed from the source Path and added to the target Path.
 
+#### Pick up a system Path change made elsewhere
+
+```powershell
+> syncpath
+```
+
+`syncpath` is an alias for `Sync-SystemPath`, which you should use in scripts. \
+The Path of the current shell is rebuilt from the machine and the user Path, the way a fresh shell is given one, so a change made in the Windows settings, in another shell or by an installer takes effect without opening a new one. Folders only this shell knows, such as those a virtual environment added, are kept. The easypeasy Path functions do this themselves, so this is only for a change easypeasy did not make.
+
+A folder **removed** elsewhere is not picked up: no scope carries it any more, which is exactly what a folder this shell added looks like. Open a new shell for that.
+
 #### Back up the effective system Path environment variable to a file in the temp folder
 
 ```powershell

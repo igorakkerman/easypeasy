@@ -88,3 +88,5 @@ write the **canonical** name, never an alias.
   `%…%` references.
 - `-Contains` / `-Filter` / `-Match` on `Get-SystemPath`, `Get-SystemPathLocation`,
   `Test-SystemPathLocation` — literal substring, wildcard, regular expression.
+- `Sync-SystemPath` (alias `syncpath`) — rebuild the system Path of the current shell from the
+  machine and the user Path, for a change made outside easypeasy.
