@@ -78,7 +78,7 @@ write the **canonical** name, never an alias.
 - `Get-Environment` — environment variables as records (scope, name, value); both scopes by default,
   or `-Machine` / `-User`.
 - `Test-Elevated` — whether the current session is elevated.
-- `Set-EnvironmentVariable -Expand` — write an expandable (`REG_EXPAND_SZ`) value so a `%…%`
+- `Set-EnvironmentVariable -Expandable` — write an expandable (`REG_EXPAND_SZ`) value so a `%…%`
   reference stays as indirection; without it the value is written verbatim as `REG_SZ`.
 - `-Contains` / `-Filter` / `-Match` on `Get-SystemPath`, `Get-SystemPathLocation`,
   `Test-SystemPathLocation` — literal substring, wildcard, regular expression.

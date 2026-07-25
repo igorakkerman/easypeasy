@@ -63,53 +63,53 @@ Describe 'Set-EnvironmentVariable' {
         }
     }
 
-    Context 'expandable value (-Expand)' {
+    Context 'expandable value (-Expandable)' {
 
         AfterEach {
             [Environment]::SetEnvironmentVariable('EASYPEASY_TEST', $null, 'User')
             Remove-Item -Path env:EASYPEASY_TEST -ErrorAction SilentlyContinue
         }
 
-        It 'writes a REG_EXPAND_SZ value with -Expand' {
-            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expand
+        It 'writes a REG_EXPAND_SZ value with -Expandable' {
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expandable
             (Get-Item 'HKCU:\Environment').GetValueKind('EASYPEASY_TEST') |
                 Should -Be ([Microsoft.Win32.RegistryValueKind]::ExpandString)
         }
 
         It 'stores the %...% reference verbatim, unexpanded' {
-            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expand
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expandable
             (Get-Item 'HKCU:\Environment').GetValue('EASYPEASY_TEST', $null, 'DoNotExpandEnvironmentNames') |
                 Should -Be '%SystemRoot%\tools'
         }
 
-        It 'writes a REG_SZ value without -Expand' {
+        It 'writes a REG_SZ value without -Expandable' {
             Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User
             (Get-Item 'HKCU:\Environment').GetValueKind('EASYPEASY_TEST') |
                 Should -Be ([Microsoft.Win32.RegistryValueKind]::String)
         }
 
         It 'applies the expanded value to the current process immediately' {
-            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expand
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expandable
             $env:EASYPEASY_TEST | Should -Be "$env:SystemRoot\tools"
         }
 
         It 'does not write under -WhatIf' {
-            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expand -WhatIf
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -User -Expandable -WhatIf
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
             $env:EASYPEASY_TEST | Should -BeNullOrEmpty
         }
 
-        It 'auto-elevates through Invoke-Elevated, passing -Expand, for a machine write when not administrator' {
+        It 'auto-elevates through Invoke-Elevated, passing -Expandable, for a machine write when not administrator' {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
 
-            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -Machine -Expand
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -Machine -Expandable
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
                 $Command -contains 'Set-EnvironmentVariable' -and
                 $Command -contains 'EASYPEASY_TEST' -and
                 $Command -contains '-Machine' -and
-                $Command -contains '-Expand'
+                $Command -contains '-Expandable'
             }
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'Machine') | Should -BeNullOrEmpty
         }
