@@ -32,7 +32,7 @@ No build step for development. Iterate by importing the module from source:
 Import-Module .\easypeasy.psd1 -Force
 ```
 
-`build.ps1` is only for packaging: it stages the publishable files into a folder named after the module and returns its path. `Publish-Module` packs the whole folder it is pointed at, so the staging leaves out the development artifacts (`tests/`, `.github/`, `.vscode/`, `AGENTS.md`, `CLAUDE.md`, `build.ps1` itself). Run it to inspect what a release would ship:
+`build.ps1` is only for packaging: it stages the publishable files into a folder named after the module and returns its path. `Publish-Module` packs the whole folder it is pointed at, so the staging leaves out the development artifacts: `tests/`, `AGENTS.md`, `CLAUDE.md`, `build.ps1` itself, and **everything whose name starts with a dot** (`.git/`, `.github/`, `.vscode/`, `.claude/`, and whatever tool adds the next one) — a new dot folder is excluded without touching the list. Run it to inspect what a release would ship:
 
 ```powershell
 ./build.ps1 -Destination .\out
