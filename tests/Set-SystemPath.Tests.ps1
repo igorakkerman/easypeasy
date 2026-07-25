@@ -5,9 +5,16 @@ BeforeAll {
 
 Describe 'Set-SystemPath' {
 
+    BeforeAll { $script:originalPath = $env:PATH }
+    AfterAll { $env:PATH = $script:originalPath }
+
     BeforeEach {
         Mock -ModuleName easypeasy Backup-SystemPath { }
         Mock -ModuleName easypeasy Set-EnvironmentVariable { }
+        # the process Path is rebuilt from the scopes afterwards; keep that off the real registry
+        Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\M1' }
+        Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\U1' }
+        $env:PATH = 'C:\M1;C:\U1'
     }
 
     Context 'persisting entries' {
@@ -55,6 +62,26 @@ Describe 'Set-SystemPath' {
 
             Should -Invoke -ModuleName easypeasy Set-EnvironmentVariable -Times 1 -Exactly `
                 -ParameterFilter { $User -and -not $Machine }
+        }
+    }
+
+    Context 'rebuilding the process Path' {
+
+        It 'derives it from both scopes' {
+            $entries = New-PathEntries 'C:\A'
+
+            InModuleScope easypeasy -Parameters @{ e = $entries } { Set-SystemPath -Entries $e -User }
+
+            $env:PATH | Should -Be 'C:\M1;C:\U1'
+        }
+
+        It 'keeps a location only the session knows' {
+            $env:PATH = 'C:\HostDir;C:\M1;C:\U1;C:\Venv'
+            $entries = New-PathEntries 'C:\A'
+
+            InModuleScope easypeasy -Parameters @{ e = $entries } { Set-SystemPath -Entries $e -User }
+
+            $env:PATH | Should -Be 'C:\HostDir;C:\M1;C:\U1;C:\Venv'
         }
     }
 }

@@ -28,8 +28,10 @@ function local:Sync-ProcessEnvironmentVariable {
     .DESCRIPTION
         Recomputes the value a fresh process would resolve - the user value over the machine value -
         and applies it to the current process, so a persisted change takes effect immediately.
-        Path is left untouched: it is composed of several scopes and may carry process-only entries,
-        so the system-path functions keep the current process Path in sync themselves.
+        Path is composed of several scopes rather than resolved from one, so it goes to Sync-ProcessPath,
+        which rebuilds it from the machine and the user Path. Called this way it keeps no process-only
+        locations; the system-path functions capture those before their write and rebuild afterwards
+        themselves, which takes precedence.
     #>
     param(
         [Parameter(Mandatory = $true)]
@@ -37,6 +39,7 @@ function local:Sync-ProcessEnvironmentVariable {
     )
 
     if ($Name -ieq "Path") {
+        Sync-ProcessPath
         return
     }
 

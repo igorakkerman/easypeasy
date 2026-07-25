@@ -17,7 +17,9 @@ function New-PathEntries {
     )
 
     InModuleScope easypeasy -Parameters @{ path = $Path; scope = $Scope } {
-        ConvertTo-PathEntries -Path $path -Scope $scope
+        @($path -split ([IO.Path]::PathSeparator) | Where-Object { $_ } | ForEach-Object {
+                [SystemPathLocation]::new($scope, $_, $_)
+            })
     }
 }
 

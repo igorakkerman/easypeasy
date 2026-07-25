@@ -151,4 +151,46 @@ Describe 'Add-SystemPathLocation' {
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
     }
+
+    Context 'a location the other scope already carries' {
+
+        # the real Set-SystemPath runs against scopes held in memory, so the process Path it rebuilds
+        # reflects the write, the way it would against the registry
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            $script:machinePath = 'C:\Windows\System32'
+            $script:userPath = 'C:\U1'
+
+            Mock -ModuleName easypeasy Backup-SystemPath { }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { $script:machinePath }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { $script:userPath }
+            Mock -ModuleName easypeasy Set-EnvironmentVariable {
+                if ($Machine) { $script:machinePath = $Value } else { $script:userPath = $Value }
+            }
+
+            $env:PATH = 'C:\Windows\System32;C:\U1'
+        }
+
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'persists it in its own scope, keeping the reference' {
+            Add-SystemPathLocation -Location '%windir%\system32' -User
+
+            $script:userPath | Should -Be 'C:\U1;%windir%\system32'
+        }
+
+        It 'leaves the other scope alone' {
+            Add-SystemPathLocation -Location '%windir%\system32' -User
+
+            $script:machinePath | Should -Be 'C:\Windows\System32'
+        }
+
+        It 'lists it on the process Path once per scope, as Windows does' {
+            Add-SystemPathLocation -Location '%windir%\system32' -User
+
+            @($env:PATH -split ([IO.Path]::PathSeparator) |
+                Where-Object { $_.TrimEnd('\') -ieq "$env:windir\system32" }).Count |
+                Should -Be 2
+        }
+    }
 }

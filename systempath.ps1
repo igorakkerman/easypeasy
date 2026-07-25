@@ -63,33 +63,6 @@ function Backup-SystemPath {
     }
 }
 
-function local:ConvertTo-PathEntries {
-    <#
-    .SYNOPSIS
-        Wraps a plain (expanded) semicolon-separated path into SystemPathLocation entries.
-    .DESCRIPTION
-        Splits an already-expanded path string - such as the process $env:PATH - into SystemPathLocation entries,
-        each with ExpandableLocation and Location set to the same value. Empty segments are dropped.
-    .PARAMETER Path
-        The expanded semicolon-separated path to wrap.
-    .PARAMETER Scope
-        Scope stamped on each entry.
-    .OUTPUTS
-        The SystemPathLocation entries.
-    #>
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true)]
-        [AllowEmptyString()]
-        [string] $Path,
-
-        [Parameter(Mandatory = $false)]
-        [string] $Scope = "Process"
-    )
-
-    return @($Path -split $systemPathSeparator | Where-Object { $_ } | ForEach-Object { [SystemPathLocation]::new($Scope, $_, $_) })
-}
-
 function local:Get-StoredPathString {
     <#
     .SYNOPSIS
@@ -110,6 +83,82 @@ function local:Get-StoredPathString {
     )
 
     return ($Entries | ForEach-Object { $_.ExpandableLocation }) -join $systemPathSeparator
+}
+
+function local:Get-ProcessOnlyPathLocations {
+    <#
+    .SYNOPSIS
+        Returns the current process Path locations that no persisted scope contributes.
+    .DESCRIPTION
+        Takes a snapshot of the locations the current shell added on top of the persisted Path - a virtual
+        environment, or the directory the host injected at startup. Read before a scope Path is written:
+        afterwards a location just removed from a scope is indistinguishable from one the session added.
+        The locations are split by position, so that rebuilding the process Path preserves precedence:
+        Leading holds those in front of the first persisted location, Trailing the rest.
+    .OUTPUTS
+        A hashtable with a LeadingProcessLocations and a TrailingProcessLocations entry, ready to splat
+        into Sync-ProcessPath.
+    #>
+    [CmdletBinding()]
+    param ()
+
+    $effective = @(Get-SystemPath)
+
+    $firstPersisted = 0
+    while ($firstPersisted -lt $effective.Count -and $effective[$firstPersisted].Scope -eq "Process") {
+        $firstPersisted++
+    }
+
+    $leading = @($effective | Select-Object -First $firstPersisted)
+    $trailing = @($effective | Select-Object -Skip $firstPersisted | Where-Object { $_.Scope -eq "Process" })
+
+    return @{
+        LeadingProcessLocations  = $leading
+        TrailingProcessLocations = $trailing
+    }
+}
+
+function local:Sync-ProcessPath {
+    <#
+    .SYNOPSIS
+        Rebuilds the current process Path from the persisted scopes.
+    .DESCRIPTION
+        Sets the current process Path to the machine Path followed by the user Path, each location expanded -
+        the order and the form Windows itself builds a process Path in, so a shell easypeasy has touched holds
+        what a fresh shell would. A location on both scopes therefore appears once per scope, as Windows leaves it.
+        The Path is derived, never patched, so a location added to or removed from one scope cannot disturb the
+        other scope's locations.
+        Locations only the session knows are passed in, having been captured before the write, and are put back
+        around the persisted ones. Without them the process Path holds the persisted scopes alone.
+    .PARAMETER LeadingProcessLocations
+        Process-only locations to keep in front of the persisted ones.
+    .PARAMETER TrailingProcessLocations
+        Process-only locations to keep behind the persisted ones.
+    .EXAMPLE
+        Sync-ProcessPath
+
+    .EXAMPLE
+        $processLocations = Get-ProcessOnlyPathLocations
+        # ... persist a scope Path ...
+        Sync-ProcessPath @processLocations
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
+        [SystemPathLocation[]] $LeadingProcessLocations = @(),
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
+        [SystemPathLocation[]] $TrailingProcessLocations = @()
+    )
+
+    # Location already carries the expanded form, which is what a process Path holds
+    $persisted = @(Get-SystemPath -Machine) + @(Get-SystemPath -User)
+
+    $locations = @($LeadingProcessLocations) + $persisted + @($TrailingProcessLocations)
+
+    $env:PATH = ($locations | ForEach-Object { $_.Location }) -join $systemPathSeparator
 }
 
 function local:Add-PathLocation {
@@ -497,6 +546,8 @@ function local:Set-SystemPath {
         Sets the system Path to the given SystemPathLocation entries, either for the current user or for the
         local machine. The entries' stored form (ExpandableLocation) is persisted, so a %...% reference is kept
         as indirection; the Path is written as an expandable (REG_EXPAND_SZ) value.
+        The current process Path is rebuilt from both scopes afterwards, keeping the locations only the session
+        knows, which are captured before the write.
     .PARAMETER Entries
         The SystemPathLocation entries to persist.
     .PARAMETER Machine
@@ -528,7 +579,14 @@ function local:Set-SystemPath {
     # persist the stored form so %...% references survive, as an expandable (REG_EXPAND_SZ) value
     $value = ($Entries | ForEach-Object { $_.ExpandableLocation }) -join $systemPathSeparator
 
+    # capture what only the session knows before the write, while a removed location is still
+    # distinguishable from one the session added
+    $processLocations = Get-ProcessOnlyPathLocations
+
     Set-EnvironmentVariable @context -Name Path -Value $value -Expandable
+
+    # derive the process Path from both scopes; runs after the write, so it is the authoritative one
+    Sync-ProcessPath @processLocations
 }
 
 function Add-SystemPathLocation {
@@ -591,11 +649,8 @@ function Add-SystemPathLocation {
     }
 
     if ($PSCmdlet.ShouldProcess($Location, "Add location to system Path")) {
+        # Set-SystemPath rebuilds the process Path, so the new location takes effect immediately
         Set-SystemPath @context -Entries $newEntries
-
-        # enable new location immediately
-        $processEntries = Add-PathLocation -Entries (ConvertTo-PathEntries -Path "$env:PATH") -Location $Location -First:$First -Scope "Process"
-        $env:PATH = ($processEntries | ForEach-Object { $_.Location }) -join $systemPathSeparator
     }
 }
 
@@ -638,7 +693,7 @@ function Remove-SystemPathLocation {
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 
     $currentEntries = @(Get-SystemPath @context)
-    $newEntries = Remove-PathLocation -Entries $currentEntries -Location $Location
+    $newEntries = @(Remove-PathLocation -Entries $currentEntries -Location $Location)
 
     # idempotent: nothing changed means the location is not present
     if ((Get-StoredPathString -Entries $newEntries) -eq (Get-StoredPathString -Entries $currentEntries)) {
@@ -647,11 +702,9 @@ function Remove-SystemPathLocation {
     }
 
     if ($PSCmdlet.ShouldProcess($Location, "Remove location from system Path")) {
+        # Set-SystemPath rebuilds the process Path from both scopes, so the location stays available
+        # when the other scope still carries it
         Set-SystemPath @context -Entries $newEntries
-        # disable location immediately
-        # TODO: remove only if not present in the other context
-        $processEntries = Remove-PathLocation -Entries (ConvertTo-PathEntries -Path "$env:PATH") -Location $Location
-        $env:PATH = ($processEntries | ForEach-Object { $_.Location }) -join $systemPathSeparator
     }
 }
 
@@ -701,38 +754,34 @@ function Remove-DuplicateSystemPathLocations {
         Write-Error "Specify only one of -KeepMachine and -KeepUser." -ErrorAction Stop
     }
 
-    $changed = $false
-
     # clean both scopes when neither (or both) scope switches are given
     if ($Machine -eq $User) {
         $machineEntries = @(Get-SystemPath -Machine)
         $userEntries = @(Get-SystemPath -User)
 
-        $machineDeduped = Remove-DuplicatePathLocation -Entries $machineEntries
-        $userDeduped = Remove-DuplicatePathLocation -Entries $userEntries
+        $machineDeduped = @(Remove-DuplicatePathLocation -Entries $machineEntries)
+        $userDeduped = @(Remove-DuplicatePathLocation -Entries $userEntries)
 
         # cross-scope: drop from the non-kept scope every location present in the kept scope
         if ($KeepUser) {
             foreach ($entry in $userDeduped) {
-                $machineDeduped = Remove-PathLocation -Entries $machineDeduped -Location $entry.Location
+                $machineDeduped = @(Remove-PathLocation -Entries $machineDeduped -Location $entry.Location)
             }
         }
         else {
             foreach ($entry in $machineDeduped) {
-                $userDeduped = Remove-PathLocation -Entries $userDeduped -Location $entry.Location
+                $userDeduped = @(Remove-PathLocation -Entries $userDeduped -Location $entry.Location)
             }
         }
 
         if ((Get-StoredPathString -Entries $machineDeduped) -ne (Get-StoredPathString -Entries $machineEntries) `
                 -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system Path")) {
             Set-SystemPath -Machine -Entries $machineDeduped
-            $changed = $true
         }
 
         if ((Get-StoredPathString -Entries $userDeduped) -ne (Get-StoredPathString -Entries $userEntries) `
                 -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system Path")) {
             Set-SystemPath -User -Entries $userDeduped
-            $changed = $true
         }
     }
     else {
@@ -740,20 +789,14 @@ function Remove-DuplicateSystemPathLocations {
         $scope = $Machine ? "machine" : "user"
 
         $currentEntries = @(Get-SystemPath @context)
-        $deduped = Remove-DuplicatePathLocation -Entries $currentEntries
+        $deduped = @(Remove-DuplicatePathLocation -Entries $currentEntries)
 
         if ((Get-StoredPathString -Entries $deduped) -ne (Get-StoredPathString -Entries $currentEntries) `
                 -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system Path")) {
             Set-SystemPath @context -Entries $deduped
-            $changed = $true
         }
     }
-
-    # keep the current process Path free of duplicates too
-    if ($changed) {
-        $processEntries = Remove-DuplicatePathLocation -Entries (ConvertTo-PathEntries -Path "$env:PATH")
-        $env:PATH = ($processEntries | ForEach-Object { $_.Location }) -join $systemPathSeparator
-    }
+    # Set-SystemPath rebuilds the process Path from the deduplicated scopes
 }
 
 function Move-SystemPathLocation {
@@ -815,7 +858,7 @@ function Move-SystemPathLocation {
         return
     }
 
-    $newSource = Remove-PathLocation -Entries $sourceEntries -Location $Location
+    $newSource = @(Remove-PathLocation -Entries $sourceEntries -Location $Location)
 
     $targetEntries = @(Get-SystemPath @target)
     $onTarget = @($targetEntries | Where-Object { $_.Location.TrimEnd("\") -ieq $key })

@@ -104,4 +104,46 @@ Describe 'Remove-SystemPathLocation' {
                 -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq '%SystemRoot%\S32' }
         }
     }
+
+    Context 'a location the other scope also carries' {
+
+        # the real Set-SystemPath runs against scopes held in memory, so the process Path it rebuilds
+        # reflects the write; the user scope loses the location, the machine scope keeps it
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            $script:machinePath = 'C:\Shared;C:\M1'
+            $script:userPath = 'C:\Shared;C:\U1'
+
+            Mock -ModuleName easypeasy Backup-SystemPath { }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { $script:machinePath }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { $script:userPath }
+            Mock -ModuleName easypeasy Set-EnvironmentVariable {
+                if ($Machine) { $script:machinePath = $Value } else { $script:userPath = $Value }
+            }
+
+            $env:PATH = 'C:\Shared;C:\M1;C:\Shared;C:\U1'
+        }
+
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'removes it from its own scope only' {
+            Remove-SystemPathLocation -Location 'C:\Shared' -User
+
+            $script:userPath | Should -Be 'C:\U1'
+            $script:machinePath | Should -Be 'C:\Shared;C:\M1'
+        }
+
+        It 'leaves it on the process Path, the machine scope still carrying it' {
+            Remove-SystemPathLocation -Location 'C:\Shared' -User
+
+            $env:PATH -split ([IO.Path]::PathSeparator) | Should -Contain 'C:\Shared'
+        }
+
+        It 'lists it once, the duplicate contribution being gone' {
+            Remove-SystemPathLocation -Location 'C:\Shared' -User
+
+            @($env:PATH -split ([IO.Path]::PathSeparator) | Where-Object { $_ -eq 'C:\Shared' }).Count |
+                Should -Be 1
+        }
+    }
 }
