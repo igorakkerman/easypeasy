@@ -22,10 +22,12 @@ class ValidRegexAttribute : System.Management.Automation.ValidateEnumeratedArgum
 class SystemPathLocation {
 
     [string] $Scope
+    [ValidateNotNullOrEmpty()] [string] $ExpandableLocation
     [ValidateNotNullOrEmpty()] [string] $Location
 
-    SystemPathLocation($Scope, $Location) {
+    SystemPathLocation($Scope, $ExpandableLocation, $Location) {
         $this.Scope = $Scope
+        $this.ExpandableLocation = $ExpandableLocation
         $this.Location = $Location
     }
 
@@ -35,8 +37,10 @@ class SystemPathLocation {
     .DESCRIPTION
         Holds a folder location on the system Path together with its scope:
         'Machine' (local machine), 'User' (current user) or 'Process' (local to the current shell).
+        ExpandableLocation is the stored form, keeping any %...% reference as indirection;
+        Location is that value expanded. The two are equal when the location holds no %...% reference.
     .EXAMPLE
-        $location = [SystemPathLocation]::new("Machine", "C:\Program Files\Git\bin")
+        $location = [SystemPathLocation]::new("Machine", "%ProgramFiles%\Git\bin", "C:\Program Files\Git\bin")
     #>
 }
 
@@ -59,150 +63,195 @@ function Backup-SystemPath {
     }
 }
 
-function local:Add-PathLocation {
+function local:ConvertTo-PathEntries {
     <#
     .SYNOPSIS
-        Adds a location to a semicolon-separated path.
+        Wraps a plain (expanded) semicolon-separated path into SystemPathLocation entries.
     .DESCRIPTION
-        Permanently adds the specified location to the specified semicolon-separated path and returns the path.
-        Adding is idempotent: if the path already contains the location and -First is not specified,
-        the path is returned unchanged.
-        If the path already contains the location and -First is specified,
-        the existing location is moved to the beginning of the path.
+        Splits an already-expanded path string - such as the process $env:PATH - into SystemPathLocation entries,
+        each with ExpandableLocation and Location set to the same value. Empty segments are dropped.
     .PARAMETER Path
-        Semiocolon separated path to add the location to.
-    .PARAMETER Location
-        Folder location to add to the path.
-    .PARAMETER First
-        If specified, the location is added to the beginning of the path.
-        Otherwise, it is added to the end.
-        If the location already exists, -First moves it to the beginning.
+        The expanded semicolon-separated path to wrap.
+    .PARAMETER Scope
+        Scope stamped on each entry.
     .OUTPUTS
-        Modified path.
-    .EXAMPLE
-        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin" -First
-    .EXAMPLE
-        Add-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
+        The SystemPathLocation entries.
     #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string] $Path,
+
+        [Parameter(Mandatory = $false)]
+        [string] $Scope = "Process"
+    )
+
+    return @($Path -split $systemPathSeparator | Where-Object { $_ } | ForEach-Object { [SystemPathLocation]::new($Scope, $_, $_) })
+}
+
+function local:Get-StoredPathString {
+    <#
+    .SYNOPSIS
+        Joins the stored (expandable) form of Path entries into a semicolon-separated string.
+    .DESCRIPTION
+        Returns the entries' ExpandableLocation values joined by the path separator, the form persisted to the
+        registry. Used to compare two sets of entries for equality.
+    .PARAMETER Entries
+        The SystemPathLocation entries to join.
+    .OUTPUTS
+        The semicolon-separated stored path.
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [SystemPathLocation[]] $Entries
+    )
+
+    return ($Entries | ForEach-Object { $_.ExpandableLocation }) -join $systemPathSeparator
+}
+
+function local:Add-PathLocation {
+    <#
+    .SYNOPSIS
+        Adds a location to a list of Path entries.
+    .DESCRIPTION
+        Adds the specified location to the given SystemPathLocation entries and returns the new entries.
+        The location is treated as expandable: it is stored verbatim as the entry's ExpandableLocation, keeping
+        any %...% reference, and its expansion becomes the entry's Location. Presence is decided on the expanded
+        Location, so an entry stored as %SystemRoot% matches the literal folder it resolves to.
+        Adding is idempotent: if an entry already resolves to the location and -First is not specified,
+        the entries are returned unchanged. If it is present and -First is specified, that entry - keeping its
+        stored form - is moved to the beginning.
+    .PARAMETER Entries
+        The current SystemPathLocation entries to add the location to.
+    .PARAMETER Location
+        Folder location to add, treated as expandable. A %...% reference is kept as indirection.
+    .PARAMETER First
+        If specified, the location is added to the beginning of the entries.
+        Otherwise, it is added to the end. If the location is already present, -First moves it to the beginning.
+    .PARAMETER Scope
+        Scope stamped on a newly created entry.
+    .OUTPUTS
+        The modified SystemPathLocation entries.
+    .EXAMPLE
+        Add-PathLocation -Entries $entries -Location "%JAVA_HOME%\bin" -First $true -Scope User
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [SystemPathLocation[]] $Entries,
 
         [Parameter(Mandatory = $true)]
         [Alias("Folder")]
         [string] $Location,
 
         [Parameter(Mandatory = $true)]
-        [bool] $First
+        [bool] $First,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Scope
     )
 
-    $oldLocations = $Path -split $systemPathSeparator
+    $key = [Environment]::ExpandEnvironmentVariables($Location).TrimEnd("\")
 
-    $alreadyPresent = $oldLocations | Where-Object { $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
+    $present = @($Entries | Where-Object { $_.Location.TrimEnd("\") -ieq $key })
 
-    if ($alreadyPresent) {
+    if ($present) {
         if (-not $First) {
-            # idempotent: the location is already present, leave the path unchanged
-            return $Path
+            # idempotent: the location is already present, leave the entries unchanged
+            return @($Entries)
         }
 
-        # move the existing location to the front
-        $remaining = Remove-PathLocation -Path $Path -Location $Location
-        return $remaining ? (($Location, $remaining) -join $systemPathSeparator) : $Location
+        # move the existing entry to the front, keeping its stored form
+        $remaining = @($Entries | Where-Object { $_.Location.TrimEnd("\") -ine $key })
+        return $present + $remaining
     }
 
-    $pathWithoutSeparator = $Path.TrimEnd($systemPathSeparator)
+    $newEntry = [SystemPathLocation]::new($Scope, $Location, [Environment]::ExpandEnvironmentVariables($Location))
 
-    return $First `
-        ? (($Location, $pathWithoutSeparator) -join $systemPathSeparator) `
-        : (($pathWithoutSeparator, $Location) -join $systemPathSeparator)
+    return $First ? (@($newEntry) + @($Entries)) : (@($Entries) + @($newEntry))
 }
 
 function local:Remove-PathLocation {
     <#
     .SYNOPSIS
-        Removes a location from a semicolon-separated path and returns the path.
+        Removes a location from a list of Path entries and returns the entries.
     .DESCRIPTION
-        Removes each occurence of location from the specified semicolon-separated path.
-        Removing is idempotent: if the path does not contain the location, the path is returned unchanged.
-    .PARAMETER Path
-        Semiocolon separated path to remove the location from.
+        Removes each entry that resolves to the specified location from the given SystemPathLocation entries.
+        The location argument is treated as expandable and matched on the entries' expanded Location, so either
+        the stored (%...%) form or the resolved folder removes the entry.
+        Removing is idempotent: if no entry resolves to the location, the entries are returned unchanged.
+        Trailing backslashes on the location argument and on the entries are ignored.
+    .PARAMETER Entries
+        The current SystemPathLocation entries to remove the location from.
     .PARAMETER Location
-        Folder location to remove from the path.
-        Trailing backslashes on the location argument and within the path are ignored.
+        Folder location to remove, treated as expandable.
     .OUTPUTS
-        The path with the location removed.
+        The SystemPathLocation entries with the location removed.
     .EXAMPLE
-        $newPath = Remove-PathLocation -Path "C:\Windows;C:\Program Files\Git\bin\" -Location "C:\Program Files\Git\bin"
-        # -> "C:\Windows"
-        # Note the missing trailing backslash
-    .EXAMPLE
-        $newPath = Remove-PathLocation -Path "C:\Windows;C:\Program Files\Git\bin\" -Location "C:\Program Files\Git\bin"
-        # -> "C:\Windows"
-    .EXAMPLE
-        $newPath = Remove-PathLocation -Path "C:\Windows;C:\Windows\System32" -Location "C:\Program Files\Git\bin"
-        # -> "C:\Windows;C:\Windows\System32"
+        Remove-PathLocation -Entries $entries -Location "C:\Program Files\Git\bin"
     #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string] $Path,
+        [AllowEmptyCollection()]
+        [SystemPathLocation[]] $Entries,
 
         [Parameter(Mandatory = $true)]
         [Alias("Folder")]
         [string] $Location
     )
-  
-    $newPath = $Path -split $systemPathSeparator `
-    | Where-Object { $_.TrimEnd("\") -ine $Location.TrimEnd("\") } `
-    | Join-String -Separator $systemPathSeparator
 
-    return $newPath
+    $key = [Environment]::ExpandEnvironmentVariables($Location).TrimEnd("\")
+
+    return @($Entries | Where-Object { $_.Location.TrimEnd("\") -ine $key })
 }
 
 function local:Remove-DuplicatePathLocation {
     <#
     .SYNOPSIS
-        Removes duplicate locations from a semicolon-separated path.
+        Removes duplicate locations from a list of Path entries.
     .DESCRIPTION
-        Returns the path with duplicate locations removed, keeping the first occurrence of each location.
-        Comparison is case-insensitive and ignores trailing backslashes. Empty locations are dropped.
-    .PARAMETER Path
-        Semicolon-separated path to deduplicate.
+        Returns the SystemPathLocation entries with duplicates removed, keeping the first occurrence of each
+        location. Duplicates are decided on the expanded Location, case-insensitively and ignoring trailing
+        backslashes, so two entries that resolve to the same folder count as one. The kept entry retains its
+        stored form.
+    .PARAMETER Entries
+        The SystemPathLocation entries to deduplicate.
     .OUTPUTS
-        The path with duplicate locations removed.
+        The SystemPathLocation entries with duplicates removed.
     .EXAMPLE
-        Remove-DuplicatePathLocation -Path "C:\A;C:\B;C:\a\"
-        # -> "C:\A;C:\B"
+        Remove-DuplicatePathLocation -Entries $entries
     #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [AllowEmptyString()]
-        [string] $Path
+        [AllowEmptyCollection()]
+        [SystemPathLocation[]] $Entries
     )
 
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    $unique = $Path -split $systemPathSeparator `
-    | Where-Object { $_ -and $seen.Add($_.TrimEnd("\")) }
-
-    return $unique -join $systemPathSeparator
+    return @($Entries | Where-Object { $seen.Add($_.Location.TrimEnd("\")) })
 }
 
-function local:Get-PathScopeCounts {
+function local:Get-PathScopeStoredForms {
     <#
     .SYNOPSIS
-        Returns how often each location occurs on a persisted scope Path.
+        Maps each location on a persisted scope Path to the stored forms it occurs as.
     .DESCRIPTION
-        Reads the Path environment variable for the given scope and returns a case-insensitive dictionary
-        mapping each trailing-backslash-trimmed location key to the number of times it occurs. Used to tag
-        the effective Path's locations by consuming these counts in order.
+        Reads the Path environment variable for the given scope in its stored form and returns a
+        case-insensitive dictionary mapping each expanded, trailing-backslash-trimmed location key to a queue
+        of the stored (expandable) values it occurs as, in order. Used to tag the effective Path's locations
+        with their origin scope and recover the %...% reference each one is persisted as, by consuming the
+        queues in order. A location occurring more than once has one queue entry per occurrence.
     .PARAMETER Scope
         The scope to read, either "Machine" or "User".
     .OUTPUTS
-        A case-insensitive hashtable of location key to occurrence count.
+        A case-insensitive hashtable of location key to a queue of stored location values.
     #>
     [CmdletBinding()]
     param (
@@ -212,17 +261,20 @@ function local:Get-PathScopeCounts {
     )
 
     # a PowerShell hashtable literal is case-insensitive and yields $null (not an error) for absent keys
-    $counts = @{}
+    $storedForms = @{}
 
     $context = @{ $Scope = $true }
-    (Get-EnvironmentVariable @context -Name Path -ErrorAction SilentlyContinue) -split $systemPathSeparator `
+    (Get-EnvironmentVariable @context -Name Path -Expandable -ErrorAction SilentlyContinue) -split $systemPathSeparator `
     | Where-Object { $_ } `
     | ForEach-Object {
-        $key = $_.TrimEnd("\")
-        $counts[$key] = [int] $counts[$key] + 1
+        $key = [Environment]::ExpandEnvironmentVariables($_).TrimEnd("\")
+        if (-not $storedForms.ContainsKey($key)) {
+            $storedForms[$key] = [System.Collections.Generic.Queue[string]]::new()
+        }
+        $storedForms[$key].Enqueue($_)
     }
 
-    return $counts
+    return $storedForms
 }
 
 function local:Test-LocationCriteria {
@@ -306,11 +358,13 @@ function Get-SystemPath {
     .DESCRIPTION
         Retrieves the system Path, either for the current user, for the local machine
         or the system Path in effect in the current context.
-        The Path is returned as an array of SystemPathLocation objects by default, each carrying its Location and Scope.
+        The Path is returned as an array of SystemPathLocation objects by default, each carrying its Scope, its
+        Location and its ExpandableLocation - the stored form keeping any %...% reference, expanded in Location.
         For the effective Path (the default) each location is tagged with its origin scope: 'Machine' or 'User' when the
         location is on the corresponding persisted Path, or 'Process' when it is only on the current shell's Path.
         For -Machine or -User every location carries that scope.
-        If the -Join switch is specified, the Path is returned as a semicolon-separated string of locations instead.
+        If the -Join switch is specified, the Path is returned as a semicolon-separated string of the stored
+        (expandable) locations instead.
         The -Contains, -Filter and -Match criteria select locations. Multiple criteria, of the same kind or of
         different kinds, must all be satisfied. Without any criterion, every location is returned.
     .PARAMETER Machine
@@ -320,7 +374,8 @@ function Get-SystemPath {
     .PARAMETER Effective
         Default; if specified, the effective system Path is returned. The effective system Path is the Path in effect in the current shell.
     .PARAMETER Join
-        If specified, the system Path is returned as a semicolon-separated string. Otherwise, it is returned as an array of SystemPathLocation objects.
+        If specified, the system Path is returned as a semicolon-separated string of the stored (expandable) locations.
+        Otherwise, it is returned as an array of SystemPathLocation objects.
     .PARAMETER Contains
         Substrings, positional; only locations containing all of them are returned. Taken literally: wildcard and
         regex characters carry no meaning. Matching is case-insensitive and ignores trailing backslashes.
@@ -331,7 +386,8 @@ function Get-SystemPath {
         Regular expressions; only locations matching all of them are returned. Matching is case-insensitive.
         An invalid regular expression is a terminating error.
     .OUTPUTS
-        SystemPathLocation objects with a Location and a Scope property, or a semicolon-separated string when -Join is specified.
+        SystemPathLocation objects with a Scope, a Location and an ExpandableLocation property, or a
+        semicolon-separated string of the stored (expandable) locations when -Join is specified.
     .NOTES
         Alias: path
     .EXAMPLE
@@ -378,32 +434,42 @@ function Get-SystemPath {
 
     $allLocations =
     if ($Machine) {
-        (Get-EnvironmentVariable -Machine -Name Path) -split $systemPathSeparator `
+        # read the stored form so a %...% reference is preserved, then expand for Location
+        (Get-EnvironmentVariable -Machine -Name Path -Expandable -ErrorAction SilentlyContinue) -split $systemPathSeparator `
         | Where-Object { $_ } `
-        | ForEach-Object { [SystemPathLocation]::new("Machine", $_) }
+        | ForEach-Object { [SystemPathLocation]::new("Machine", $_, [Environment]::ExpandEnvironmentVariables($_)) }
     }
     elseif ($User) {
-        (Get-EnvironmentVariable -User -Name Path) -split $systemPathSeparator `
+        (Get-EnvironmentVariable -User -Name Path -Expandable -ErrorAction SilentlyContinue) -split $systemPathSeparator `
         | Where-Object { $_ } `
-        | ForEach-Object { [SystemPathLocation]::new("User", $_) }
+        | ForEach-Object { [SystemPathLocation]::new("User", $_, [Environment]::ExpandEnvironmentVariables($_)) }
     }
     else {
         # effective: the live shell Path, each location tagged with the persisted scope it originates from.
         # The process Path lists machine locations before user locations, so consume the machine occurrences
         # first, then user; a location on both scopes therefore appears once as Machine and once as User.
-        $machineRemaining = Get-PathScopeCounts -Scope Machine
-        $userRemaining = Get-PathScopeCounts -Scope User
+        # Windows expands the process block, so the stored %...% form is recovered from the originating scope;
+        # a process-only location has no persisted form and keeps the expanded one.
+        $machineRemaining = Get-PathScopeStoredForms -Scope Machine
+        $userRemaining = Get-PathScopeStoredForms -Scope User
 
         $env:PATH -split $systemPathSeparator `
         | Where-Object { $_ } `
         | ForEach-Object {
             $key = $_.TrimEnd("\")
-            $scope =
-            if ([int] $machineRemaining[$key] -gt 0) { $machineRemaining[$key]--; "Machine" }
-            elseif ([int] $userRemaining[$key] -gt 0) { $userRemaining[$key]--; "User" }
-            else { "Process" }
+            $scope = "Process"
+            $stored = $_
 
-            [SystemPathLocation]::new($scope, $_)
+            if ($machineRemaining[$key].Count -gt 0) {
+                $scope = "Machine"
+                $stored = $machineRemaining[$key].Dequeue()
+            }
+            elseif ($userRemaining[$key].Count -gt 0) {
+                $scope = "User"
+                $stored = $userRemaining[$key].Dequeue()
+            }
+
+            [SystemPathLocation]::new($scope, $stored, $_)
         }
     }
 
@@ -415,8 +481,9 @@ function Get-SystemPath {
 
     $selectedLocations = $allLocations | Where-Object { Test-LocationCriteria -Location $_.Location @criteria }
 
+    # -Join reproduces the stored form (ExpandableLocation), keeping %...% references
     return $Join `
-        ? (($selectedLocations | ForEach-Object { $_.Location }) -join $systemPathSeparator) `
+        ? (($selectedLocations | ForEach-Object { $_.ExpandableLocation }) -join $systemPathSeparator) `
         : $selectedLocations
 }
 
@@ -427,24 +494,25 @@ function local:Set-SystemPath {
     .SYNOPSIS
         Modifies the system Path.
     .DESCRIPTION
-        Sets the system Path to the specified path, either for the current user or for the local machine. 
-    .PARAMETER Path
-        Semiocolon separated path to set.
+        Sets the system Path to the given SystemPathLocation entries, either for the current user or for the
+        local machine. The entries' stored form (ExpandableLocation) is persisted, so a %...% reference is kept
+        as indirection; the Path is written as an expandable (REG_EXPAND_SZ) value.
+    .PARAMETER Entries
+        The SystemPathLocation entries to persist.
     .PARAMETER Machine
         If specified, the system Path for the local machine is used.
     .PARAMETER User
         If specified, the system Path for the current user is used.
     .EXAMPLE
-        Set-SystemPath -Path "C:\Windows;C:\Windows\System32"
+        Set-SystemPath -Entries $entries -Machine
     .EXAMPLE
-        Set-SystemPath -Path "C:\Windows;C:\Windows\System32" -Machine
-    .EXAMPLE
-        Set-SystemPath -Path "C:\Windows;C:\Windows\System32" -User
+        Set-SystemPath -Entries $entries -User
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory = $true)]
-        [string] $Path,
+        [AllowEmptyCollection()]
+        [SystemPathLocation[]] $Entries,
 
         [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
@@ -457,12 +525,10 @@ function local:Set-SystemPath {
 
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 
-    $params = @{
-        Name  = "Path"
-        Value = $Path
-    }
+    # persist the stored form so %...% references survive, as an expandable (REG_EXPAND_SZ) value
+    $value = ($Entries | ForEach-Object { $_.ExpandableLocation }) -join $systemPathSeparator
 
-    Set-EnvironmentVariable @context @params
+    Set-EnvironmentVariable @context -Name Path -Value $value -Expandable
 }
 
 function Add-SystemPathLocation {
@@ -513,21 +579,23 @@ function Add-SystemPathLocation {
     )
 
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }
+    $scope = $Machine ? "Machine" : "User"
 
-    $currentPath = Get-SystemPath @context -Join
-    $newPath = Add-PathLocation -Path $currentPath -Location $Location -First:$First
+    $currentEntries = @(Get-SystemPath @context)
+    $newEntries = Add-PathLocation -Entries $currentEntries -Location $Location -First:$First -Scope $scope
 
     # idempotent: nothing changed means the location is already present
-    if ($newPath -eq $currentPath) {
+    if ((Get-StoredPathString -Entries $newEntries) -eq (Get-StoredPathString -Entries $currentEntries)) {
         Write-Warning "Location is already on the system Path: '$Location'"
         return
     }
 
     if ($PSCmdlet.ShouldProcess($Location, "Add location to system Path")) {
-        Set-SystemPath @context -Path $newPath
+        Set-SystemPath @context -Entries $newEntries
 
         # enable new location immediately
-        $env:PATH = Add-PathLocation -Path "$env:PATH" -Location $Location -First:$First
+        $processEntries = Add-PathLocation -Entries (ConvertTo-PathEntries -Path "$env:PATH") -Location $Location -First:$First -Scope "Process"
+        $env:PATH = ($processEntries | ForEach-Object { $_.Location }) -join $systemPathSeparator
     }
 }
 
@@ -569,20 +637,21 @@ function Remove-SystemPathLocation {
 
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 
-    $currentPath = Get-SystemPath @context -Join
-    $newPath = Remove-PathLocation -Path $currentPath -Location $Location
+    $currentEntries = @(Get-SystemPath @context)
+    $newEntries = Remove-PathLocation -Entries $currentEntries -Location $Location
 
     # idempotent: nothing changed means the location is not present
-    if ($newPath -eq $currentPath) {
+    if ((Get-StoredPathString -Entries $newEntries) -eq (Get-StoredPathString -Entries $currentEntries)) {
         Write-Warning "Location is not on the system Path: '$Location'"
         return
     }
 
     if ($PSCmdlet.ShouldProcess($Location, "Remove location from system Path")) {
-        Set-SystemPath @context -Path $newPath
+        Set-SystemPath @context -Entries $newEntries
         # disable location immediately
         # TODO: remove only if not present in the other context
-        $env:PATH = Remove-PathLocation -Path "$env:PATH" -Location $Location
+        $processEntries = Remove-PathLocation -Entries (ConvertTo-PathEntries -Path "$env:PATH") -Location $Location
+        $env:PATH = ($processEntries | ForEach-Object { $_.Location }) -join $systemPathSeparator
     }
 }
 
@@ -636,31 +705,33 @@ function Remove-DuplicateSystemPathLocations {
 
     # clean both scopes when neither (or both) scope switches are given
     if ($Machine -eq $User) {
-        $machinePath = Get-SystemPath -Machine -Join
-        $userPath = Get-SystemPath -User -Join
+        $machineEntries = @(Get-SystemPath -Machine)
+        $userEntries = @(Get-SystemPath -User)
 
-        $machineDeduped = Remove-DuplicatePathLocation -Path $machinePath
-        $userDeduped = Remove-DuplicatePathLocation -Path $userPath
+        $machineDeduped = Remove-DuplicatePathLocation -Entries $machineEntries
+        $userDeduped = Remove-DuplicatePathLocation -Entries $userEntries
 
         # cross-scope: drop from the non-kept scope every location present in the kept scope
         if ($KeepUser) {
-            foreach ($location in ($userDeduped -split $systemPathSeparator)) {
-                if ($location) { $machineDeduped = Remove-PathLocation -Path $machineDeduped -Location $location }
+            foreach ($entry in $userDeduped) {
+                $machineDeduped = Remove-PathLocation -Entries $machineDeduped -Location $entry.Location
             }
         }
         else {
-            foreach ($location in ($machineDeduped -split $systemPathSeparator)) {
-                if ($location) { $userDeduped = Remove-PathLocation -Path $userDeduped -Location $location }
+            foreach ($entry in $machineDeduped) {
+                $userDeduped = Remove-PathLocation -Entries $userDeduped -Location $entry.Location
             }
         }
 
-        if ($machineDeduped -ne $machinePath -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system Path")) {
-            Set-SystemPath -Machine -Path $machineDeduped
+        if ((Get-StoredPathString -Entries $machineDeduped) -ne (Get-StoredPathString -Entries $machineEntries) `
+                -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system Path")) {
+            Set-SystemPath -Machine -Entries $machineDeduped
             $changed = $true
         }
 
-        if ($userDeduped -ne $userPath -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system Path")) {
-            Set-SystemPath -User -Path $userDeduped
+        if ((Get-StoredPathString -Entries $userDeduped) -ne (Get-StoredPathString -Entries $userEntries) `
+                -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system Path")) {
+            Set-SystemPath -User -Entries $userDeduped
             $changed = $true
         }
     }
@@ -668,18 +739,20 @@ function Remove-DuplicateSystemPathLocations {
         $context = $Machine ? @{ Machine = $true } : @{ User = $true }
         $scope = $Machine ? "machine" : "user"
 
-        $currentPath = Get-SystemPath @context -Join
-        $deduped = Remove-DuplicatePathLocation -Path $currentPath
+        $currentEntries = @(Get-SystemPath @context)
+        $deduped = Remove-DuplicatePathLocation -Entries $currentEntries
 
-        if ($deduped -ne $currentPath -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system Path")) {
-            Set-SystemPath @context -Path $deduped
+        if ((Get-StoredPathString -Entries $deduped) -ne (Get-StoredPathString -Entries $currentEntries) `
+                -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system Path")) {
+            Set-SystemPath @context -Entries $deduped
             $changed = $true
         }
     }
 
     # keep the current process Path free of duplicates too
     if ($changed) {
-        $env:PATH = Remove-DuplicatePathLocation -Path "$env:PATH"
+        $processEntries = Remove-DuplicatePathLocation -Entries (ConvertTo-PathEntries -Path "$env:PATH")
+        $env:PATH = ($processEntries | ForEach-Object { $_.Location }) -join $systemPathSeparator
     }
 }
 
@@ -729,30 +802,34 @@ function Move-SystemPathLocation {
         $target = @{ Machine = $true }; $targetName = "machine"
     }
 
-    $sourcePath = Get-SystemPath @source -Join
-    $newSource = Remove-PathLocation -Path $sourcePath -Location $Location
+    $sourceEntries = @(Get-SystemPath @source)
+    $key = [Environment]::ExpandEnvironmentVariables($Location).TrimEnd("\")
+    $moved = @($sourceEntries | Where-Object { $_.Location.TrimEnd("\") -ieq $key })
 
     # not on the source Path: nothing to move
-    if ($newSource -eq $sourcePath) {
-        $onTarget = (Get-SystemPath @target -Join) -split $systemPathSeparator `
-        | Where-Object { $_ -and $_.TrimEnd("\") -ieq $Location.TrimEnd("\") }
+    if ($moved.Count -eq 0) {
+        $onTarget = @(Get-SystemPath @target) | Where-Object { $_.Location.TrimEnd("\") -ieq $key }
 
         $reason = $onTarget ? "already on the $targetName Path" : "not on the $sourceName Path"
         Write-Warning "Nothing to move. reason: $reason, location: '$Location'"
         return
     }
 
-    $targetPath = Get-SystemPath @target -Join
-    $newTarget = Add-PathLocation -Path $targetPath -Location $Location -First:$false
+    $newSource = Remove-PathLocation -Entries $sourceEntries -Location $Location
+
+    $targetEntries = @(Get-SystemPath @target)
+    $onTarget = @($targetEntries | Where-Object { $_.Location.TrimEnd("\") -ieq $key })
+    # append the moved entry, keeping its stored (%...%) form, unless the target already has it
+    $newTarget = $onTarget.Count -gt 0 ? $targetEntries : (@($targetEntries) + @($moved[0]))
 
     if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system Path")) {
         return
     }
 
-    Set-SystemPath @source -Path $newSource
+    Set-SystemPath @source -Entries $newSource
 
-    if ($newTarget -ne $targetPath) {
-        Set-SystemPath @target -Path $newTarget
+    if ((Get-StoredPathString -Entries $newTarget) -ne (Get-StoredPathString -Entries $targetEntries)) {
+        Set-SystemPath @target -Entries $newTarget
     }
 }
 

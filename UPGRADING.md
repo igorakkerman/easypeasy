@@ -61,6 +61,10 @@ write the **canonical** name, never an alias.
 - **`Remove-EnvironmentVariable` deletes the registry value** instead of leaving an empty string.
 - **`Invoke-Elevated` (aliases `sudops`, `sups`) runs inline** via `sudo --inline` and raises a
   terminating error on failure or when sudo is unavailable.
+- **System Path keeps `%…%` references.** A persisted Path is read and written in its stored form and
+  saved as `REG_EXPAND_SZ`, so editing it no longer freezes `%SystemRoot%\system32` to its expanded
+  path. `SystemPathLocation` carries `ExpandableLocation` (stored) next to `Location` (expanded);
+  criteria still match on `Location`, but `Get-SystemPath -Join` now returns the stored form.
 
 ## Removed components — replace entirely
 

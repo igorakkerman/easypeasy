@@ -29,6 +29,85 @@ Describe 'Get-SystemPath' {
 
             Get-SystemPath -Join | Should -Be 'C:\A;C:\B'
         }
+
+        It 'reports the same stored and expanded location, the process Path being expanded' {
+            $env:PATH = 'C:\A'
+
+            $result = Get-SystemPath
+
+            $result.ExpandableLocation | Should -Be 'C:\A'
+            $result.Location | Should -Be 'C:\A'
+        }
+    }
+
+    Context 'expandable locations on the effective Path' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Windows\System32' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '%windir%\system32\test' }
+            # Windows expands the process block, so the persisted %...% reference does not appear in it
+            $env:PATH = "C:\Windows\System32;$env:windir\system32\test;C:\OnlyProcess"
+        }
+
+        It 'recovers the stored %...% form from the originating scope' {
+            $result = Get-SystemPath -Contains 'system32\test'
+
+            $result.Scope | Should -Be 'User'
+            $result.ExpandableLocation | Should -Be '%windir%\system32\test'
+            $result.Location | Should -Be "$env:windir\system32\test"
+        }
+
+        It 'keeps a process-only location as its own stored form' {
+            $result = Get-SystemPath | Where-Object { $_.Location -eq 'C:\OnlyProcess' }
+
+            $result.Scope | Should -Be 'Process'
+            $result.ExpandableLocation | Should -Be 'C:\OnlyProcess'
+        }
+
+        It 'leaves a location persisted without a reference unchanged' {
+            $result = Get-SystemPath | Where-Object { $_.Location -eq 'C:\Windows\System32' }
+
+            $result.Scope | Should -Be 'Machine'
+            $result.ExpandableLocation | Should -Be 'C:\Windows\System32'
+        }
+    }
+
+    Context 'expandable locations in a persisted scope' {
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } {
+                '%SystemRoot%\S32;C:\Plain'
+            }
+        }
+
+        It 'keeps the stored %...% reference in ExpandableLocation' {
+            (Get-SystemPath -Machine).ExpandableLocation |
+                Should -Be @('%SystemRoot%\S32', 'C:\Plain')
+        }
+
+        It 'expands the reference in Location' {
+            (Get-SystemPath -Machine).Location |
+                Should -Be @("$env:SystemRoot\S32", 'C:\Plain')
+        }
+
+        It 'reads the stored form, passing -Expandable' {
+            Get-SystemPath -Machine | Out-Null
+
+            Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -Times 1 -Exactly `
+                -ParameterFilter { $Machine -and $Expandable }
+        }
+
+        It 'joins the stored form when -Join is used' {
+            Get-SystemPath -Machine -Join | Should -Be '%SystemRoot%\S32;C:\Plain'
+        }
+
+        It 'selects on the expanded location' {
+            (Get-SystemPath -Machine -Contains 'S32').ExpandableLocation |
+                Should -Be '%SystemRoot%\S32'
+        }
     }
 
     Context '-Filter' {

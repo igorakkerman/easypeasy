@@ -1,5 +1,6 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
+    . "$PSScriptRoot/PathEntries.ps1"
 }
 
 Describe 'Add-SystemPathLocation' {
@@ -8,8 +9,8 @@ Describe 'Add-SystemPathLocation' {
 
         BeforeEach {
             $script:originalPath = $env:PATH
-            Mock -ModuleName easypeasy Get-SystemPath { 'C:\Old' }
-            Mock -ModuleName easypeasy Add-PathLocation { 'C:\Old;C:\New' }
+            $script:currentEntries = New-PathEntries 'C:\Old'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
             Mock -ModuleName easypeasy Set-SystemPath { }
         }
 
@@ -19,7 +20,7 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\New' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Path -eq 'C:\Old;C:\New' -and $User }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old;C:\New' -and $User }
         }
 
         It 'does not persist under -WhatIf' {
@@ -47,7 +48,8 @@ Describe 'Add-SystemPathLocation' {
         BeforeEach {
             $script:originalPath = $env:PATH
             # Real Add-PathLocation runs; the location is already present.
-            Mock -ModuleName easypeasy Get-SystemPath { 'C:\Exists' }
+            $script:currentEntries = New-PathEntries 'C:\Exists'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
             Mock -ModuleName easypeasy Set-SystemPath { }
         }
 
@@ -74,7 +76,8 @@ Describe 'Add-SystemPathLocation' {
         BeforeEach {
             $script:originalPath = $env:PATH
             # Real Add-PathLocation runs; the location is already present in the middle.
-            Mock -ModuleName easypeasy Get-SystemPath { 'C:\A;C:\Exists;C:\B' }
+            $script:currentEntries = New-PathEntries 'C:\A;C:\Exists;C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
             Mock -ModuleName easypeasy Set-SystemPath { }
         }
 
@@ -84,7 +87,7 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\Exists' -First -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Path -eq 'C:\Exists;C:\A;C:\B' -and $User }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Exists;C:\A;C:\B' -and $User }
         }
 
         It 'does not throw for an existing location' {
@@ -96,7 +99,56 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\Exists' -User -Front
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Path -eq 'C:\Exists;C:\A;C:\B' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Exists;C:\A;C:\B' }
+        }
+    }
+
+    Context 'expandable locations' {
+
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            Mock -ModuleName easypeasy Set-SystemPath { }
+        }
+
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'stores a %...% location as the reference, unexpanded' {
+            $script:currentEntries = New-PathEntries 'C:\Old'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
+
+            Add-SystemPathLocation -Location '%SystemRoot%\Tools' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old;%SystemRoot%\Tools' }
+        }
+
+        It 'expands a %...% location into the entry Location' {
+            $script:currentEntries = New-PathEntries 'C:\Old'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
+
+            Add-SystemPathLocation -Location '%SystemRoot%\Tools' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Entries[-1].Location -eq "$env:SystemRoot\Tools" }
+        }
+
+        It 'keeps an existing entry stored form when another location is added' {
+            $script:currentEntries = New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
+
+            Add-SystemPathLocation -Location 'C:\New' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq '%SystemRoot%\S32;C:\New' }
+        }
+
+        It 'recognizes an existing %...% entry by its expanded location' {
+            $script:currentEntries = New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
+
+            Add-SystemPathLocation -Location 'C:\WINDOWS\S32' -User -WarningAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
     }
 }

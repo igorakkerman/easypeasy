@@ -1,5 +1,6 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
+    . "$PSScriptRoot/PathEntries.ps1"
 }
 
 Describe 'Remove-DuplicateSystemPathLocations' {
@@ -14,26 +15,28 @@ Describe 'Remove-DuplicateSystemPathLocations' {
     Context 'both scopes (default)' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A;C:\B;C:\A' }
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\B;C:\C;C:\C' }
+            $script:machineEntries = New-PathEntries 'C:\A;C:\B;C:\A' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\B;C:\C;C:\C'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
         }
 
         It 'dedups each scope and keeps cross-scope duplicates on the machine Path by default' {
             Remove-DuplicateSystemPathLocations
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and $Path -eq 'C:\A;C:\B' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\B' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and $Path -eq 'C:\C' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\C' }
         }
 
         It 'keeps cross-scope duplicates on the user Path with -KeepUser' {
             Remove-DuplicateSystemPathLocations -KeepUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and $Path -eq 'C:\A' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and $Path -eq 'C:\B;C:\C' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\C' }
         }
 
         It 'does not persist under -WhatIf' {
@@ -50,8 +53,10 @@ Describe 'Remove-DuplicateSystemPathLocations' {
     Context 'idempotent when there are no duplicates' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A;C:\B' }
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\C;C:\D' }
+            $script:machineEntries = New-PathEntries 'C:\A;C:\B' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\C;C:\D'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
         }
 
         It 'does not persist when nothing changes' {
@@ -63,23 +68,39 @@ Describe 'Remove-DuplicateSystemPathLocations' {
     Context 'single scope' {
 
         It 'dedups only the machine Path with -Machine' {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A;C:\B;C:\A' }
+            $script:machineEntries = New-PathEntries 'C:\A;C:\B;C:\A' -Scope Machine
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
 
             Remove-DuplicateSystemPathLocations -Machine
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and $Path -eq 'C:\A;C:\B' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\B' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly `
                 -ParameterFilter { $User }
         }
 
         It 'matches case-insensitively and ignores trailing backslashes' {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\A;C:\a\;C:\B' }
+            $script:userEntries = New-PathEntries 'C:\A;C:\a\;C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
 
             Remove-DuplicateSystemPathLocations -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and $Path -eq 'C:\A;C:\B' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\B' }
+        }
+    }
+
+    Context 'expandable locations' {
+
+        It 'treats a %...% entry and its expanded twin as duplicates, keeping the first' {
+            $script:userEntries = @(New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32') +
+                @(New-PathEntries 'C:\WINDOWS\S32;C:\B')
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+
+            Remove-DuplicateSystemPathLocations -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq '%SystemRoot%\S32;C:\B' }
         }
     }
 }

@@ -1,5 +1,6 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
+    . "$PSScriptRoot/PathEntries.ps1"
 }
 
 Describe 'Move-SystemPathLocation' {
@@ -14,17 +15,19 @@ Describe 'Move-SystemPathLocation' {
     Context 'moving from machine to user (-ToUser)' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A;C:\X' }
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\B' }
+            $script:machineEntries = New-PathEntries 'C:\A;C:\X' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
         }
 
         It 'removes from the machine Path and adds to the user Path' {
             Move-SystemPathLocation 'C:\X' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and $Path -eq 'C:\A' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and $Path -eq 'C:\B;C:\X' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\X' }
         }
 
         It 'does not persist under -WhatIf' {
@@ -36,32 +39,36 @@ Describe 'Move-SystemPathLocation' {
     Context 'moving from user to machine (-ToMachine)' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\B;C:\X' }
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A' }
+            $script:userEntries = New-PathEntries 'C:\B;C:\X'
+            $script:machineEntries = New-PathEntries 'C:\A' -Scope Machine
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
         }
 
         It 'removes from the user Path and adds to the machine Path' {
             Move-SystemPathLocation 'C:\X' -ToMachine
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and $Path -eq 'C:\B' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and $Path -eq 'C:\A;C:\X' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\X' }
         }
     }
 
     Context 'when the location is on both scopes' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A;C:\X' }
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\X' }
+            $script:machineEntries = New-PathEntries 'C:\A;C:\X' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\X'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
         }
 
         It 'removes from the source and leaves the target unchanged' {
             Move-SystemPathLocation 'C:\X' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and $Path -eq 'C:\A' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly `
                 -ParameterFilter { $User }
         }
@@ -70,8 +77,10 @@ Describe 'Move-SystemPathLocation' {
     Context 'when the location is not on the source' {
 
         It 'warns and does not persist when already on the target' {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A' }
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\X' }
+            $script:machineEntries = New-PathEntries 'C:\A' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\X'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
 
             Move-SystemPathLocation 'C:\X' -ToUser -WarningVariable warning -WarningAction SilentlyContinue
 
@@ -80,13 +89,47 @@ Describe 'Move-SystemPathLocation' {
         }
 
         It 'warns and does not persist when the location is on neither Path' {
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { 'C:\A' }
-            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { 'C:\B' }
+            $script:machineEntries = New-PathEntries 'C:\A' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
 
             Move-SystemPathLocation 'C:\Z' -ToUser -WarningVariable warning -WarningAction SilentlyContinue
 
             $warning | Should -Match 'not on the machine Path'
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+    }
+
+    Context 'expandable locations' {
+
+        BeforeEach {
+            $script:machineEntries = @(New-PathEntries 'C:\A' -Scope Machine) +
+                @(New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32' -Scope Machine)
+            $script:userEntries = New-PathEntries 'C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+        }
+
+        It 'keeps the stored %...% form on the target Path' {
+            Move-SystemPathLocation 'C:\WINDOWS\S32' -ToUser
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;%SystemRoot%\S32' }
+        }
+
+        It 'removes the entry from the source Path' {
+            Move-SystemPathLocation 'C:\WINDOWS\S32' -ToUser
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
+        }
+
+        It 'accepts the stored %...% form as the location to move' {
+            Move-SystemPathLocation '%SystemRoot%\S32' -ToUser
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;%SystemRoot%\S32' }
         }
     }
 }

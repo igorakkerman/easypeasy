@@ -40,6 +40,20 @@ Process    C:\Program Files\PowerShell\7
 `path` is an alias for `Get-SystemPath`, which you should use in scripts. \
 Each location is tagged with its **scope**: `Machine`, `User`, or `Process` — the last for entries present only in the current shell's Path and not persisted.
 
+A persisted location keeping a `%…%` reference is listed with its stored form underneath the expanded one:
+
+```powershell
+> path -Machine
+
+Scope      Location
+-----      --------
+Machine    C:\WINDOWS\system32
+           %SystemRoot%\system32
+Machine    C:\Program Files\Git\bin
+```
+
+Every location carries both: `Location` expanded, `ExpandableLocation` as stored. Editing the Path keeps the reference intact, and `-Join` returns the stored form.
+
 #### Find a folder in the system Path
 
 ```powershell
