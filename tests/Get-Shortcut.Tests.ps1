@@ -27,17 +27,17 @@ Describe 'Get-Shortcut' {
     It 'returns every readable field of the shortcut' {
         $result = Get-Shortcut -Shortcut $lnk
 
-        $result.Shortcut           | Should -Be $lnk
+        $result.Location           | Should -Be $lnk
         $result.Target             | Should -Be 'C:\Windows\notepad.exe'
         $result.Arguments          | Should -Be '/A C:\temp\file.txt'
-        $result.StartIn            | Should -Be 'C:\temp'
+        $result.RunLocation        | Should -Be 'C:\temp'
         $result.Description        | Should -Be 'Edit file'
         $result.Icon.Value         | Should -Be 'C:\Windows\notepad.exe,0'
         $result.Icon.Location      | Should -Be 'C:\Windows\notepad.exe'
         $result.Icon.Index         | Should -Be 0
         $result.Hotkey             | Should -Be 'Alt+Ctrl+N'
         $result.WindowStyle        | Should -Be 'Maximized'
-        $result.RunAsAdministrator | Should -BeFalse
+        $result.Elevated           | Should -BeFalse
     }
 
     It 'reports the run-as-administrator flag' {
@@ -47,13 +47,13 @@ Describe 'Get-Shortcut' {
         $shortcut.Save()
 
         try {
-            (Get-Shortcut -Shortcut $elevated).RunAsAdministrator | Should -BeFalse
+            (Get-Shortcut -Shortcut $elevated).Elevated | Should -BeFalse
 
             InModuleScope easypeasy -Parameters @{ Lnk = $elevated } {
                 Set-ShortcutRunAsAdministrator -Shortcut $Lnk
             }
 
-            (Get-Shortcut -Shortcut $elevated).RunAsAdministrator | Should -BeTrue
+            (Get-Shortcut -Shortcut $elevated).Elevated | Should -BeTrue
         }
         finally {
             Remove-Item $elevated -Force -ErrorAction SilentlyContinue

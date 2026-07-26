@@ -1,7 +1,7 @@
 class Shortcut {
 
     # Full path of the shortcut's own .lnk file (WScript.Shell FullName).
-    [string] $Shortcut
+    [string] $Location
 
     # Location of the file or folder the shortcut opens: its target.
     [string] $Target
@@ -10,7 +10,7 @@ class Shortcut {
     [string] $Arguments
 
     # Location the target runs in, shown as "Start in" in the shortcut properties.
-    [string] $StartIn
+    [string] $RunLocation
 
     # Free-text description, shown as the shortcut's comment / tooltip.
     [string] $Description
@@ -25,7 +25,7 @@ class Shortcut {
     [ShortcutWindowStyle] $WindowStyle
 
     # Whether the target launches elevated, ticked as "Run as administrator" in the advanced properties.
-    [bool] $RunAsAdministrator
+    [bool] $Elevated
 
     <#
     .SYNOPSIS
@@ -36,7 +36,7 @@ class Shortcut {
         The icon is a ShortcutIcon record, or $null when the shortcut carries no icon.
         The write-only RelativePath field is left out, as it cannot be read back.
     .EXAMPLE
-        $shortcut = [Shortcut] @{ Shortcut = "C:\Users\me\Desktop\MyApp.lnk"; Target = "C:\Program Files\MyApp\MyApp.exe" }
+        $shortcut = [Shortcut] @{ Location = "C:\Users\me\Desktop\MyApp.lnk"; Target = "C:\Program Files\MyApp\MyApp.exe" }
     #>
 }
 
@@ -120,7 +120,7 @@ function Get-Shortcut {
         The location of the shortcut to read.
 
     .OUTPUTS
-        Shortcut record with a Shortcut, Target, Arguments, StartIn, Description, Icon, Hotkey, WindowStyle and RunAsAdministrator property.
+        Shortcut record with a Location, Target, Arguments, RunLocation, Description, Icon, Hotkey, WindowStyle and Elevated property.
         Icon is a ShortcutIcon record with a Value, Location and Index property, or $null when the shortcut carries no icon.
         WindowStyle is a ShortcutWindowStyle: Normal, Maximized or Minimized.
 
@@ -136,15 +136,15 @@ function Get-Shortcut {
     $obj = $wshShell.CreateShortcut($Shortcut)
 
     return [Shortcut] @{
-        Shortcut           = $obj.FullName
+        Location           = $obj.FullName
         Target             = $obj.TargetPath
         Arguments          = $obj.Arguments
-        StartIn            = $obj.WorkingDirectory
+        RunLocation        = $obj.WorkingDirectory
         Description        = $obj.Description
         Icon               = ConvertTo-ShortcutIcon -Value $obj.IconLocation
         Hotkey             = $obj.Hotkey
         WindowStyle        = $obj.WindowStyle
-        RunAsAdministrator = Test-RunAsAdministrator -Shortcut $Shortcut
+        Elevated           = Test-RunAsAdministrator -Shortcut $Shortcut
     }
 }
 

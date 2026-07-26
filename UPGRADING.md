@@ -76,9 +76,9 @@ write the **canonical** name, never an alias.
 
 ## New in v2 — prefer where applicable
 
-- `Get-Shortcut` — every readable field of a shortcut as one record: `Shortcut`, `Target`, `Arguments`,
-  `StartIn`, `Description`, `Icon` (`Value`, `Location`, `Index`, or `$null` when there is no icon),
-  `Hotkey`, `WindowStyle` and `RunAsAdministrator`.
+- `Get-Shortcut` — every readable field of a shortcut as one record: `Location`, `Target`, `Arguments`,
+  `RunLocation`, `Description`, `Icon` (`Value`, `Location`, `Index`, or `$null` when there is no icon),
+  `Hotkey`, `WindowStyle` and `Elevated`.
 - `Get-Environment` — environment variables as records (scope, name, value); both scopes by default,
   or `-Machine` / `-User`.
 - `Test-Elevated` — whether the current session is elevated.

@@ -200,15 +200,15 @@ in a specific scope (machine 🅰️ or user) \
 ```powershell
 > Get-Shortcut "C:\Users\me\Desktop\MyApp.lnk"
 
-Shortcut           : C:\Users\me\Desktop\MyApp.lnk
+Location           : C:\Users\me\Desktop\MyApp.lnk
 Target             : C:\Program Files\MyApp\MyApp.exe
 Arguments          : --profile Default
-StartIn            : C:\Program Files\MyApp
+RunLocation        : C:\Program Files\MyApp
 Description        : My favourite app
 Icon               : C:\Program Files\MyApp\MyApp.exe,3
 Hotkey             : Alt+Ctrl+M
 WindowStyle        : Maximized
-RunAsAdministrator : False
+Elevated           : False
 ```
 
 `Icon` splits into its parts, and is `$null` when the shortcut carries no icon:

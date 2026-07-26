@@ -19,7 +19,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Get-StartMenuProgramsPath` renamed to `Get-StartMenuProgramsLocation`.
 
 ### Shortcut
-- **Added:** `Get-Shortcut` — every readable field of a shortcut as one record: `Shortcut`, `Target`, `Arguments`, `StartIn`, `Description`, `Icon`, `Hotkey`, `WindowStyle`, `RunAsAdministrator`.
+- **Added:** `Get-Shortcut` — every readable field of a shortcut as one record: `Location`, `Target`, `Arguments`, `RunLocation`, `Description`, `Icon`, `Hotkey`, `WindowStyle`, `Elevated`.
 - **Added:** `Icon` as `ShortcutIcon` record — combined `Value`, plus `Location` and `Index`; `$null` when shortcut carries no icon.
 - **Added:** `WindowStyle` as `ShortcutWindowStyle` enum — `Normal`, `Maximized`, `Minimized`.
 - **Removed:** `Get-ShortcutIconLocation` — read `Get-Shortcut` instead.

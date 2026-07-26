@@ -47,7 +47,7 @@
           <ListEntry>
             <ListItems>
               <ListItem>
-                <PropertyName>Shortcut</PropertyName>
+                <PropertyName>Location</PropertyName>
               </ListItem>
               <ListItem>
                 <PropertyName>Target</PropertyName>
@@ -56,7 +56,7 @@
                 <PropertyName>Arguments</PropertyName>
               </ListItem>
               <ListItem>
-                <PropertyName>StartIn</PropertyName>
+                <PropertyName>RunLocation</PropertyName>
               </ListItem>
               <ListItem>
                 <PropertyName>Description</PropertyName>
@@ -72,7 +72,7 @@
                 <PropertyName>WindowStyle</PropertyName>
               </ListItem>
               <ListItem>
-                <PropertyName>RunAsAdministrator</PropertyName>
+                <PropertyName>Elevated</PropertyName>
               </ListItem>
             </ListItems>
           </ListEntry>
