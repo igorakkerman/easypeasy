@@ -133,13 +133,8 @@ function Get-EnvironmentVariable() {
     }
 
     if ($null -eq $value) {
-        $errorRecord = [System.Management.Automation.ErrorRecord]::new(
-            [System.Management.Automation.ItemNotFoundException]::new("Environment variable not found: $Name"),
-            "EnvironmentVariableNotFound",
-            [System.Management.Automation.ErrorCategory]::ObjectNotFound,
-            $Name
-        )
-        $PSCmdlet.WriteError($errorRecord)
+        Write-Error -Exception ([System.Management.Automation.ItemNotFoundException]::new("Environment variable not found: $Name")) `
+            -ErrorId "EnvironmentVariableNotFound" -Category ObjectNotFound -TargetObject $Name
         return
     }
 

@@ -34,6 +34,15 @@ Describe 'Get-EnvironmentVariable' {
                 [Environment]::SetEnvironmentVariable('EASYPEASY_TEST[1]', $null)
             }
         }
+
+        It 'reports the missing variable as one categorized error' {
+            Get-EnvironmentVariable EASYPEASY_MISSING_XYZ -ErrorVariable variableError -ErrorAction SilentlyContinue
+
+            $variableError.Count | Should -Be 1
+            $variableError[0].CategoryInfo.Category | Should -Be 'ObjectNotFound'
+            $variableError[0].FullyQualifiedErrorId | Should -BeLike 'EnvironmentVariableNotFound,*'
+            $variableError[0].TargetObject | Should -Be 'EASYPEASY_MISSING_XYZ'
+        }
     }
 
     Context 'machine scope' {
