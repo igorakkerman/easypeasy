@@ -17,6 +17,23 @@ Describe 'Get-EnvironmentVariable' {
             { Get-EnvironmentVariable EASYPEASY_MISSING_XYZ -ErrorAction Stop } |
                 Should -Throw '*not found*'
         }
+
+        It 'takes the name literally, so a wildcard matches nothing' {
+            $env:EASYPEASY_TEST = 'hello'
+
+            { Get-EnvironmentVariable 'EASYPEASY_TES?' -ErrorAction Stop } | Should -Throw '*not found*'
+            { Get-EnvironmentVariable 'EASYPEASY_*' -ErrorAction Stop } | Should -Throw '*not found*'
+        }
+
+        It 'reads a variable whose name carries wildcard characters' {
+            [Environment]::SetEnvironmentVariable('EASYPEASY_TEST[1]', 'bracketed')
+            try {
+                Get-EnvironmentVariable 'EASYPEASY_TEST[1]' | Should -Be 'bracketed'
+            }
+            finally {
+                [Environment]::SetEnvironmentVariable('EASYPEASY_TEST[1]', $null)
+            }
+        }
     }
 
     Context 'machine scope' {

@@ -46,6 +46,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `Sync-SystemPath` and alias `syncpath` — rebuild system Path of current shell from persisted Path, for a change made outside easypeasy.
 - **Added:** `Get-Environment` — returns environment variables as records carrying scope, name and value; both scopes by default, or `-Machine` / `-User`.
 - **Fixed:** `Remove-EnvironmentVariable` deletes registry value instead of leaving empty tombstone.
+- **Fixed:** `Get-EnvironmentVariable` takes `-Name` literally in effective scope, no longer matching wildcards or missing names carrying `[` and `]`.
 - **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error.
 - **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` force inline execution in the current terminal via `sudo --inline`, and report a terminating error on failure.
 - **Added:** `Invoke-Elevated` reports terminating error when sudo not available.

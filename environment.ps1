@@ -129,7 +129,7 @@ function Get-EnvironmentVariable() {
         [Environment]::GetEnvironmentVariable($Name, [System.EnvironmentVariableTarget]::User)
     }
     else {
-        (Get-Item env:$Name -ErrorAction SilentlyContinue)?.Value
+        [Environment]::GetEnvironmentVariable($Name)
     }
 
     if ($null -eq $value) {
