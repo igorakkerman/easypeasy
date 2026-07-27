@@ -71,6 +71,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Assert-Administrator` renamed to `Assert-Elevation`.
 - **Added:** `Test-Elevation` — returns whether the current session is elevated.
 - **Added:** Error id, category and target on every reported error.
+- **Changed:** `Backup-SystemPath` returns location of backup file.
 - **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` take `-Machine`, `-User` and `-Effective` as parameter sets, matching `Get-SystemPath`.
 - **Changed:** `Remove-DuplicateSystemPathLocations` rejects `-KeepMachine` / `-KeepUser` next to a single scope, instead of ignoring them.
 - **Fixed:** `Stop-Explorer` treats absent Explorer process as success.

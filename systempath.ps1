@@ -45,21 +45,30 @@ class SystemPathLocation {
 }
 
 function Backup-SystemPath {
-    <# 
+    <#
     .SYNOPSIS
         Backs up the system Path to a file in the temp folder.
     .DESCRIPTION
-        Backs up the system Path to a file in the temp folder.
+        Writes the Path in effect in the current shell - the expanded, effective $env:PATH, not the
+        persisted machine and user Paths - to a timestamped file in the temp folder, and returns the
+        location of that file. Every write to a scope Path takes one of these first.
+    .OUTPUTS
+        string - Location of the backup file. Nothing under -WhatIf.
     .EXAMPLE
         Backup-SystemPath
+    .EXAMPLE
+        $backup = Backup-SystemPath
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([string])]
     param ()
-    
+
     $backupFile = "$env:TEMP\PATH-$(Get-Timestamp).txt"
 
     if ($PSCmdlet.ShouldProcess($backupFile, "Backup system Path")) {
         $env:PATH > $backupFile
+
+        return $backupFile
     }
 }
 
@@ -580,7 +589,8 @@ function local:Set-SystemPath {
         [switch] $User
     )
 
-    Backup-SystemPath
+    # the backup location goes to the caller of Backup-SystemPath, not into this function's output
+    Backup-SystemPath | Out-Null
 
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 

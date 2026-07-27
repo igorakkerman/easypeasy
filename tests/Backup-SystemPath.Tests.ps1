@@ -29,8 +29,16 @@ Describe 'Backup-SystemPath' {
         (Get-Content $backup -Raw).Trim() | Should -Be $env:PATH
     }
 
+    It 'returns the location of the backup file' {
+        Backup-SystemPath | Should -Be (Join-Path $tempDir 'PATH-STAMP.txt')
+    }
+
     It 'writes no file under -WhatIf' {
         Backup-SystemPath -WhatIf
         Join-Path $tempDir 'PATH-STAMP.txt' | Should -Not -Exist
+    }
+
+    It 'returns nothing under -WhatIf' {
+        Backup-SystemPath -WhatIf | Should -BeNullOrEmpty
     }
 }

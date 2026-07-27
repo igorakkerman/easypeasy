@@ -46,6 +46,15 @@ Describe 'Set-SystemPath' {
             Should -Invoke -ModuleName easypeasy Backup-SystemPath -Times 1 -Exactly
         }
 
+        It 'keeps the backup location out of its own output' {
+            Mock -ModuleName easypeasy Backup-SystemPath { 'C:\Temp\PATH-STAMP.txt' }
+            $entries = New-PathEntries 'C:\A'
+
+            $result = InModuleScope easypeasy -Parameters @{ e = $entries } { Set-SystemPath -Entries $e -User }
+
+            $result | Should -BeNullOrEmpty
+        }
+
         It 'targets the machine scope with -Machine' {
             $entries = New-PathEntries 'C:\A' -Scope Machine
 
