@@ -22,6 +22,13 @@ Describe 'Remove-StartMenuShortcut' {
                 -ParameterFilter { $LiteralPath -eq "$userPrograms\Foo.lnk" }
         }
 
+        It 'takes the shortcut name positionally' {
+            Remove-StartMenuShortcut 'Foo'
+
+            Should -Invoke -ModuleName easypeasy Remove-Item -Times 1 -Exactly `
+                -ParameterFilter { $LiteralPath -eq "$userPrograms\Foo.lnk" }
+        }
+
         It 'uses -Folder for the containing folder when given' {
             Remove-StartMenuShortcut -Name 'Foo' -Folder 'Bar'
 

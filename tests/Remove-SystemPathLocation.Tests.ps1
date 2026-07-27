@@ -23,6 +23,13 @@ Describe 'Remove-SystemPathLocation' {
                 -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old' -and $User }
         }
 
+        It 'takes the location positionally' {
+            Remove-SystemPathLocation 'C:\Gone' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old' }
+        }
+
         It 'does not persist under -WhatIf' {
             Remove-SystemPathLocation -Location 'C:\Gone' -User -WhatIf
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly

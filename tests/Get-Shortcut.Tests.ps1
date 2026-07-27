@@ -24,6 +24,10 @@ Describe 'Get-Shortcut' {
         (Get-Shortcut -Location $lnk).GetType().Name | Should -Be 'Shortcut'
     }
 
+    It 'takes the shortcut location positionally' {
+        (Get-Shortcut $lnk).Location | Should -Be $lnk
+    }
+
     It 'returns every readable field of the shortcut' {
         $result = Get-Shortcut -Location $lnk
 

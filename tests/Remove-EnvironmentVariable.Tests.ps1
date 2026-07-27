@@ -20,6 +20,11 @@ Describe 'Remove-EnvironmentVariable' {
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
         }
 
+        It 'takes the variable name positionally' {
+            Remove-EnvironmentVariable EASYPEASY_TEST -User
+            [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
+        }
+
         It 'deletes the registry value instead of leaving an empty tombstone' {
             Remove-EnvironmentVariable -Name EASYPEASY_TEST -User
             (Get-Item 'HKCU:\Environment').GetValueNames() | Should -Not -Contain 'EASYPEASY_TEST'

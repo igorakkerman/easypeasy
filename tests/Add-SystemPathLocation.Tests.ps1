@@ -23,6 +23,13 @@ Describe 'Add-SystemPathLocation' {
                 -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old;C:\New' -and $User }
         }
 
+        It 'takes the location positionally' {
+            Add-SystemPathLocation 'C:\New' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old;C:\New' }
+        }
+
         It 'does not persist under -WhatIf' {
             Add-SystemPathLocation -Location 'C:\New' -User -WhatIf
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly

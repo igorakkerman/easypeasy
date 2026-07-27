@@ -30,6 +30,13 @@ Describe 'Move-SystemPathLocation' {
                 -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\X' }
         }
 
+        It 'takes the location positionally' {
+            Move-SystemPathLocation 'C:\X' -ToUser
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\X' }
+        }
+
         It 'does not persist under -WhatIf' {
             Move-SystemPathLocation 'C:\X' -ToUser -WhatIf
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly

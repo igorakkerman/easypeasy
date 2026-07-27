@@ -13,6 +13,11 @@ Describe 'Get-EnvironmentVariable' {
             Get-EnvironmentVariable EASYPEASY_TEST | Should -Be 'hello'
         }
 
+        It 'takes the variable name positionally' {
+            $env:EASYPEASY_TEST = 'hello'
+            Get-EnvironmentVariable EASYPEASY_TEST | Should -Be (Get-EnvironmentVariable -Name EASYPEASY_TEST)
+        }
+
         It 'errors when the variable is not set' {
             { Get-EnvironmentVariable EASYPEASY_MISSING_XYZ -ErrorAction Stop } |
                 Should -Throw '*not found*'

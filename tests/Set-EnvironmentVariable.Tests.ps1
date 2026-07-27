@@ -21,6 +21,11 @@ Describe 'Set-EnvironmentVariable' {
             $env:EASYPEASY_TEST | Should -Be '42'
         }
 
+        It 'takes the variable name and value positionally' {
+            Set-EnvironmentVariable EASYPEASY_TEST '42' -User
+            [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -Be '42'
+        }
+
         It 'does not set the variable under -WhatIf' {
             Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '42' -User -WhatIf
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'User') | Should -BeNullOrEmpty
