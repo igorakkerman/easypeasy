@@ -1,20 +1,20 @@
-function Test-Elevation {
+function Test-Elevated {
     <#
     .SYNOPSIS
         Tests whether the current session runs as administrator.
 
     .DESCRIPTION
         Returns whether the current session is elevated, so a caller can offer an unelevated path
-        instead of failing. Assert-Elevation reports an error instead.
+        instead of failing. Assert-Elevated reports an error instead.
 
     .OUTPUTS
         Boolean indicating whether the current session runs as administrator.
 
     .EXAMPLE
-        Test-Elevation
+        Test-Elevated
 
     .EXAMPLE
-        if (-not (Test-Elevation)) { Invoke-Elevated Restart-Service -Name Spooler }
+        if (-not (Test-Elevated)) { Invoke-Elevated Restart-Service -Name Spooler }
     #>
     [CmdletBinding()]
     [OutputType([bool])]
@@ -24,22 +24,22 @@ function Test-Elevation {
     return $identity.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Assert-Elevation {
+function Assert-Elevated {
     <#
     .SYNOPSIS
         Requires the current session to run as administrator.
 
     .DESCRIPTION
         Reports a terminating error when the current session is not elevated, ending a command that has
-        no unelevated path. An elevated session passes silently. Test-Elevation returns the state instead.
+        no unelevated path. An elevated session passes silently. Test-Elevated returns the state instead.
 
     .EXAMPLE
-        Assert-Elevation
+        Assert-Elevated
     #>
     [CmdletBinding()]
     param ()
 
-    if (! (Test-Elevation)) {
+    if (! (Test-Elevated)) {
         Write-Error "Operation requires administrator privileges." `
             -ErrorId "ElevationRequired" `
             -Category PermissionDenied `

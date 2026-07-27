@@ -20,7 +20,7 @@ write the **canonical** name, never an alias.
 
 | v1 | v2 |
 |---|---|
-| `Assert-Administrator` | `Assert-Elevation` |
+| `Assert-Administrator` | `Assert-Elevated` |
 | `Get-StartMenuProgramsPath` | `Get-StartMenuProgramsLocation` |
 
 ## Renamed parameters
@@ -111,7 +111,7 @@ write the **canonical** name, never an alias.
   `-Index` (default `0`), or from a combined `-Value` `"file,index"`.
 - `Get-Environment` — environment variables as records (scope, name, value); both scopes by default,
   or `-Machine` / `-User`.
-- `Test-Elevation` — whether the current session is elevated.
+- `Test-Elevated` — whether the current session is elevated.
 - `Set-EnvironmentVariable -Expandable` — write an expandable (`REG_EXPAND_SZ`) value so a `%…%`
   reference stays as indirection; without it the value is written verbatim as `REG_SZ`.
 - `Get-EnvironmentVariable -Expandable` — read the stored expandable value without evaluating its

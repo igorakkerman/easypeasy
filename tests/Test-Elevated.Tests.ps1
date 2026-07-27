@@ -5,17 +5,17 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
 }
 
-Describe 'Test-Elevation' {
+Describe 'Test-Elevated' {
 
     It 'exports the command' {
-        Get-Command Test-Elevation -Module easypeasy | Should -Not -BeNullOrEmpty
+        Get-Command Test-Elevated -Module easypeasy | Should -Not -BeNullOrEmpty
     }
 
     It 'returns a boolean' {
-        Test-Elevation | Should -BeOfType [bool]
+        Test-Elevated | Should -BeOfType [bool]
     }
 
     It 'reports the elevation of the current session' {
-        Test-Elevation | Should -Be $isAdmin
+        Test-Elevated | Should -Be $isAdmin
     }
 }

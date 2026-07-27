@@ -401,14 +401,14 @@ Runs the given command in an elevated PowerShell session, prompting for confirma
 #### Verify that the current user is an administrator
 
 ```powershell
-> Assert-Elevation
-Assert-Elevation: Operation requires administrator privileges.
+> Assert-Elevated
+Assert-Elevated: Operation requires administrator privileges.
 ```
 
-`Test-Elevation` returns the same fact as a boolean, for a script that offers an unelevated path instead of failing.
+`Test-Elevated` returns the same fact as a boolean, for a script that offers an unelevated path instead of failing.
 
 ```powershell
-> Test-Elevation
+> Test-Elevated
 
 False
 ```
