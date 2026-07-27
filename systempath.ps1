@@ -740,6 +740,8 @@ function Remove-DuplicateSystemPathLocations {
         When cleaning both scopes, a location present on both is kept on the user Path and removed from the machine Path.
     .NOTES
         Alias: cleanpath
+        Cleaning both scopes writes each Path on its own: an unelevated run that changes the machine Path
+        therefore prompts for elevation once per scope and leaves one backup file per write.
     .EXAMPLE
         Remove-DuplicateSystemPathLocations
     .EXAMPLE
@@ -824,7 +826,8 @@ function Move-SystemPathLocation {
         The location is removed from the source Path and added to the target Path.
         If the location is not on the source Path - whether it is already on the target Path or on neither -
         nothing is moved and a warning is reported.
-        Moving to or from the machine Path requires administrator privileges.
+        Moving to or from the machine Path elevates through User Account Control when the session is not
+        already elevated.
     .PARAMETER Location
         Folder location to move, positional.
     .PARAMETER ToUser
@@ -833,6 +836,8 @@ function Move-SystemPathLocation {
         Move the location from the user system Path to the machine system Path.
     .NOTES
         Alias: movepath
+        Both scope Paths are written, each on its own: an unelevated move therefore prompts for elevation
+        once per scope and leaves one backup file per write.
     .EXAMPLE
         Move-SystemPathLocation "C:\Program Files\Git\bin" -ToUser
     .EXAMPLE

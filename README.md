@@ -7,9 +7,12 @@
 The *easypeasy* PowerShell module simplifies and automates common tasks in Windows environments:
 - manage locations on the system Path
 - manage environment variables
+- create, read and change shortcuts
 - create and remove start menu shortcuts
 - create scheduled tasks
 - create timestamps
+- locate special folders
+- restart Windows Explorer
 - run a command as administrator (sudo)
 - verify administrator privileges
 
@@ -192,6 +195,22 @@ in a specific scope (machine 🅰️ or user) \
 ```
 
 `setenv` and `rmenv` are aliases for `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` respectively, which you should use in scripts.
+
+#### List the variables of a scope
+
+both scopes (**default**), or one of them (`-Machine`, `-User`)
+
+```powershell
+> Get-Environment
+
+Scope      Name                           Value
+-----      ----                           -----
+User       GOPATH                         C:\Go\GOPATH
+Machine    JAVA_HOME                      C:\Java\jdk-21
+...
+```
+
+Each record carries its `Scope`, `Name` and `Value`. Records are ordered by name, and where both scopes define a variable the user record comes first, since the user value is the one in effect. `Path` is no exception: each scope carries its own record.
 
 ### Shortcuts
 
@@ -383,8 +402,43 @@ Runs the given command in an elevated PowerShell session, prompting for confirma
 
 ```powershell
 > Assert-Elevation
-Assert-Elevation: This operation requires administrator privileges.
+Assert-Elevation: Operation requires administrator privileges.
 ```
+
+`Test-Elevation` returns the same fact as a boolean, for a script that offers an unelevated path instead of failing.
+
+```powershell
+> Test-Elevation
+
+False
+```
+
+#### Restart Windows Explorer
+
+```powershell
+> sx
+```
+
+`sx` is an alias for `Stop-Explorer`, which you should use in scripts. \
+Stopping Explorer generally triggers a restart, which picks up a shell setting that needs one.
+
+#### Locate a special folder
+
+```powershell
+> programs
+
+C:\Program Files
+
+> docs
+
+C:\Users\me\Documents
+
+> desktop
+
+C:\Users\me\Desktop
+```
+
+`programs`, `docs` and `desktop` are aliases for `Get-ProgramFilesFolder`, `Get-MyDocumentsFolder` and `Get-DesktopFolder` respectively, which you should use in scripts.
 
 ## Installation
 ### Installation from PowerShell Gallery

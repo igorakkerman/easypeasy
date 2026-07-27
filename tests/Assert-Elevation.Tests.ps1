@@ -11,7 +11,11 @@ Describe 'Assert-Elevation' {
     It 'throws when the session is not elevated' {
         Mock -ModuleName easypeasy Test-Elevation { $false }
 
-        { Assert-Elevation } | Should -Throw '*administrator privileges*'
+        $errorRecord = { Assert-Elevation } | Should -Throw '*administrator privileges*' -PassThru
+
+        $errorRecord.CategoryInfo.Category | Should -Be 'PermissionDenied'
+        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ElevationRequired,*'
+        $errorRecord.TargetObject | Should -Be ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name)
     }
 
     It 'is silent when the session is elevated' {

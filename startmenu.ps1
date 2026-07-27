@@ -15,6 +15,12 @@ function Get-StartMenuProgramsLocation {
     .OUTPUTS
         string - Path to the Start Menu Programs folder.
 
+    .EXAMPLE
+        Get-StartMenuProgramsLocation
+
+    .EXAMPLE
+        Get-StartMenuProgramsLocation -AllUsers
+
     .NOTES
         Default scope is User (current user).
     #>
@@ -50,6 +56,12 @@ function New-StartMenuProgramsFolder {
 
     .OUTPUTS
         string - Path to the newly created folder in the Start Menu Programs folder.
+
+    .EXAMPLE
+        New-StartMenuProgramsFolder -Name MyCompany
+
+    .EXAMPLE
+        New-StartMenuProgramsFolder -Name MyCompany -AllUsers
 
     .NOTES
         Default scope is User (current user).
@@ -210,6 +222,15 @@ function Remove-StartMenuShortcut {
 
     .PARAMETER User
         Remove the shortcut from the current user's Start Menu Programs folder. (Default.)
+
+    .EXAMPLE
+        Remove-StartMenuShortcut MyApp
+
+    .EXAMPLE
+        Remove-StartMenuShortcut -Name MyApp -Folder MyCompany
+
+    .EXAMPLE
+        Remove-StartMenuShortcut -Name MyApp -AllUsers
 
     .NOTES
         Default scope is User (current user).

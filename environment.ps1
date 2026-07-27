@@ -76,7 +76,8 @@ function Get-EnvironmentVariable() {
         its %...% references, so %USERPROFILE%\tmp is returned as the literal indirection rather
         than expanded. Without it, a %...% reference is expanded on read.
 
-    .OUTPUTS string - The value of the environment variable.
+    .OUTPUTS
+        string - The value of the environment variable.
 
     .NOTES
         Alias: getenv
@@ -152,8 +153,8 @@ function Get-Environment() {
         Returns environment variables as EnvironmentVariable records, each carrying its Name, Value and Scope.
         Both the machine and the user environment are returned by default; pass -Machine or -User for one scope.
         Records are ordered by name; where both scopes define a variable the user record comes first,
-        since the user value is the one in effect. Path is the exception - the machine and user Paths are
-        combined, machine first.
+        since the user value is the one in effect. Path is no exception: each scope carries its own record,
+        holding that scope's Path alone.
 
     .PARAMETER Machine
         If specified, the environment variables of the machine environment are returned.
