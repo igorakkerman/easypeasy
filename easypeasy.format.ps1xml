@@ -63,7 +63,7 @@
               </ListItem>
               <ListItem>
                 <Label>Icon</Label>
-                <ScriptBlock>$_.Icon.Value</ScriptBlock>
+                <ScriptBlock>$_.Icon?.ToString()</ScriptBlock>
               </ListItem>
               <ListItem>
                 <PropertyName>Hotkey</PropertyName>

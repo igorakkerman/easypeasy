@@ -388,10 +388,10 @@ function New-PowershellStartMenuShortcut {
 
     if ($PSCmdlet.ShouldProcess($shortcutLocation, "Create shortcut")) {
         $shortcut.Save()
-    }
 
-    if ($RunAsAdministrator) {
-        Set-ShortcutRunAsAdministrator $shortcutLocation
+        if ($RunAsAdministrator) {
+            Set-ShortcutElevated -Location $shortcutLocation -Elevated $true
+        }
     }
 
     return $shortcutLocation

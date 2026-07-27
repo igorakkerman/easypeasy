@@ -221,7 +221,63 @@ C:\Program Files\MyApp\MyApp.exe
 3
 ```
 
+`ToString()` combines them back into the `file,index` source a shortcut stores.
+
 `WindowStyle` is `Normal`, `Maximized` or `Minimized`.
+
+#### Create a shortcut
+
+Only the shortcut location and its target are mandatory; the run location defaults to the folder of the target.
+```powershell
+> New-Shortcut "C:\Users\me\Desktop\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe"
+
+> New-Shortcut -Location "C:\Users\me\Desktop\MyApp.lnk" -Target "C:\Program Files\MyApp\MyApp.exe" `
+        -Arguments "--profile Default" `
+        -RunLocation "C:\Users\me\Documents" `
+        -Description "My favourite app" `
+        -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
+        -Hotkey "Ctrl+Alt+M" `
+        -WindowStyle Maximized `
+        -Elevated
+```
+
+The created shortcut is returned, in the same shape `Get-Shortcut` reads it. \
+An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it completely; omitted optional fields reset to their defaults.
+
+#### Build a shortcut icon
+
+`-Icon` takes a `ShortcutIcon`, built from the icon file and an optional index, or from the combined `file,index` source.
+```powershell
+> New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe"
+> New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3
+> New-ShortcutIcon "C:\Program Files\MyApp\MyApp.exe,3"
+```
+
+`-Index` defaults to `0`. An icon file on its own is only accepted as `-Location`; `-Value` insists on the `file,index` form. \
+An icon read off another shortcut goes straight back in:
+```powershell
+> New-Shortcut "C:\Users\me\Desktop\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" `
+        -Icon (Get-Shortcut "C:\Users\me\Desktop\Other.lnk").Icon
+```
+
+#### Change a shortcut
+
+Any combination of fields, the others stay as they are.
+```powershell
+> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Target "C:\Program Files\MyApp\MyApp.exe" -WindowStyle Maximized
+> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Elevated
+> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Elevated:$false
+```
+
+`$null` or an empty string clears a field.
+```powershell
+> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Arguments $null -Hotkey '' -Icon $null
+```
+
+`-PassThru` returns the shortcut after the change.
+```powershell
+> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -WindowStyle Minimized -PassThru
+```
 
 ### Start Menu Shortcuts
 

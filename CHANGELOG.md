@@ -19,11 +19,15 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Get-StartMenuProgramsPath` renamed to `Get-StartMenuProgramsLocation`.
 
 ### Shortcut
+- **Added:** `New-Shortcut` — creates shortcut at any location and returns it; only `-Location` and `-Target` mandatory, run location defaults to folder of target, `-Force` performs complete overwrite.
+- **Added:** `Set-Shortcut` — sets any combination of shortcut fields, returns shortcut with `-PassThru`; `$null` or empty string clears a field.
+- **Added:** `New-ShortcutIcon` — builds `ShortcutIcon` for `-Icon`, from `-Location` and optional `-Index`, or from combined `-Value` `"file,index"`.
 - **Added:** `Get-Shortcut` — every readable field of a shortcut as one record: `Location`, `Target`, `Arguments`, `RunLocation`, `Description`, `Icon`, `Hotkey`, `WindowStyle`, `Elevated`.
-- **Added:** `Icon` as `ShortcutIcon` record — combined `Value`, plus `Location` and `Index`; `$null` when shortcut carries no icon.
+- **Added:** `Icon` as `ShortcutIcon` record — `Location` and `Index`, combined back by `ToString()`; `$null` when shortcut carries no icon.
 - **Added:** `WindowStyle` as `ShortcutWindowStyle` enum — `Normal`, `Maximized`, `Minimized`.
 - **Removed:** `Get-ShortcutIconLocation` — read `Get-Shortcut` instead.
-- **Changed:** Remaining shortcut functions unpublished while interface is reworked.
+- **Removed:** `Set-ShortcutTarget` — pass `-Target` to `Set-Shortcut` instead.
+- **Removed:** `Set-ShortcutRunAsAdministrator` — pass `-Elevated` to `Set-Shortcut` instead.
 
 ### System PATH and environment variables
 - **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.

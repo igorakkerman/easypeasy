@@ -30,6 +30,24 @@ Describe 'New-PowershellStartMenuShortcut' {
         $wsh.CreateShortcut($location).Arguments | Should -Match '-NoExit'
     }
 
+    It 'sets the run-as-administrator flag with -RunAsAdministrator' {
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AsAdmin' -RunAsAdministrator
+
+        (Get-Shortcut $location).Elevated | Should -BeTrue
+    }
+
+    It 'leaves the target unelevated without -RunAsAdministrator' {
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Unelevated'
+
+        (Get-Shortcut $location).Elevated | Should -BeFalse
+    }
+
+    It 'creates nothing under -WhatIf, even with -RunAsAdministrator' {
+        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'WhatIfAdmin' -RunAsAdministrator -WhatIf
+
+        $location | Should -Not -Exist
+    }
+
     It 'creates the shortcut in the given -Folder' {
         Mock -ModuleName easypeasy New-StartMenuProgramsFolder { $folder }
 

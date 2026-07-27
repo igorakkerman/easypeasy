@@ -21,18 +21,18 @@ Describe 'Get-Shortcut' {
     AfterAll { Remove-Item $lnk -Force -ErrorAction SilentlyContinue }
 
     It 'returns a Shortcut record' {
-        (Get-Shortcut -Shortcut $lnk).GetType().Name | Should -Be 'Shortcut'
+        (Get-Shortcut -Location $lnk).GetType().Name | Should -Be 'Shortcut'
     }
 
     It 'returns every readable field of the shortcut' {
-        $result = Get-Shortcut -Shortcut $lnk
+        $result = Get-Shortcut -Location $lnk
 
         $result.Location           | Should -Be $lnk
         $result.Target             | Should -Be 'C:\Windows\notepad.exe'
         $result.Arguments          | Should -Be '/A C:\temp\file.txt'
         $result.RunLocation        | Should -Be 'C:\temp'
         $result.Description        | Should -Be 'Edit file'
-        $result.Icon.Value         | Should -Be 'C:\Windows\notepad.exe,0'
+        $result.Icon.ToString()         | Should -Be 'C:\Windows\notepad.exe,0'
         $result.Icon.Location      | Should -Be 'C:\Windows\notepad.exe'
         $result.Icon.Index         | Should -Be 0
         $result.Hotkey             | Should -Be 'Alt+Ctrl+N'
@@ -47,13 +47,11 @@ Describe 'Get-Shortcut' {
         $shortcut.Save()
 
         try {
-            (Get-Shortcut -Shortcut $elevated).Elevated | Should -BeFalse
+            (Get-Shortcut -Location $elevated).Elevated | Should -BeFalse
 
-            InModuleScope easypeasy -Parameters @{ Lnk = $elevated } {
-                Set-ShortcutRunAsAdministrator -Shortcut $Lnk
-            }
+            Set-Shortcut -Location $elevated -Elevated
 
-            (Get-Shortcut -Shortcut $elevated).Elevated | Should -BeTrue
+            (Get-Shortcut -Location $elevated).Elevated | Should -BeTrue
         }
         finally {
             Remove-Item $elevated -Force -ErrorAction SilentlyContinue
@@ -61,7 +59,7 @@ Describe 'Get-Shortcut' {
     }
 
     It 'returns a ShortcutIcon record for the icon' {
-        (Get-Shortcut -Shortcut $lnk).Icon.GetType().Name | Should -Be 'ShortcutIcon'
+        (Get-Shortcut -Location $lnk).Icon.GetType().Name | Should -Be 'ShortcutIcon'
     }
 
     It 'splits icon file and index at the last comma' {
@@ -72,9 +70,9 @@ Describe 'Get-Shortcut' {
         $shortcut.Save()
 
         try {
-            $result = Get-Shortcut -Shortcut $lnkWithComma
+            $result = Get-Shortcut -Location $lnkWithComma
 
-            $result.Icon.Value    | Should -Be 'C:\Program Files\App, Inc\app.exe,3'
+            $result.Icon.ToString()    | Should -Be 'C:\Program Files\App, Inc\app.exe,3'
             $result.Icon.Location | Should -Be 'C:\Program Files\App, Inc\app.exe'
             $result.Icon.Index    | Should -Be 3
         }
@@ -90,7 +88,7 @@ Describe 'Get-Shortcut' {
         $shortcut.Save()
 
         try {
-            (Get-Shortcut -Shortcut $lnkWithoutIcon).Icon | Should -BeNullOrEmpty
+            (Get-Shortcut -Location $lnkWithoutIcon).Icon | Should -BeNullOrEmpty
         }
         finally {
             Remove-Item $lnkWithoutIcon -Force -ErrorAction SilentlyContinue
