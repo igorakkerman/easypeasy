@@ -43,7 +43,7 @@ write the **canonical** name, never an alias.
 | `removepath` alias | `Remove-SystemPathLocation` | `rmpath`, or the full name |
 | `deduppath` alias | `Remove-DuplicateSystemPathLocations` | `cleanpath`, or the full name |
 | `-IconLocation`, `-IconIndex`, `-IconFile` | shortcut and Start Menu shortcut commands | `-Icon (New-ShortcutIcon -Location … -Index …)` |
-| `-Administrator`, `-Admin`, `-Elevate` | `New-PowershellStartMenuShortcut` | `-Elevated` |
+| `-Admin`, `-Elevate` | `New-PowershellStartMenuShortcut` | `-Elevated` (`-Administrator` kept as alias — prefer `-Elevated`) |
 
 ## Changed behavior — review call sites
 

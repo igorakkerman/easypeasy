@@ -41,6 +41,12 @@ Describe 'New-PowershellStartMenuShortcut' {
         (Get-Shortcut $shortcut.Location).Elevated | Should -BeTrue
     }
 
+    It 'accepts -Administrator as alias of -Elevated' {
+        $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AdminAlias' -Administrator
+
+        $shortcut.Elevated | Should -BeTrue
+    }
+
     It 'takes the shortcut name positionally' {
         $shortcut = New-PowershellStartMenuShortcut 'Positional' -Command 'Get-Date'
 

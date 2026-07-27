@@ -31,6 +31,12 @@ Describe 'New-StartMenuShortcut' {
         $shortcut.Target   | Should -Be 'C:\Windows\notepad.exe'
     }
 
+    It 'accepts -Administrator as alias of -Elevated' {
+        $shortcut = New-StartMenuShortcut -Name 'AdminAlias' -Target 'C:\Windows\notepad.exe' -Administrator
+
+        $shortcut.Elevated | Should -BeTrue
+    }
+
     It 'takes the shortcut name positionally' {
         $shortcut = New-StartMenuShortcut 'Positional' -Target 'C:\Windows\notepad.exe'
 

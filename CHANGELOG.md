@@ -19,7 +19,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `-RunLocation`, `-Description` and `-Hotkey` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut`.
 - **Added:** `-AllUsers` (aliases `-Machine`, `-All`) and `-User` on `New-PowershellStartMenuShortcut`, matching the other Start Menu functions. Default stays the current user.
 - **Removed:** `-IconLocation` (alias `-IconFile`) and `-IconIndex` — pass `-Icon (New-ShortcutIcon -Location … -Index …)`.
-- **Removed:** Aliases `-Administrator`, `-Admin` and `-Elevate` on `New-PowershellStartMenuShortcut` — pass `-Elevated`.
+- **Removed:** Aliases `-Admin` and `-Elevate` on `New-PowershellStartMenuShortcut` — pass `-Elevated`, or its alias `-Administrator`.
+- **Added:** Alias `-Administrator` for `-Elevated` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut`, matching `New-Shortcut`.
 - **Removed:** Aliases `-Group` and `-GroupName` — pass `-Folder`, or `-Name` on `New-StartMenuProgramsFolder`.
 - **Removed:** Aliases `-AppName` and `-Folder` on `New-StartMenuProgramsFolder` — pass `-Name`.
 - **Removed:** Aliases `-App` and `-AppName` on the shortcut functions — pass `-Name`.

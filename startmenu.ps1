@@ -112,6 +112,7 @@ function New-StartMenuShortcut {
 
     .PARAMETER Elevated
         Launch the target elevated, ticked as "Run as administrator" in the advanced properties.
+        Alias: Administrator.
 
     .PARAMETER Force
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
@@ -136,6 +137,7 @@ function New-StartMenuShortcut {
 
     .NOTES
         Default scope is User (current user).
+        Alias: Administrator for -Elevated.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
@@ -152,6 +154,7 @@ function New-StartMenuShortcut {
         [ShortcutIcon] $Icon,
         [string] $Hotkey,
         [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Normal,
+        [Alias("Administrator")]
         [switch] $Elevated,
         [switch] $Force,
         [Parameter(Mandatory, ParameterSetName = "AllUsers")]
@@ -282,6 +285,7 @@ function New-PowershellStartMenuShortcut {
 
     .PARAMETER Elevated
         Run the PowerShell command elevated, ticked as "Run as administrator" in the advanced properties.
+        Alias: Administrator.
 
     .PARAMETER Force
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
@@ -304,7 +308,7 @@ function New-PowershellStartMenuShortcut {
 
     .NOTES
         Default scope is User (current user).
-        Alias: Script for -Command, NoExit for -KeepOpen.
+        Alias: Script for -Command, NoExit for -KeepOpen, Administrator for -Elevated.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
@@ -323,6 +327,7 @@ function New-PowershellStartMenuShortcut {
         [ShortcutIcon] $Icon,
         [string] $Hotkey,
         [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Minimized,
+        [Alias("Administrator")]
         [switch] $Elevated,
         [switch] $Force,
         [Parameter(Mandatory, ParameterSetName = "AllUsers")]
