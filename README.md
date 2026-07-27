@@ -7,14 +7,12 @@
 The *easypeasy* PowerShell module simplifies and automates common tasks in Windows environments:
 - manage locations on the system Path
 - manage environment variables
-- create, read and change shortcuts
-- create and remove start menu shortcuts
+- create, read and change (start menu) shortcuts
+- run a PowerShell command as administrator (sudo)
+- easily restart Windows Explorer
+- output timestamps
 - create scheduled tasks
-- create timestamps
 - locate special folders
-- restart Windows Explorer
-- run a command as administrator (sudo)
-- verify administrator privileges
 
 ___
 ## Examples
@@ -23,44 +21,41 @@ ___
 ### System Path
 #### List the folders in the system Path
 
-in a specific scope (machine or user) \
-**default**: **effective** in current shell
+in order of precedence
 
 ```powershell
-> path
+> path   # Get-SystemPath
 
 Scope      Location
 -----      --------
-Machine    C:\Program Files\PowerShell\7
+Process    C:\Program Files\PowerShell\7
 Machine    C:\Program Files\Microsoft VS Code\bin
-Machine    C:\Windows\system32
+Machine    C:\Windows\system32    # expanded location
+           %SystemRoot%\system32  # actually stored expandable reference
 Machine    C:\Windows
 User       C:\Users\me\go\bin
-Process    C:\Program Files\PowerShell\7
 ...
 ```
 
-`path` is an alias for `Get-SystemPath`, which you should use in scripts. \
-Each location is tagged with its **scope**: `Machine`, `User`, or `Process` — the last for entries present only in the current shell's Path and not persisted.
-
-A persisted location keeping a `%…%` reference is listed with its stored form underneath the expanded one:
+#### Specific scope
 
 ```powershell
-> path -Machine
+> path -Machine   # machine scope only
+> path -User      # user scope only
+> path -Process   # process scope only 
 
 Scope      Location
 -----      --------
-Machine    C:\WINDOWS\system32
+Machine    C:\Windows\system32
            %SystemRoot%\system32
 Machine    C:\Program Files\Git\bin
 ```
 
-Every location carries both: `Location` expanded, `ExpandableLocation` as stored. Editing the Path keeps the reference intact, and `-Join` returns the stored form.
-
 #### Find a folder in the system Path
 
 ```powershell
-> path Windows
+> path -Contains windows         # literal match, case-insentive, no wildcards
+> path windows                   # same as -Contains
 
 Scope      Location
 -----      --------
@@ -69,15 +64,19 @@ Machine    C:\Windows
 ...
 ```
 
-`Windows` is the `-Contains` parameter, which you should name explicitly in scripts. It selects every location containing the string, case-insensitively, and is taken literally — no wildcards.
-
-Three kinds of criteria are available, and a location must satisfy **all** of the criteria given:
+#### Match a folder in the system Path
 
 ```powershell
-> path Git Program                # contains both strings
-> path -Filter "*\Git\*"          # wildcard match
-> path -Match "\\Git\\(cmd|bin)$" # regex match
-> path Git -Filter "*\bin"        # contains Git AND matches the wildcard
+> path -Location "C:\Program Files\Git\bin" # exact match
+> path -Filter "*\Git\*"                    # wildcard match
+> path -Match "\\Git\\(cmd|bin)$"           # regex match
+```
+
+#### Multiple Criteria
+
+```powershell
+> path Git -Filter "*\bin"        # ALL criteria must be met
+> path Git Program                # must contain both strings
 ```
 
 #### Find a folder on the system Path and the scope it lives in
