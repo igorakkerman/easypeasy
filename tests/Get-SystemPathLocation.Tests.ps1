@@ -111,7 +111,13 @@ Describe 'Get-SystemPathLocation' {
 
         It 'rejects both -Machine and -User' {
             { Get-SystemPathLocation -Location 'C:\x' -Machine -User } |
-                Should -Throw '*only one*'
+                Should -Throw '*Parameter set cannot be resolved*'
+        }
+
+        It 'accepts -Effective for the default scope' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Windows' }
+
+            { Get-SystemPathLocation -Location 'C:\Windows' -Effective } | Should -Not -Throw
         }
     }
 }

@@ -771,16 +771,17 @@ function Remove-DuplicateSystemPathLocations {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
         [switch] $User,
 
-        [Parameter(Mandatory = $false)]
+        # -KeepMachine and -KeepUser decide a cross-scope duplicate, so they belong to the both-scopes set alone
+        [Parameter(ParameterSetName = "BothScopes")]
         [switch] $KeepMachine,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(ParameterSetName = "BothScopes")]
         [switch] $KeepUser
     )
 
@@ -792,8 +793,8 @@ function Remove-DuplicateSystemPathLocations {
             -ErrorAction Stop
     }
 
-    # clean both scopes when neither (or both) scope switches are given
-    if ($Machine -eq $User) {
+    # clean both scopes when neither scope switch is given
+    if (-not $Machine -and -not $User) {
         $machineEntries = @(Get-SystemPath -Machine)
         $userEntries = @(Get-SystemPath -User)
 
@@ -940,6 +941,8 @@ function Get-SystemPathLocation {
         If specified, the system Path for the local machine is searched.
     .PARAMETER User
         If specified, the system Path for the current user is searched.
+    .PARAMETER Effective
+        Default; if specified, the system Path in effect in the current shell is searched.
     .OUTPUTS
         For each match, an object with a Location and a Scope property.
     .EXAMPLE
@@ -967,16 +970,15 @@ function Get-SystemPathLocation {
         [ValidRegexAttribute()]
         [string[]] $Match,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
 
-        [Parameter(Mandatory = $false)]
-        [switch] $User
-    )
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User,
 
-    if ($Machine -and $User) {
-        Write-Error "Specify only one of -Machine and -User." -ErrorAction Stop
-    }
+        [Parameter(ParameterSetName = "Effective")]
+        [switch] $Effective
+    )
 
     if (-not $Location -and -not $Contains -and -not $Filter -and -not $Match) {
         Write-Error "Specify at least one of -Location, -Contains, -Filter and -Match." `
@@ -1025,6 +1027,8 @@ function Test-SystemPathLocation {
         If specified, the system Path for the local machine is searched.
     .PARAMETER User
         If specified, the system Path for the current user is searched.
+    .PARAMETER Effective
+        Default; if specified, the system Path in effect in the current shell is searched.
     .OUTPUTS
         Boolean indicating whether a matching location is present.
     .EXAMPLE
@@ -1051,11 +1055,14 @@ function Test-SystemPathLocation {
         [ValidRegexAttribute()]
         [string[]] $Match,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
         [switch] $Machine,
 
-        [Parameter(Mandatory = $false)]
-        [switch] $User
+        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [switch] $User,
+
+        [Parameter(ParameterSetName = "Effective")]
+        [switch] $Effective
     )
 
     return @(Get-SystemPathLocation @PSBoundParameters).Count -gt 0

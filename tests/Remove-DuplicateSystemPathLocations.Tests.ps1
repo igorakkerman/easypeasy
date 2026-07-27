@@ -51,6 +51,11 @@ Describe 'Remove-DuplicateSystemPathLocations' {
             $errorRecord.CategoryInfo.Category | Should -Be 'InvalidArgument'
             $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ConflictingKeepScope,*'
         }
+
+        It 'rejects a -Keep switch together with a single scope' {
+            { Remove-DuplicateSystemPathLocations -Machine -KeepUser } |
+                Should -Throw '*Parameter set cannot be resolved*'
+        }
     }
 
     Context 'idempotent when there are no duplicates' {

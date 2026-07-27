@@ -59,4 +59,9 @@ Describe 'Test-SystemPathLocation' {
         Test-SystemPathLocation -Location 'C:\Users\me\bin' -User | Should -BeTrue
         Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User }
     }
+
+    It 'rejects both -Machine and -User' {
+        { Test-SystemPathLocation -Location 'C:\x' -Machine -User } |
+            Should -Throw '*Parameter set cannot be resolved*'
+    }
 }
