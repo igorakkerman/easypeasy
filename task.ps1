@@ -37,16 +37,12 @@ function Register-LogonTask {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Name,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Executable,
-
         [string] $Argument,
-
         [string] $Path = "\",
-
         [switch] $Force
     )
 

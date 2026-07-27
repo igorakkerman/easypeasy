@@ -77,7 +77,7 @@ function local:Get-StoredPathString {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [AllowEmptyCollection()]
         [SystemPathLocation[]] $Entries
     )
@@ -144,11 +144,8 @@ function local:Sync-ProcessPath {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $false)]
         [AllowEmptyCollection()]
         [SystemPathLocation[]] $LeadingProcessLocations = @(),
-
-        [Parameter(Mandatory = $false)]
         [AllowEmptyCollection()]
         [SystemPathLocation[]] $TrailingProcessLocations = @()
     )
@@ -189,18 +186,15 @@ function local:Add-PathLocation {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [AllowEmptyCollection()]
         [SystemPathLocation[]] $Entries,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [Alias("Folder")]
         [string] $Location,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [bool] $First,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Scope
     )
 
@@ -245,11 +239,10 @@ function local:Remove-PathLocation {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [AllowEmptyCollection()]
         [SystemPathLocation[]] $Entries,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [Alias("Folder")]
         [string] $Location
     )
@@ -277,7 +270,7 @@ function local:Remove-DuplicatePathLocation {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [AllowEmptyCollection()]
         [SystemPathLocation[]] $Entries
     )
@@ -304,7 +297,7 @@ function local:Get-PathScopeStoredForms {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [ValidateSet("Machine", "User")]
         [string] $Scope
     )
@@ -357,19 +350,11 @@ function local:Test-LocationCriteria {
     [CmdletBinding()]
     [OutputType([bool])]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Location,
-
-        [Parameter(Mandatory = $false)]
         [string] $Exact,
-
-        [Parameter(Mandatory = $false)]
         [string[]] $Contains,
-
-        [Parameter(Mandatory = $false)]
         [string[]] $Filter,
-
-        [Parameter(Mandatory = $false)]
         [string[]] $Match
     )
 
@@ -458,25 +443,16 @@ function Get-SystemPath {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory, ParameterSetName = "User")]
         [switch] $User,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "Effective")]
+        [Parameter(ParameterSetName = "Effective")]
         [switch] $Effective,
-
-        [Parameter(Mandatory = $false)]
         [switch] $Join,
-
-        [Parameter(Mandatory = $false, Position = 0, ValueFromRemainingArguments = $true)]
+        [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
         [string[]] $Contains,
-
-        [Parameter(Mandatory = $false)]
         [string[]] $Filter,
-
-        [Parameter(Mandatory = $false)]
         [ValidRegexAttribute()]
         [string[]] $Match
     )
@@ -595,14 +571,12 @@ function local:Set-SystemPath {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [AllowEmptyCollection()]
         [SystemPathLocation[]] $Entries,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory, ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -655,18 +629,14 @@ function Add-SystemPathLocation {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory)]
         [Alias("Folder")]
         [string] $Location,
-
-        [Parameter(Mandatory = $false)]
         [Alias("Front")]
         [switch] $First,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -713,14 +683,12 @@ function Remove-SystemPathLocation {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory)]
         [Alias("Folder")]
         [string] $Location,
-        
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -771,16 +739,14 @@ function Remove-DuplicateSystemPathLocations {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory, ParameterSetName = "User")]
         [switch] $User,
 
         # -KeepMachine and -KeepUser decide a cross-scope duplicate, so they belong to the both-scopes set alone
         [Parameter(ParameterSetName = "BothScopes")]
         [switch] $KeepMachine,
-
         [Parameter(ParameterSetName = "BothScopes")]
         [switch] $KeepUser
     )
@@ -864,14 +830,12 @@ function Move-SystemPathLocation {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory)]
         [Alias("Folder")]
         [string] $Location,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "ToUser")]
+        [Parameter(Mandatory, ParameterSetName = "ToUser")]
         [switch] $ToUser,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "ToMachine")]
+        [Parameter(Mandatory, ParameterSetName = "ToMachine")]
         [switch] $ToMachine
     )
 
@@ -956,26 +920,17 @@ function Get-SystemPathLocation {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $false)]
         [Alias("Folder")]
         [string] $Location,
-
-        [Parameter(Mandatory = $false, Position = 0, ValueFromRemainingArguments = $true)]
+        [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
         [string[]] $Contains,
-
-        [Parameter(Mandatory = $false)]
         [string[]] $Filter,
-
-        [Parameter(Mandatory = $false)]
         [ValidRegexAttribute()]
         [string[]] $Match,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory, ParameterSetName = "User")]
         [switch] $User,
-
         [Parameter(ParameterSetName = "Effective")]
         [switch] $Effective
     )
@@ -1041,26 +996,17 @@ function Test-SystemPathLocation {
     [CmdletBinding()]
     [OutputType([bool])]
     param (
-        [Parameter(Mandatory = $false)]
         [Alias("Folder")]
         [string] $Location,
-
-        [Parameter(Mandatory = $false, Position = 0, ValueFromRemainingArguments = $true)]
+        [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
         [string[]] $Contains,
-
-        [Parameter(Mandatory = $false)]
         [string[]] $Filter,
-
-        [Parameter(Mandatory = $false)]
         [ValidRegexAttribute()]
         [string[]] $Match,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory, ParameterSetName = "User")]
         [switch] $User,
-
         [Parameter(ParameterSetName = "Effective")]
         [switch] $Effective
     )

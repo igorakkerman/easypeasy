@@ -34,7 +34,7 @@ function local:Sync-ProcessEnvironmentVariable {
         themselves, which takes precedence.
     #>
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Name
     )
 
@@ -101,18 +101,14 @@ function Get-EnvironmentVariable() {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory)]
         [string] $Name,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory, ParameterSetName = "User")]
         [switch] $User,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "Effective")]
+        [Parameter(ParameterSetName = "Effective")]
         [switch] $Effective,
-
         [switch] $Expandable
     )
 
@@ -180,7 +176,6 @@ function Get-Environment() {
     [CmdletBinding()]
     param(
         [switch] $Machine,
-
         [switch] $User
     )
 
@@ -245,18 +240,14 @@ function Set-EnvironmentVariable() {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory)]
         [string] $Name,
-
-        [Parameter(Position = 1, Mandatory = $true)]
+        [Parameter(Position = 1, Mandatory)]
         [string] $Value,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User,
-
         [switch] $Expandable
     )
 
@@ -323,11 +314,9 @@ function Remove-EnvironmentVariable() {
     param(
         [Parameter(Position = 0, Mandatory = "true")]
         [string] $Name,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -408,16 +397,13 @@ function local:Get-EnvironmentVariableExpandable {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory)]
         [string] $Name,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "User")]
+        [Parameter(Mandatory, ParameterSetName = "User")]
         [switch] $User,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "Effective")]
+        [Parameter(ParameterSetName = "Effective")]
         [switch] $Effective
     )
 
@@ -475,16 +461,13 @@ function local:Set-EnvironmentVariableExpandable {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory)]
         [string] $Name,
-
-        [Parameter(Position = 1, Mandatory = $true)]
+        [Parameter(Position = 1, Mandatory)]
         [string] $Value,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Machine")]
+        [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 

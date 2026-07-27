@@ -46,7 +46,7 @@ function Invoke-Elevated {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments = $true)]
+        [Parameter(Mandatory, Position = 0, ValueFromRemainingArguments = $true)]
         [string[]] $Command
     )
 

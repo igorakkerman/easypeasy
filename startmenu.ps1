@@ -23,11 +23,10 @@ function Get-StartMenuProgramsLocation {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -59,14 +58,12 @@ function New-StartMenuProgramsFolder {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Name,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -146,44 +143,23 @@ function New-StartMenuShortcut {
     # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
     [OutputType("Shortcut")]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Name,
-
-        [Parameter(Mandatory = $false)]
         [string] $Folder,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Target,
-
-        [Parameter(Mandatory = $false)]
         [string] $Arguments,
-
-        [Parameter(Mandatory = $false)]
         [string] $RunLocation,
-
-        [Parameter(Mandatory = $false)]
         [string] $Description,
-
-        [Parameter(Mandatory = $false)]
         [ShortcutIcon] $Icon,
-
-        [Parameter(Mandatory = $false)]
         [string] $Hotkey,
-
-        [Parameter(Mandatory = $false)]
         [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Normal,
-
-        [Parameter(Mandatory = $false)]
         [switch] $Elevated,
-
-        [Parameter(Mandatory = $false)]
         [switch] $Force,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -238,17 +214,13 @@ function Remove-StartMenuShortcut {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory = $true, Position = 0)]
+        [Parameter(Mandatory, Position = 0)]
         [string] $Name,
-
-        [Parameter(Mandatory = $false)]
         [string] $Folder,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 
@@ -340,46 +312,25 @@ function New-PowershellStartMenuShortcut {
     # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
     [OutputType("Shortcut")]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [Alias("Script")]
         [string] $Command,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Name,
-
-        [Parameter(Mandatory = $false)]
         [string] $Folder,
-
-        [Parameter(Mandatory = $false)]
         [Alias("NoExit")]
         [switch] $KeepOpen,
-
-        [Parameter(Mandatory = $false)]
         [string] $RunLocation,
-
-        [Parameter(Mandatory = $false)]
         [string] $Description,
-
-        [Parameter(Mandatory = $false)]
         [ShortcutIcon] $Icon,
-
-        [Parameter(Mandatory = $false)]
         [string] $Hotkey,
-
-        [Parameter(Mandatory = $false)]
         [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Minimized,
-
-        [Parameter(Mandatory = $false)]
         [switch] $Elevated,
-
-        [Parameter(Mandatory = $false)]
         [switch] $Force,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "AllUsers")]
+        [Parameter(Mandatory, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
         [switch] $AllUsers,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
 

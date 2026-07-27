@@ -9,10 +9,9 @@ function New-PathEntries {
         New-PathEntries 'C:\A;C:\B' -Scope Machine
     #>
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [AllowEmptyString()]
         [string] $Path,
-
         [string] $Scope = "User"
     )
 
@@ -31,12 +30,10 @@ function New-PathEntry {
         New-PathEntry -ExpandableLocation '%SystemRoot%\System32' -Location 'C:\WINDOWS\System32'
     #>
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $ExpandableLocation,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Location,
-
         [string] $Scope = "User"
     )
 
@@ -53,7 +50,7 @@ function Get-StoredPath {
         Get-StoredPath $Entries | Should -Be 'C:\A;C:\B'
     #>
     param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $false)]
+        [Parameter(Mandatory, ValueFromPipeline = $false)]
         [AllowEmptyCollection()]
         [object[]] $Entries
     )

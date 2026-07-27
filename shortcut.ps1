@@ -101,7 +101,7 @@ function Get-Shortcut {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Location
     )
 
@@ -164,13 +164,11 @@ function New-ShortcutIcon {
     [CmdletBinding(DefaultParameterSetName = "Value")]
     [OutputType([ShortcutIcon])]
     param (
-        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "Value")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "Value")]
         [string] $Value,
-
-        [Parameter(Mandatory = $true, ParameterSetName = "Location")]
+        [Parameter(Mandatory, ParameterSetName = "Location")]
         [string] $Location,
-
-        [Parameter(Mandatory = $false, ParameterSetName = "Location")]
+        [Parameter(ParameterSetName = "Location")]
         [int] $Index = 0
     )
 
@@ -282,38 +280,19 @@ function New-Shortcut {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([Shortcut])]
     param (
-        [Parameter(Mandatory = $true, Position = 0)]
+        [Parameter(Mandatory, Position = 0)]
         [string] $Location,
-
-        [Parameter(Mandatory = $true, Position = 1)]
+        [Parameter(Mandatory, Position = 1)]
         [string] $Target,
-
-        [Parameter(Mandatory = $false)]
         [string] $Arguments,
-
-        [Parameter(Mandatory = $false)]
         [string] $RunLocation,
-
-        [Parameter(Mandatory = $false)]
         [string] $Description,
-
-        [Parameter(Mandatory = $false)]
         [ShortcutIcon] $Icon,
-
-        [Parameter(Mandatory = $false)]
         [string] $Hotkey,
-
-        [Parameter(Mandatory = $false)]
         [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Normal,
-
-        [Parameter(Mandatory = $false)]
         [Alias("Administrator")]
         [switch] $Elevated,
-
-        [Parameter(Mandatory = $false)]
         [switch] $CreateFolder,
-
-        [Parameter(Mandatory = $false)]
         [switch] $Force
     )
 
@@ -423,35 +402,17 @@ function Set-Shortcut {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([Shortcut])]
     param (
-        [Parameter(Mandatory = $true, Position = 0)]
+        [Parameter(Mandatory, Position = 0)]
         [string] $Location,
-
-        [Parameter(Mandatory = $false)]
         [string] $Target,
-
-        [Parameter(Mandatory = $false)]
         [string] $Arguments,
-
-        [Parameter(Mandatory = $false)]
         [string] $RunLocation,
-
-        [Parameter(Mandatory = $false)]
         [string] $Description,
-
-        [Parameter(Mandatory = $false)]
         [ShortcutIcon] $Icon,
-
-        [Parameter(Mandatory = $false)]
         [string] $Hotkey,
-
-        [Parameter(Mandatory = $false)]
         [ShortcutWindowStyle] $WindowStyle,
-
-        [Parameter(Mandatory = $false)]
         [Alias("Administrator")]
         [switch] $Elevated,
-
-        [Parameter(Mandatory = $false)]
         [switch] $PassThru
     )
 
@@ -520,10 +481,9 @@ function local:Set-ShortcutElevated {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Location,
-
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [bool] $Elevated
     )
 
@@ -557,7 +517,7 @@ function local:ConvertTo-ShortcutIcon {
     [CmdletBinding()]
     [OutputType([ShortcutIcon])]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [AllowEmptyString()]
         [string] $Value
     )
@@ -593,7 +553,7 @@ function local:Test-ShortcutElevated {
     [CmdletBinding()]
     [OutputType([bool])]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string] $Location
     )
 

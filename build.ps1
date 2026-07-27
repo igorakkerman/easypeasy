@@ -27,7 +27,6 @@
 [CmdletBinding()]
 [OutputType([string])]
 param (
-    [Parameter(Mandatory = $false)]
     [string] $Destination = (Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-build-$(New-Guid)")
 )
 
