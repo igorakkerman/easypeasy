@@ -1,6 +1,3 @@
-$allUsersProgramsLocation = $wshShell.SpecialFolders("AllUsersPrograms")
-$userProgramsLocation = $wshShell.SpecialFolders("Programs")
-
 function Get-StartMenuProgramsLocation {
     <#
     .SYNOPSIS
@@ -30,7 +27,8 @@ function Get-StartMenuProgramsLocation {
         [switch] $User
     )
 
-    return $AllUsers ? $allUsersProgramsLocation : $userProgramsLocation
+    # resolved per call, so a folder relocated during the session is picked up
+    return $wshShell.SpecialFolders($AllUsers ? "AllUsersPrograms" : "Programs")
 }
 
 function New-StartMenuProgramsFolder {
@@ -67,7 +65,7 @@ function New-StartMenuProgramsFolder {
         [switch] $User
     )
 
-    $programsLocation = $AllUsers ? $allUsersProgramsLocation : $userProgramsLocation
+    $programsLocation = Get-StartMenuProgramsLocation -AllUsers:$AllUsers
     $shortcutFolderName = "$programsLocation\$Name"
     if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
         New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
@@ -224,7 +222,7 @@ function Remove-StartMenuShortcut {
         [switch] $User
     )
 
-    $programsLocation = $AllUsers ? $allUsersProgramsLocation : $userProgramsLocation
+    $programsLocation = Get-StartMenuProgramsLocation -AllUsers:$AllUsers
     $shortcutFolder = $Folder ? "$programsLocation\$Folder" : $programsLocation
     $shortcutLocation = "$shortcutFolder\$Name.lnk"
 

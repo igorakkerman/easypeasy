@@ -24,6 +24,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Removed:** Aliases `-AppName` and `-Folder` on `New-StartMenuProgramsFolder` — pass `-Name`.
 - **Removed:** Aliases `-App` and `-AppName` on the shortcut functions — pass `-Name`.
 - **Changed:** `Remove-StartMenuShortcut` reports missing shortcut with error id `ShortcutNotFound`, category and target.
+- **Changed:** Start Menu Programs folder resolved per call, so a folder relocated during session is picked up.
 - **Changed:** `Get-StartMenuProgramsPath` renamed to `Get-StartMenuProgramsLocation`.
 
 ### Shortcut
