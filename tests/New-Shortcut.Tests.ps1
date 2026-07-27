@@ -165,6 +165,37 @@ Describe 'New-Shortcut' {
         Test-Path -LiteralPath $missing | Should -BeFalse
     }
 
+    It 'reports the missing shortcut folder under -WhatIf too' {
+        $missing = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid)\MyApp.lnk"
+
+        New-Shortcut $missing 'C:\Windows\notepad.exe' -WhatIf -ErrorVariable shortcutError -ErrorAction SilentlyContinue
+
+        $shortcutError.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+    }
+
+    It 'creates the missing shortcut folder with -CreateFolder' {
+        $folder = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid)"
+        try {
+            $result = New-Shortcut "$folder\MyApp.lnk" 'C:\Windows\notepad.exe' -CreateFolder
+
+            $folder | Should -Exist
+            $result.Target | Should -Be 'C:\Windows\notepad.exe'
+        }
+        finally {
+            Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'reports no missing shortcut folder under -WhatIf with -CreateFolder' {
+        $folder = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid)"
+
+        New-Shortcut "$folder\MyApp.lnk" 'C:\Windows\notepad.exe' -CreateFolder -WhatIf `
+            -ErrorVariable shortcutError -ErrorAction SilentlyContinue
+
+        $shortcutError | Should -BeNullOrEmpty
+        $folder | Should -Not -Exist
+    }
+
     It 'creates nothing and returns nothing under -WhatIf' {
         $result = New-Shortcut $lnk 'C:\Windows\notepad.exe' -WhatIf
 

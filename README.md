@@ -244,6 +244,11 @@ Only the shortcut location and its target are mandatory; the run location defaul
 The created shortcut is returned, in the same shape `Get-Shortcut` reads it. \
 An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it completely; omitted optional fields reset to their defaults.
 
+A missing folder is reported as an error, unless `-CreateFolder` is given to create it.
+```powershell
+> New-Shortcut "C:\Tools\Shortcuts\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" -CreateFolder
+```
+
 #### Build a shortcut icon
 
 `-Icon` takes a `ShortcutIcon`, built from the icon file and an optional index, or from the combined `file,index` source.

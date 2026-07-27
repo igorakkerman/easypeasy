@@ -86,7 +86,7 @@ write the **canonical** name, never an alias.
   `Hotkey`, `WindowStyle` and `Elevated`.
 - `New-Shortcut` — create a shortcut anywhere, not only in the Start Menu, and get it back as a
   record. `-Location` and `-Target` are mandatory; every other field is optional, with the target's
-  folder as default run location.
+  folder as default run location. `-CreateFolder` creates the folder of the shortcut when it is missing.
 - `Set-Shortcut` — set any combination of fields on an existing shortcut; `$null` or an empty string
   clears a field, `-Elevated:$false` clears the "Run as administrator" flag, `-PassThru` returns the
   shortcut.

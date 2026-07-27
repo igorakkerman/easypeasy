@@ -21,6 +21,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 ### Shortcut
 - **Added:** `New-Shortcut` — creates shortcut at any location and returns it; only `-Location` and `-Target` mandatory, run location defaults to folder of target, `-Force` performs complete overwrite.
 - **Added:** `Set-Shortcut` — sets any combination of shortcut fields, returns shortcut with `-PassThru`; `$null` or empty string clears a field.
+- **Added:** `-CreateFolder` on `New-Shortcut` — creates folder of shortcut when missing; without it, missing folder is reported as error.
 - **Added:** `New-ShortcutIcon` — builds `ShortcutIcon` for `-Icon`, from `-Location` and optional `-Index`, or from combined `-Value` `"file,index"`.
 - **Added:** `Get-Shortcut` — every readable field of a shortcut as one record: `Location`, `Target`, `Arguments`, `RunLocation`, `Description`, `Icon`, `Hotkey`, `WindowStyle`, `Elevated`.
 - **Added:** `Icon` as `ShortcutIcon` record — `Location` and `Index`, combined back by `ToString()`; `$null` when shortcut carries no icon.

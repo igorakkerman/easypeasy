@@ -243,6 +243,10 @@ function New-Shortcut {
         Launch the target elevated, ticked as "Run as administrator" in the advanced properties.
         Alias: Administrator.
 
+    .PARAMETER CreateFolder
+        Create the folder of the shortcut if it does not exist.
+        Without -CreateFolder, a missing folder is reported as an error and no shortcut is created.
+
     .PARAMETER Force
         Completely overwrite the shortcut if it already exists. Omitted optional fields reset to their documented defaults.
         Without -Force, a terminating error is reported when the shortcut exists.
@@ -258,6 +262,9 @@ function New-Shortcut {
             -Arguments "--profile Default" -Description "My favourite app" `
             -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
             -Hotkey "Ctrl+Alt+M" -WindowStyle Maximized -Elevated
+
+    .EXAMPLE
+        New-Shortcut "C:\Tools\Shortcuts\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" -CreateFolder
 
     .NOTES
         Alias: Administrator for -Elevated.
@@ -294,6 +301,9 @@ function New-Shortcut {
         [switch] $Elevated,
 
         [Parameter(Mandatory = $false)]
+        [switch] $CreateFolder,
+
+        [Parameter(Mandatory = $false)]
         [switch] $Force
     )
 
@@ -305,9 +315,12 @@ function New-Shortcut {
             -ErrorAction Stop
     }
 
+    # the folder is checked before the mutation, so -WhatIf reports the error a real run would hit
     $shortcutFolder = Split-Path -Parent $Location
-    if ($shortcutFolder -and -not (Test-Path -LiteralPath $shortcutFolder)) {
-        Write-Error "Shortcut folder not found: '$shortcutFolder'" `
+    $missesFolder = $shortcutFolder -and -not (Test-Path -LiteralPath $shortcutFolder)
+
+    if ($missesFolder -and -not $CreateFolder) {
+        Write-Error "Shortcut folder not found, use -CreateFolder to create it: '$shortcutFolder'" `
             -ErrorId "ShortcutFolderNotFound" `
             -Category ObjectNotFound `
             -TargetObject $shortcutFolder
@@ -316,6 +329,10 @@ function New-Shortcut {
 
     # every field is written, so an overwritten shortcut keeps nothing of its former self
     if ($PSCmdlet.ShouldProcess($Location, "Create shortcut")) {
+        if ($missesFolder) {
+            New-Item -ItemType Directory -Path $shortcutFolder -Force | Out-Null
+        }
+
         $obj = $wshShell.CreateShortcut($Location)
         $obj.TargetPath = $Target
         $obj.Arguments = $Arguments
