@@ -5,26 +5,26 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
 }
 
-Describe 'Assert-Elevated' {
+Describe 'Assert-Elevation' {
 
     # the two mocked cases cover both branches on every run, whichever way the runner was started
     It 'throws when the session is not elevated' {
-        Mock -ModuleName easypeasy Test-Elevated { $false }
+        Mock -ModuleName easypeasy Test-Elevation { $false }
 
-        { Assert-Elevated } | Should -Throw '*administrator privileges*'
+        { Assert-Elevation } | Should -Throw '*administrator privileges*'
     }
 
     It 'is silent when the session is elevated' {
-        Mock -ModuleName easypeasy Test-Elevated { $true }
+        Mock -ModuleName easypeasy Test-Elevation { $true }
 
-        { Assert-Elevated } | Should -Not -Throw
+        { Assert-Elevation } | Should -Not -Throw
     }
 
     It 'throws for a non-administrator' -Skip:$isAdmin {
-        { Assert-Elevated } | Should -Throw '*administrator privileges*'
+        { Assert-Elevation } | Should -Throw '*administrator privileges*'
     }
 
     It 'is silent for an administrator' -Skip:(-not $isAdmin) {
-        { Assert-Elevated } | Should -Not -Throw
+        { Assert-Elevation } | Should -Not -Throw
     }
 }

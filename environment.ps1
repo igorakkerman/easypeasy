@@ -280,7 +280,7 @@ function Set-EnvironmentVariable() {
 
     if ($PSCmdlet.ShouldProcess($Name, "Set environment variable in the ${scope} scope")) {
         # when not already elevated, a machine write runs in an elevated process instead of in-process
-        if ($Machine -and -not (Test-Elevated)) {
+        if ($Machine -and -not (Test-Elevation)) {
             Invoke-Elevated Set-EnvironmentVariable -Name $Name -Value $Value -Machine
         }
         else {
@@ -350,7 +350,7 @@ function Remove-EnvironmentVariable() {
 
     if ($PSCmdlet.ShouldProcess($Name, "Remove environment variable from the ${scope} scope")) {
         # when not already elevated, a machine write runs in an elevated process instead of in-process
-        if ($Machine -and -not (Test-Elevated)) {
+        if ($Machine -and -not (Test-Elevation)) {
             Invoke-Elevated Remove-EnvironmentVariable -Name $Name -Machine
         }
         else {
@@ -494,7 +494,7 @@ function local:Set-EnvironmentVariableExpandable {
         # when not already elevated, a machine write runs in an elevated process instead of in-process.
         # Re-invoke through the exported Set-EnvironmentVariable -Expandable: the elevated child auto-loads
         # the module by exported command name, which this internal function is not.
-        if ($Machine -and -not (Test-Elevated)) {
+        if ($Machine -and -not (Test-Elevation)) {
             Invoke-Elevated Set-EnvironmentVariable -Name $Name -Value $Value -Machine -Expandable
         }
         else {

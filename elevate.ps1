@@ -1,13 +1,13 @@
-function Test-Elevated {
+function Test-Elevation {
     $identity = [Security.Principal.WindowsPrincipal] [System.Security.Principal.WindowsIdentity]::GetCurrent()
     return $identity.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Assert-Elevated {
+function Assert-Elevation {
     [CmdletBinding()]
     param ()
 
-    if (! (Test-Elevated)) {
+    if (! (Test-Elevation)) {
         Write-Error "Operation requires administrator privileges." -ErrorAction Stop
     }
 }

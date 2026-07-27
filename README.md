@@ -382,8 +382,8 @@ Runs the given command in an elevated PowerShell session, prompting for confirma
 #### Verify that the current user is an administrator
 
 ```powershell
-> Assert-Elevated
-Assert-Elevated: This operation requires administrator privileges.
+> Assert-Elevation
+Assert-Elevation: This operation requires administrator privileges.
 ```
 
 ## Installation

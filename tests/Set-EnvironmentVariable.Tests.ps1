@@ -40,7 +40,7 @@ Describe 'Set-EnvironmentVariable' {
     Context 'machine scope' {
 
         It 'auto-elevates instead of writing in-process when not administrator' {
-            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Test-Elevation { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
 
             Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '42' -Machine
@@ -100,7 +100,7 @@ Describe 'Set-EnvironmentVariable' {
         }
 
         It 'auto-elevates through Invoke-Elevated, passing -Expandable, for a machine write when not administrator' {
-            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Test-Elevation { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
 
             Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -Machine -Expandable

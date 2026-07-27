@@ -55,7 +55,7 @@ Describe 'Remove-EnvironmentVariable' {
     Context 'machine scope' {
 
         It 'auto-elevates instead of writing in-process when not administrator' {
-            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Test-Elevation { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
             Mock -ModuleName easypeasy Get-EnvironmentVariable { 'present' }
 
