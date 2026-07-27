@@ -64,6 +64,10 @@ write the **canonical** name, never an alias.
   `Get-Shortcut`.
 - **PowerShell shortcut window.** `-Visible` and `-Maximized` give way to
   `-WindowStyle Normal` / `-WindowStyle Maximized`; the default stays `Minimized`.
+- **`Add-SystemPathLocation` rejects a location naming no existing folder** with a terminating
+  `PathLocationNotFound`, where v1 persisted whatever string it was given. The location is checked
+  expanded, so a `%…%` reference whose variable is not set is rejected too. Pass `-Force` where the
+  folder is meant to appear later.
 - **`Get-SystemPathLocation` and `Test-SystemPathLocation` require a criterion** — at least one of
   `-Location`, `-Contains`, `-Filter`, `-Match`. A bare call now errors.
 - **`Register-LogonTask -Name` and `-Executable` are mandatory.** A call omitting either now errors

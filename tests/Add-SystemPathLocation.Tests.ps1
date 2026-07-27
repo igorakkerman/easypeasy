@@ -5,6 +5,12 @@ BeforeAll {
 
 Describe 'Add-SystemPathLocation' {
 
+    BeforeAll {
+        # the fixture locations name no real folder, so the folder check is neutralized here;
+        # it is exercised against the file system in its own contexts below
+        Mock -ModuleName easypeasy Test-Path { $true }
+    }
+
     Context 'delegation' {
 
         BeforeEach {
@@ -156,6 +162,90 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\WINDOWS\S32' -User -WarningAction SilentlyContinue
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+    }
+
+    Context 'a location that names no existing folder' {
+
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            # the folder check runs against the real file system, without touching it
+            Mock -ModuleName easypeasy Test-Path { [System.IO.Directory]::Exists($LiteralPath) }
+            Mock -ModuleName easypeasy Get-SystemPath { New-PathEntries 'C:\Old' }
+            Mock -ModuleName easypeasy Set-SystemPath { }
+
+            $script:missing = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid)"
+        }
+
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'reports a terminating error' {
+            $errorRecord = { Add-SystemPathLocation -Location $missing -User } |
+                Should -Throw '*not an existing folder*' -PassThru
+
+            $errorRecord.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+            $errorRecord.FullyQualifiedErrorId | Should -BeLike 'PathLocationNotFound,*'
+            $errorRecord.TargetObject | Should -Be $missing
+        }
+
+        It 'does not persist' {
+            { Add-SystemPathLocation -Location $missing -User } | Should -Throw
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'reports the missing folder under -WhatIf too' {
+            { Add-SystemPathLocation -Location $missing -User -WhatIf } | Should -Throw '*not an existing folder*'
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'reports a location that is a file, not a folder' {
+            { Add-SystemPathLocation -Location 'C:\Windows\notepad.exe' -User } |
+                Should -Throw '*not an existing folder*'
+        }
+
+        It 'reports a %...% reference whose variable is not set' {
+            # an unset variable is left verbatim, so the expansion adds nothing and is not reported
+            { Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User } |
+                Should -Throw "*location: '%EASYPEASY_UNSET_XYZ%\bin'"
+        }
+
+        It 'names both forms when the expansion differs' {
+            { Add-SystemPathLocation -Location '%SystemRoot%\EasypeasyNoSuchFolder' -User } |
+                Should -Throw "*location: '%SystemRoot%\EasypeasyNoSuchFolder', expanded: '$env:SystemRoot\EasypeasyNoSuchFolder'"
+        }
+
+        It 'adds an existing folder' {
+            Add-SystemPathLocation -Location $env:SystemRoot -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Entries[-1].ExpandableLocation -eq $env:SystemRoot }
+        }
+
+        It 'adds a %...% reference that resolves to an existing folder' {
+            Add-SystemPathLocation -Location '%SystemRoot%\system32' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Entries[-1].ExpandableLocation -eq '%SystemRoot%\system32' }
+        }
+
+        It 'adds a missing folder with -Force' {
+            Add-SystemPathLocation -Location $missing -User -Force
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Entries[-1].ExpandableLocation -eq $script:missing }
+        }
+
+        It 'stores an unresolved %...% reference unexpanded with -Force' {
+            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User -Force
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Entries[-1].ExpandableLocation -eq '%EASYPEASY_UNSET_XYZ%\bin' }
+        }
+
+        It 'does not create the missing folder with -Force' {
+            Add-SystemPathLocation -Location $missing -User -Force
+
+            $missing | Should -Not -Exist
         }
     }
 

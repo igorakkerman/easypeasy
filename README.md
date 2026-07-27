@@ -116,9 +116,12 @@ in a specific scope (machine 🅰️ or user) \
 > addpath "C:\Program Files\MyApp"
 > addpath -Machine "C:\Program Files\MyApp" # 🅰️
 > addpath -First "C:\Program Files\MyApp" # this folder will be searched first
+> addpath -Force "%JAVA_HOME%\bin" # adds a location naming no existing folder
 
 > rmpath "C:\Program Files\MyApp" # removes every occurrence of this path
 ```
+
+A location naming no existing folder is rejected; pass `-Force` to add it anyway. The location is checked expanded, so a `%…%` reference whose variable is not set is rejected too.
 
 `addpath` and `rmpath` are aliases for `Add-SystemPathLocation` and `Remove-SystemPathLocation` respectively, which you should use in scripts.
 

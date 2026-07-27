@@ -51,6 +51,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** positional parameter: `-Contains` replaces `-Filter` / `-Location`, use `path Git`, `-Filter "*Git*"` or `-Match ".*Git.*"`.
 - **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` require at least one of `-Location`, `-Contains`, `-Filter` and `-Match`.
 - **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
+- **Added:** `Add-SystemPathLocation` reports terminating error `PathLocationNotFound` for location naming no existing folder, checked expanded.
+- **Added:** `-Force` on `Add-SystemPathLocation` — adds location naming no existing folder.
 - **Removed:** Aliases `-Prepend` and `-Start` on `Add-SystemPathLocation`.
 - **Fixed:** Aliases `addpath` and `rmpath` are exported;
   previously missing from the manifest.

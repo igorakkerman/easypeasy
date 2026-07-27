@@ -613,6 +613,9 @@ function Add-SystemPathLocation {
         Adds a location to the system Path.
     .DESCRIPTION
         Adds the specified location to the system Path, either for the current user or for the local machine.
+        A location naming no existing folder is reported as a terminating error and nothing is written,
+        unless -Force is given. The location is checked expanded, so a %...% reference whose variable is
+        not set names no folder either.
         Adding is idempotent: if the location is already present, the Path is left unchanged and a warning is reported.
         If the location is already present and -First is specified, it is moved to the beginning of the Path.
     .PARAMETER Location
@@ -625,6 +628,9 @@ function Add-SystemPathLocation {
         If specified, the location is added to the beginning of the Path. Otherwise, it is added to the end.
         If the location is already present, -First moves it to the beginning.
         Alias: Front.
+    .PARAMETER Force
+        Add the location even when it names no existing folder, e.g. to put a folder on the Path
+        before whatever creates it runs.
     .NOTES
         Alias: addpath
         Default scope is User.
@@ -636,6 +642,8 @@ function Add-SystemPathLocation {
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -First
+    .EXAMPLE
+        Add-SystemPathLocation -Location "%JAVA_HOME%\bin" -Force
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -647,8 +655,24 @@ function Add-SystemPathLocation {
         [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
         [Parameter(ParameterSetName = "User")]
-        [switch] $User
+        [switch] $User,
+        [switch] $Force
     )
+
+    # the location is checked before anything is read or written, so -WhatIf reports the error a real run would hit
+    $expandedLocation = [Environment]::ExpandEnvironmentVariables($Location)
+
+    if (-not $Force -and -not (Test-Path -LiteralPath $expandedLocation -PathType Container)) {
+        $detail = $expandedLocation -ceq $Location `
+            ? "location: '$Location'" `
+            : "location: '$Location', expanded: '$expandedLocation'"
+
+        Write-Error "Location is not an existing folder, use -Force to add it anyway. $detail" `
+            -ErrorId "PathLocationNotFound" `
+            -Category ObjectNotFound `
+            -TargetObject $Location `
+            -ErrorAction Stop
+    }
 
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }
     $scope = $Machine ? "Machine" : "User"
