@@ -71,6 +71,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
+- **Changed:** `-Name` and `-Executable` on `Register-LogonTask` are mandatory.
+- **Fixed:** `Register-LogonTask` registers a task without `-Argument`.
 
 ### Theme
 - **Removed:** Entire component — `Get-Theme`, `Set-Theme`, `Switch-Theme` and alias `theme`.

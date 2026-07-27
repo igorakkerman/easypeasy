@@ -349,7 +349,7 @@ Both accept `-Force` to overwrite an existing shortcut.
 equivalent to checking [Process Explorer](https://learn.microsoft.com/de-de/sysinternals/downloads/process-explorer)'s menu item *Options > Run At Logon* (requires administrator)
 ```powershell
 Register-LogonTask `
-    -Name "Process Explorer-${env:\USERDOMAIN}-${env:USERNAME}" `
+    -Name "Process Explorer-${env:USERDOMAIN}-${env:USERNAME}" `
     -Executable "$env:LOCALAPPDATA\Microsoft\WindowsApps\procexp.exe" `
     -Argument "/t" `
     -Force

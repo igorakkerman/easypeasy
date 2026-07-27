@@ -32,6 +32,14 @@ Describe 'Register-LogonTask' {
         }
     }
 
+    It 'runs the executable without an argument when none is given' {
+        Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe'
+
+        Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 1 -Exactly -ParameterFilter {
+            $InputObject.Actions[0].Execute -eq 'C:\app.exe' -and -not $InputObject.Actions[0].Arguments
+        }
+    }
+
     It 'triggers the task at logon of the current user' {
         Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument 'x'
 
@@ -61,6 +69,15 @@ Describe 'Register-LogonTask' {
 
     It 'does nothing under -WhatIf' {
         Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument 'x' -WhatIf
+
+        Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 0 -Exactly
+    }
+
+    It 'requires -<parameter>' -ForEach @(
+        @{ parameter = 'Name'; arguments = @{ Executable = 'C:\app.exe' } }
+        @{ parameter = 'Executable'; arguments = @{ Name = 'MyTask' } }
+    ) {
+        { Register-LogonTask @arguments -ErrorAction Stop } | Should -Throw
 
         Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 0 -Exactly
     }
