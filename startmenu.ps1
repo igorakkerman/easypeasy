@@ -56,7 +56,7 @@ function New-StartMenuProgramsFolder {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [string] $Name,
         [Parameter(Mandatory, ParameterSetName = "AllUsers")]
         [Alias("Machine", "All")]
@@ -84,11 +84,11 @@ function New-StartMenuShortcut {
     .PARAMETER Name
         The name of the shortcut in the Start Menu > Programs folder.
 
-    .PARAMETER Folder
-        The name of the folder in Start Menu > Programs to create the shortcut in. If not specified, the shortcut is created directly in Start Menu > Programs.
-
     .PARAMETER Target
         The location of the file or folder the shortcut opens.
+
+    .PARAMETER Folder
+        The name of the folder in Start Menu > Programs to create the shortcut in. If not specified, the shortcut is created directly in Start Menu > Programs.
 
     .PARAMETER Arguments
         The command-line arguments to pass to the target.
@@ -141,11 +141,11 @@ function New-StartMenuShortcut {
     # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
     [OutputType("Shortcut")]
     param (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [string] $Name,
-        [string] $Folder,
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 1)]
         [string] $Target,
+        [string] $Folder,
         [string] $Arguments,
         [string] $RunLocation,
         [string] $Description,
@@ -252,11 +252,11 @@ function New-PowershellStartMenuShortcut {
     .DESCRIPTION
         Creates a new shortcut that runs a PowerShell command in the Start Menu Programs folder, for the current user (the default) or for all users.
 
-    .PARAMETER Command
-        The PowerShell command to run.
-
     .PARAMETER Name
         The name of the shortcut in the Start Menu > Programs folder.
+
+    .PARAMETER Command
+        The PowerShell command to run.
 
     .PARAMETER Folder
         The name of the folder in Start Menu > Programs to create the shortcut in. If not specified, the shortcut is created directly in Start Menu > Programs.
@@ -310,11 +310,11 @@ function New-PowershellStartMenuShortcut {
     # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
     [OutputType("Shortcut")]
     param (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
+        [string] $Name,
+        [Parameter(Mandatory, Position = 1)]
         [Alias("Script")]
         [string] $Command,
-        [Parameter(Mandatory)]
-        [string] $Name,
         [string] $Folder,
         [Alias("NoExit")]
         [switch] $KeepOpen,

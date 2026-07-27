@@ -31,6 +31,19 @@ Describe 'New-StartMenuShortcut' {
         $shortcut.Target   | Should -Be 'C:\Windows\notepad.exe'
     }
 
+    It 'takes the shortcut name positionally' {
+        $shortcut = New-StartMenuShortcut 'Positional' -Target 'C:\Windows\notepad.exe'
+
+        $shortcut.Location | Should -Be "$folder\Positional.lnk"
+    }
+
+    It 'takes the shortcut name and target positionally' {
+        $shortcut = New-StartMenuShortcut 'PositionalBoth' 'C:\Windows\notepad.exe'
+
+        $shortcut.Location | Should -Be "$folder\PositionalBoth.lnk"
+        $shortcut.Target   | Should -Be 'C:\Windows\notepad.exe'
+    }
+
     It 'creates nothing and returns nothing under -WhatIf' {
         $shortcut = New-StartMenuShortcut -Name 'WhatIfApp' -Target 'C:\Windows\notepad.exe' -WhatIf
 

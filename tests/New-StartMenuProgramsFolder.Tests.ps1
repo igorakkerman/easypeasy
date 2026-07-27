@@ -45,6 +45,14 @@ Describe 'New-StartMenuProgramsFolder' {
             -ParameterFilter { $Path -eq "$allUsersPrograms\EasypeasyTest" }
     }
 
+    It 'takes the folder name positionally' {
+        Mock -ModuleName easypeasy New-Item { }
+
+        $result = New-StartMenuProgramsFolder 'EasypeasyTest'
+
+        $result | Should -Match 'EasypeasyTest$'
+    }
+
     It 'creates the folder as a directory' {
         Mock -ModuleName easypeasy New-Item { }
 

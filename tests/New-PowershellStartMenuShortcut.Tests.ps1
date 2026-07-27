@@ -41,6 +41,19 @@ Describe 'New-PowershellStartMenuShortcut' {
         (Get-Shortcut $shortcut.Location).Elevated | Should -BeTrue
     }
 
+    It 'takes the shortcut name positionally' {
+        $shortcut = New-PowershellStartMenuShortcut 'Positional' -Command 'Get-Date'
+
+        $shortcut.Location | Should -Be "$folder\Positional.lnk"
+    }
+
+    It 'takes the shortcut name and command positionally' {
+        $shortcut = New-PowershellStartMenuShortcut 'PositionalBoth' 'Get-Date'
+
+        $shortcut.Location  | Should -Be "$folder\PositionalBoth.lnk"
+        $shortcut.Arguments | Should -Match 'Get-Date'
+    }
+
     It 'leaves the target unelevated without -Elevated' {
         $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Unelevated'
 
