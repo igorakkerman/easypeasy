@@ -20,4 +20,13 @@ Describe 'Stop-Explorer' {
 
         Should -Invoke -ModuleName easypeasy Stop-Process -Times 0 -Exactly
     }
+
+    It 'leaves an Explorer that is not running alone, reporting no error' {
+        Mock -ModuleName easypeasy Stop-Process { }
+
+        Stop-Explorer
+
+        Should -Invoke -ModuleName easypeasy Stop-Process -Times 1 -Exactly `
+            -ParameterFilter { $ErrorAction -eq 'SilentlyContinue' }
+    }
 }

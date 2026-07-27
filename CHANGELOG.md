@@ -67,6 +67,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Assert-Administrator` renamed to `Assert-Elevation`.
 - **Added:** `Test-Elevation` — returns whether the current session is elevated.
 - **Added:** Error id, category and target on every reported error.
+- **Fixed:** `Stop-Explorer` treats absent Explorer process as success.
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
