@@ -66,6 +66,8 @@ write the **canonical** name, never an alias.
   `-WindowStyle Normal` / `-WindowStyle Maximized`; the default stays `Minimized`.
 - **`Get-SystemPathLocation` and `Test-SystemPathLocation` require a criterion** — at least one of
   `-Location`, `-Contains`, `-Filter`, `-Match`. A bare call now errors.
+- **Errors carry an error id, a category and a target.** Code discriminating on message text should match
+  on `FullyQualifiedErrorId` instead, e.g. `ShortcutNotFound`, `ElevationRequired`, `SudoNotAvailable`.
 - **Positional path/query argument is `-Contains`** (literal substring), replacing v1 positional
   `-Filter` / `-Location`: `Get-SystemPath Git`, or `-Filter "*Git*"`, or `-Match ".*Git.*"`.
 - **Environment writes apply immediately.** `Set-EnvironmentVariable` / `Remove-EnvironmentVariable`

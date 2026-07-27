@@ -45,8 +45,11 @@ Describe 'Remove-DuplicateSystemPathLocations' {
         }
 
         It 'rejects both -KeepMachine and -KeepUser' {
-            { Remove-DuplicateSystemPathLocations -KeepMachine -KeepUser -ErrorAction Stop } |
-                Should -Throw '*only one*'
+            $errorRecord = { Remove-DuplicateSystemPathLocations -KeepMachine -KeepUser -ErrorAction Stop } |
+                Should -Throw '*only one*' -PassThru
+
+            $errorRecord.CategoryInfo.Category | Should -Be 'InvalidArgument'
+            $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ConflictingKeepScope,*'
         }
     }
 

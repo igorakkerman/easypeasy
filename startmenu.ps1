@@ -257,7 +257,11 @@ function Remove-StartMenuShortcut {
     $shortcutLocation = "$shortcutFolder\$Name.lnk"
 
     if (-not (Test-Path -LiteralPath $shortcutLocation)) {
-        Write-Error "Shortcut not found: '$shortcutLocation'" -ErrorAction Stop
+        Write-Error "Shortcut not found: '$shortcutLocation'" `
+            -ErrorId "ShortcutNotFound" `
+            -Category ObjectNotFound `
+            -TargetObject $shortcutLocation `
+            -ErrorAction Stop
     }
 
     if ($PSCmdlet.ShouldProcess($shortcutLocation, "Remove shortcut")) {

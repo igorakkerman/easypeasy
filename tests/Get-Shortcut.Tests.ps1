@@ -84,10 +84,22 @@ Describe 'Get-Shortcut' {
     It 'reports an error for a missing shortcut' {
         $missing = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid).lnk"
 
-        { Get-Shortcut -Location $missing -ErrorAction Stop } | Should -Throw
+        Get-Shortcut -Location $missing -ErrorVariable shortcutError -ErrorAction SilentlyContinue
+
+        $shortcutError.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+        $shortcutError.FullyQualifiedErrorId | Should -BeLike 'ShortcutNotFound,*'
+        $shortcutError.TargetObject | Should -Be $missing
 
         # reading a shortcut must not create one
         $missing | Should -Not -Exist
+    }
+
+    It 'returns nothing for a missing shortcut' {
+        $missing = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid).lnk"
+
+        $result = Get-Shortcut -Location $missing -ErrorAction SilentlyContinue
+
+        $result | Should -BeNullOrEmpty
     }
 
     It 'returns no icon for a shortcut carrying none' {

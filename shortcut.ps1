@@ -89,6 +89,7 @@ function Get-Shortcut {
 
     .PARAMETER Location
         The location of the shortcut to read.
+        If the shortcut does not exist, an error is reported.
 
     .OUTPUTS
         Shortcut record with a Location, Target, Arguments, RunLocation, Description, Icon, Hotkey, WindowStyle and Elevated property.
@@ -103,6 +104,15 @@ function Get-Shortcut {
         [Parameter(Mandatory = $true)]
         [string] $Location
     )
+
+    # CreateShortcut hands back a blank shortcut for a location holding none, so the file is checked first
+    if (-not (Test-Path -LiteralPath $Location -PathType Leaf)) {
+        Write-Error "Shortcut not found: '$Location'" `
+            -ErrorId "ShortcutNotFound" `
+            -Category ObjectNotFound `
+            -TargetObject $Location
+        return
+    }
 
     $obj = $wshShell.CreateShortcut($Location)
 
@@ -451,7 +461,11 @@ function Set-Shortcut {
     $setsField = [bool] ($paramNames | Where-Object { $PSBoundParameters.ContainsKey($_) })
 
     if (-not $setsField -and -not $PSBoundParameters.ContainsKey("Elevated")) {
-        Write-Error "At least one shortcut field is required: -$($paramNames -join ', -'), -Elevated." -ErrorAction Stop
+        Write-Error "At least one shortcut field is required: -$($paramNames -join ', -'), -Elevated." `
+            -ErrorId "MissingShortcutField" `
+            -Category InvalidArgument `
+            -TargetObject $Location `
+            -ErrorAction Stop
     }
 
     if (-not (Test-Path -LiteralPath $Location -PathType Leaf)) {

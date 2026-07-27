@@ -23,6 +23,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Removed:** Aliases `-Group` and `-GroupName` — pass `-Folder`, or `-Name` on `New-StartMenuProgramsFolder`.
 - **Removed:** Aliases `-AppName` and `-Folder` on `New-StartMenuProgramsFolder` — pass `-Name`.
 - **Removed:** Aliases `-App` and `-AppName` on the shortcut functions — pass `-Name`.
+- **Changed:** `Remove-StartMenuShortcut` reports missing shortcut with error id `ShortcutNotFound`, category and target.
 - **Changed:** `Get-StartMenuProgramsPath` renamed to `Get-StartMenuProgramsLocation`.
 
 ### Shortcut
@@ -36,6 +37,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Removed:** `Get-ShortcutIconLocation` — read `Get-Shortcut` instead.
 - **Removed:** `Set-ShortcutTarget` — pass `-Target` to `Set-Shortcut` instead.
 - **Removed:** `Set-ShortcutRunAsAdministrator` — pass `-Elevated` to `Set-Shortcut` instead.
+- **Fixed:** `Get-Shortcut` reports missing shortcut as `ShortcutNotFound` instead of failing on file read.
 
 ### System PATH and environment variables
 - **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.
@@ -64,6 +66,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `Invoke-Elevated` reports terminating error when sudo not available.
 - **Changed:** `Assert-Administrator` renamed to `Assert-Elevation`.
 - **Added:** `Test-Elevation` — returns whether the current session is elevated.
+- **Added:** Error id, category and target on every reported error.
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`

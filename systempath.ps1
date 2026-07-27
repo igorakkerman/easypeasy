@@ -785,7 +785,11 @@ function Remove-DuplicateSystemPathLocations {
     )
 
     if ($KeepMachine -and $KeepUser) {
-        Write-Error "Specify only one of -KeepMachine and -KeepUser." -ErrorAction Stop
+        Write-Error "Specify only one of -KeepMachine and -KeepUser." `
+            -ErrorId "ConflictingKeepScope" `
+            -Category InvalidArgument `
+            -TargetObject "-KeepMachine, -KeepUser" `
+            -ErrorAction Stop
     }
 
     # clean both scopes when neither (or both) scope switches are given
@@ -975,7 +979,11 @@ function Get-SystemPathLocation {
     }
 
     if (-not $Location -and -not $Contains -and -not $Filter -and -not $Match) {
-        Write-Error "Specify at least one of -Location, -Contains, -Filter and -Match." -ErrorAction Stop
+        Write-Error "Specify at least one of -Location, -Contains, -Filter and -Match." `
+            -ErrorId "MissingSearchCriterion" `
+            -Category InvalidArgument `
+            -TargetObject "-Location, -Contains, -Filter, -Match" `
+            -ErrorAction Stop
     }
 
     $context = `

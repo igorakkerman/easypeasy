@@ -62,7 +62,11 @@ Describe 'Invoke-Elevated' {
     It 'reports a terminating error when the elevated command exits non-zero' {
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 1 }
 
-        { Invoke-Elevated addpath -Machine 'C:\Tools' } | Should -Throw '*exitCode: 1*'
+        $errorRecord = { Invoke-Elevated addpath -Machine 'C:\Tools' } | Should -Throw '*exitCode: 1*' -PassThru
+
+        $errorRecord.CategoryInfo.Category | Should -Be 'OperationStopped'
+        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ElevatedCommandFailed,*'
+        $errorRecord.TargetObject | Should -Be 'addpath -Machine C:\Tools'
     }
 
     It 'treats a non-terminating error in the elevated command as success' {
@@ -87,7 +91,11 @@ Describe 'Invoke-Elevated' {
         Mock -ModuleName easypeasy Get-Command { } -ParameterFilter { $Name -eq 'sudo' }
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
 
-        { Invoke-Elevated addpath -Machine 'C:\Tools' } | Should -Throw '*sudo*'
+        $errorRecord = { Invoke-Elevated addpath -Machine 'C:\Tools' } | Should -Throw '*sudo*' -PassThru
+
+        $errorRecord.CategoryInfo.Category | Should -Be 'NotInstalled'
+        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'SudoNotAvailable,*'
+        $errorRecord.TargetObject | Should -Be 'sudo'
         Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
     }
 

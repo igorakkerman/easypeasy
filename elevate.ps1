@@ -8,7 +8,11 @@ function Assert-Elevation {
     param ()
 
     if (! (Test-Elevation)) {
-        Write-Error "Operation requires administrator privileges." -ErrorAction Stop
+        Write-Error "Operation requires administrator privileges." `
+            -ErrorId "ElevationRequired" `
+            -Category PermissionDenied `
+            -TargetObject ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) `
+            -ErrorAction Stop
     }
 }
 
@@ -50,7 +54,11 @@ function Invoke-Elevated {
 
     if ($PSCmdlet.ShouldProcess($line, "Run elevated")) {
         if (-not (Get-Command sudo -ErrorAction SilentlyContinue)) {
-            Write-Error "Elevation requires sudo. Enable Windows sudo feature." -ErrorAction Stop
+            Write-Error "Elevation requires sudo. Enable Windows sudo feature." `
+                -ErrorId "SudoNotAvailable" `
+                -Category NotInstalled `
+                -TargetObject "sudo" `
+                -ErrorAction Stop
         }
         # exit $LASTEXITCODE so only a real failure - a terminating error or a native non-zero exit -
         # sets the exit code; a non-terminating error alone would otherwise make -Command exit 1
@@ -60,7 +68,11 @@ function Invoke-Elevated {
         # --inline forces sudo to run in the current terminal, whatever mode the system is configured for
         sudo --inline $powershell -NoProfile -EncodedCommand $encodedCommand
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "Elevated command failed. exitCode: $LASTEXITCODE, command: $line" -ErrorAction Stop
+            Write-Error "Elevated command failed. exitCode: $LASTEXITCODE, command: $line" `
+                -ErrorId "ElevatedCommandFailed" `
+                -Category OperationStopped `
+                -TargetObject $line `
+                -ErrorAction Stop
         }
     }
 }

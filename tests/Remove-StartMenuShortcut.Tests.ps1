@@ -77,5 +77,13 @@ Describe 'Remove-StartMenuShortcut' {
             { Remove-StartMenuShortcut -Name 'Foo' } | Should -Throw '*not found*'
             Should -Invoke -ModuleName easypeasy Remove-Item -Times 0 -Exactly
         }
+
+        It 'reports the missing shortcut with its error id and location' {
+            $errorRecord = { Remove-StartMenuShortcut -Name 'Foo' } | Should -Throw -PassThru
+
+            $errorRecord.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+            $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ShortcutNotFound,*'
+            $errorRecord.TargetObject | Should -BeLike '*\Foo.lnk'
+        }
     }
 }

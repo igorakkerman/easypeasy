@@ -137,7 +137,11 @@ Describe 'Set-Shortcut' {
     }
 
     It 'requires at least one field' {
-        { Set-Shortcut $lnk } | Should -Throw '*at least one shortcut field*'
+        $errorRecord = { Set-Shortcut $lnk } | Should -Throw '*at least one shortcut field*' -PassThru
+
+        $errorRecord.CategoryInfo.Category | Should -Be 'InvalidArgument'
+        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'MissingShortcutField,*'
+        $errorRecord.TargetObject | Should -Be $lnk
     }
 
     It 'returns nothing without -PassThru' {

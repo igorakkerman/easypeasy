@@ -76,8 +76,11 @@ Describe 'Get-SystemPathLocation' {
         }
 
         It 'errors when no criterion is given' {
-            { Get-SystemPathLocation -ErrorAction Stop } |
-                Should -Throw '*at least one*'
+            $errorRecord = { Get-SystemPathLocation -ErrorAction Stop } |
+                Should -Throw '*at least one*' -PassThru
+
+            $errorRecord.CategoryInfo.Category | Should -Be 'InvalidArgument'
+            $errorRecord.FullyQualifiedErrorId | Should -BeLike 'MissingSearchCriterion,*'
         }
 
         It 'rejects an invalid regex on -Match, reporting the pattern and the reason' {
