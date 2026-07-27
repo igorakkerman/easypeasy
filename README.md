@@ -79,20 +79,6 @@ Machine    C:\Windows
 > path Git Program                # must contain both strings
 ```
 
-#### Find a folder on the system Path and the scope it lives in
-
-```powershell
-> Get-SystemPathLocation Windows
-> Get-SystemPathLocation -Location "C:\Windows"
-> Get-SystemPathLocation -Filter "*\Git\*" -User
-
-Scope      Location
------      --------
-Machine    C:\Windows
-```
-
-Both commands take the same criteria as `Get-SystemPath` — `-Contains` (positional), `-Filter` and `-Match` — plus an exact `-Location`, and the scope switches `-Machine` and `-User`. At least one criterion is required. Each result carries the scope it was found in: `Machine`, `User`, or `Process`.
-
 #### Test whether a folder is on the system Path
 
 in a specific scope (machine or user) \
@@ -107,7 +93,6 @@ True
 ```
 
 #### Add or remove a folder to/from the system Path permanently
-
 in a specific scope (machine 🅰️ or user) \
 **default**: **user** scope
 

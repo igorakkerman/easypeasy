@@ -110,6 +110,91 @@ Describe 'Get-SystemPath' {
         }
     }
 
+    Context '-Exact' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        It 'returns only the location equal to it' {
+            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+
+            (Get-SystemPath -Exact 'C:\Windows').Location | Should -Be @('C:\Windows')
+        }
+
+        It 'matches the exact location, not a location containing it' {
+            $env:PATH = 'C:\Windows;C:\Windows\System32'
+
+            (Get-SystemPath -Exact 'C:\Windows').Location | Should -Be @('C:\Windows')
+        }
+
+        It 'matches case-insensitively and ignores trailing backslashes' {
+            $env:PATH = 'C:\Windows'
+
+            (Get-SystemPath -Exact 'c:\windows\').Location | Should -Be @('C:\Windows')
+        }
+
+        It 'returns nothing when the location is absent' {
+            $env:PATH = 'C:\Windows'
+
+            Get-SystemPath -Exact 'C:\Nope' | Should -BeNullOrEmpty
+        }
+
+        It 'tags the match with its origin scope' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Windows' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\me\bin' }
+            $env:PATH = 'C:\Windows;C:\Users\me\bin;C:\Temp\session'
+
+            (Get-SystemPath -Exact 'C:\Windows').Scope | Should -Be 'Machine'
+            (Get-SystemPath -Exact 'C:\Users\me\bin').Scope | Should -Be 'User'
+            (Get-SystemPath -Exact 'C:\Temp\session').Scope | Should -Be 'Process'
+        }
+
+        It 'searches the machine Path when -Machine is given' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Windows;C:\Tools' }
+
+            (Get-SystemPath -Exact 'C:\Tools' -Machine).Scope | Should -Be 'Machine'
+
+            Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -Times 1 -Exactly `
+                -ParameterFilter { $Machine }
+        }
+
+        It 'searches the user Path when -User is given' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Users\me\bin' }
+
+            (Get-SystemPath -Exact 'C:\Users\me\bin' -User).Scope | Should -Be 'User'
+
+            Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -Times 1 -Exactly `
+                -ParameterFilter { $User }
+        }
+
+        It 'rejects both -Machine and -User' {
+            { Get-SystemPath -Exact 'C:\x' -Machine -User } |
+                Should -Throw '*Parameter set cannot be resolved*'
+        }
+
+        It 'combines with the other criteria' {
+            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd'
+
+            (Get-SystemPath -Exact 'C:\Program Files\Git\bin' -Filter '*\bin').Location |
+                Should -Be @('C:\Program Files\Git\bin')
+
+            Get-SystemPath -Exact 'C:\Program Files\Git\bin' -Filter '*\cmd' | Should -BeNullOrEmpty
+        }
+
+        It 'returns the stored form when -Join is used' {
+            $env:PATH = 'C:\A;C:\B'
+
+            Get-SystemPath -Exact 'C:\B' -Join | Should -Be 'C:\B'
+        }
+
+        It 'takes the location by its -Location and -Folder aliases' {
+            $env:PATH = 'C:\Windows;C:\Tools'
+
+            (Get-SystemPath -Location 'C:\Tools').Location | Should -Be @('C:\Tools')
+            (Get-SystemPath -Folder 'C:\Tools').Location | Should -Be @('C:\Tools')
+        }
+    }
+
     Context '-Filter' {
 
         BeforeAll { $script:originalPath = $env:PATH }
@@ -270,6 +355,44 @@ Describe 'Get-SystemPath' {
             $env:PATH = 'C:\Shared;C:\Shared'
 
             (Get-SystemPath).Scope | Should -Be @('Machine', 'User')
+        }
+    }
+
+    Context '-Process' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\WinDir' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\me\bin' }
+        }
+
+        It 'returns only the locations on neither persisted Path' {
+            $env:PATH = 'C:\WinDir;C:\Users\me\bin;C:\Temp\session;C:\Temp\other'
+
+            $result = Get-SystemPath -Process
+
+            $result.Location | Should -Be @('C:\Temp\session', 'C:\Temp\other')
+            $result.Scope | Should -Be @('Process', 'Process')
+        }
+
+        It 'returns nothing when every location is persisted' {
+            $env:PATH = 'C:\WinDir;C:\Users\me\bin'
+
+            Get-SystemPath -Process | Should -BeNullOrEmpty
+        }
+
+        It 'applies the criteria to the process-only locations' {
+            $env:PATH = 'C:\WinDir;C:\Temp\session;C:\Temp\other'
+
+            (Get-SystemPath -Process session).Location | Should -Be @('C:\Temp\session')
+            Get-SystemPath -Process 'C:\WinDir' | Should -BeNullOrEmpty
+        }
+
+        It 'rejects both -Process and -Machine' {
+            { Get-SystemPath -Process -Machine } |
+                Should -Throw '*Parameter set cannot be resolved*'
         }
     }
 

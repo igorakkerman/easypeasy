@@ -68,13 +68,13 @@ write the **canonical** name, never an alias.
   `PathLocationNotFound`, where v1 persisted whatever string it was given. The location is checked
   expanded, so a `%…%` reference whose variable is not set is rejected too. Pass `-Force` where the
   folder is meant to appear later.
-- **`Get-SystemPathLocation` and `Test-SystemPathLocation` require a criterion** — at least one of
+- **`Test-SystemPathLocation` requires a criterion** — at least one of
   `-Location`, `-Contains`, `-Filter`, `-Match`. A bare call now errors.
 - **`Register-LogonTask -Name` and `-Executable` are mandatory.** A call omitting either now errors
   instead of registering a task with nothing to run.
-- **Scope switches on the Path lookups are parameter sets.** `Get-SystemPathLocation` and
-  `Test-SystemPathLocation` take `-Machine`, `-User` or `-Effective` (default); passing two of them is a
-  parameter-set error. `Remove-DuplicateSystemPathLocations` likewise rejects `-KeepMachine` / `-KeepUser`
+- **Scope switches on the Path lookups are parameter sets.** `Get-SystemPath` and
+  `Test-SystemPathLocation` take `-Machine`, `-User`, `-Process` or `-Effective` (default); passing two of
+  them is a parameter-set error. `Remove-DuplicateSystemPathLocations` likewise rejects `-KeepMachine` / `-KeepUser`
   next to `-Machine` or `-User`, where v2 up to now ignored them.
 - **Errors carry an error id, a category and a target.** Code discriminating on message text should match
   on `FullyQualifiedErrorId` instead, e.g. `ShortcutNotFound`, `ElevationRequired`, `SudoNotAvailable`.
@@ -99,6 +99,7 @@ write the **canonical** name, never an alias.
 | `Get-ShortcutIconLocation` | `Get-Shortcut`, then read `.Icon.Location` or `.Icon.Index` |
 | `Set-ShortcutTarget` | `Set-Shortcut -Target` |
 | `Set-ShortcutRunAsAdministrator` | `Set-Shortcut -Elevated` (and `-Elevated:$false` to clear it) |
+| `Get-SystemPathLocation` | `Get-SystemPath -Exact` (alias `-Location`), or `-Contains` / `-Filter` / `-Match` |
 
 ## New in v2 — prefer where applicable
 
@@ -120,7 +121,8 @@ write the **canonical** name, never an alias.
   reference stays as indirection; without it the value is written verbatim as `REG_SZ`.
 - `Get-EnvironmentVariable -Expandable` — read the stored expandable value without evaluating its
   `%…%` references.
-- `-Contains` / `-Filter` / `-Match` on `Get-SystemPath`, `Get-SystemPathLocation`,
-  `Test-SystemPathLocation` — literal substring, wildcard, regular expression.
+- `-Contains` / `-Filter` / `-Match` on `Get-SystemPath` and `Test-SystemPathLocation` — literal
+  substring, wildcard, regular expression. `-Exact` (alias `-Location`) matches exactly, `-Process`
+  narrows to the locations local to the current shell.
 - `Sync-SystemPath` (alias `syncpath`) — rebuild the system Path of the current shell from the
   machine and the user Path, for a change made outside easypeasy.

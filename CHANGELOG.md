@@ -47,10 +47,13 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 ### System PATH and environment variables
 - **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.
 - **Added:** Table view for system path locations in output of `Get-SystemPath`. 
-- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` — literal substring, wildcard pattern, regular expression.
-- **Added:** `-Match` on `Get-SystemPath`, `Get-SystemPathLocation` and `Test-SystemPathLocation` rejects invalid regular expressions.
+- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath` and `Test-SystemPathLocation` — literal substring, wildcard pattern, regular expression.
+- **Added:** `-Match` on `Get-SystemPath` and `Test-SystemPathLocation` rejects invalid regular expressions.
+- **Added:** `-Exact` (aliases `-Location`, `-Folder`) on `Get-SystemPath` — exact match, case-insensitive, trailing backslashes ignored.
+- **Added:** `-Process` on `Get-SystemPath` and `Test-SystemPathLocation` — locations local to current shell, on neither persisted Path.
+- **Removed:** `Get-SystemPathLocation` — use `Get-SystemPath -Location`, `-Contains`, `-Filter` or `-Match`.
 - **Changed:** positional parameter: `-Contains` replaces `-Filter` / `-Location`, use `path Git`, `-Filter "*Git*"` or `-Match ".*Git.*"`.
-- **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` require at least one of `-Location`, `-Contains`, `-Filter` and `-Match`.
+- **Changed:** `Test-SystemPathLocation` requires at least one of `-Location`, `-Contains`, `-Filter` and `-Match`.
 - **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
 - **Added:** `Add-SystemPathLocation` reports terminating error `PathLocationNotFound` for location naming no existing folder, checked expanded.
 - **Added:** `-Force` on `Add-SystemPathLocation` — adds location naming no existing folder.
@@ -75,7 +78,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `Test-Elevated` — returns whether the current session is elevated.
 - **Added:** Error id, category and target on every reported error.
 - **Changed:** `Backup-SystemPath` returns location of backup file.
-- **Changed:** `Get-SystemPathLocation` and `Test-SystemPathLocation` take `-Machine`, `-User` and `-Effective` as parameter sets, matching `Get-SystemPath`.
+- **Changed:** `Test-SystemPathLocation` takes `-Machine`, `-User` and `-Effective` as parameter sets, matching `Get-SystemPath`.
 - **Changed:** `Remove-DuplicateSystemPathLocations` rejects `-KeepMachine` / `-KeepUser` next to a single scope, instead of ignoring them.
 - **Fixed:** `Stop-Explorer` treats absent Explorer process as success.
 

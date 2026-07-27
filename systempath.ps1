@@ -408,17 +408,23 @@ function Get-SystemPath {
         For -Machine or -User every location carries that scope.
         If the -Join switch is specified, the Path is returned as a semicolon-separated string of the stored
         (expandable) locations instead.
-        The -Contains, -Filter and -Match criteria select locations. Multiple criteria, of the same kind or of
-        different kinds, must all be satisfied. Without any criterion, every location is returned.
+        The -Exact, -Contains, -Filter and -Match criteria select locations. Multiple criteria, of the same kind or
+        of different kinds, must all be satisfied. Without any criterion, every location is returned.
     .PARAMETER Machine
         If specified, the system Path for the local machine is returned.
     .PARAMETER User
         If specified, the system Path for the current user is returned.
     .PARAMETER Effective
         Default; if specified, the effective system Path is returned. The effective system Path is the Path in effect in the current shell.
+    .PARAMETER Process
+        If specified, only the locations local to the current shell are returned, those on neither persisted Path.
     .PARAMETER Join
         If specified, the system Path is returned as a semicolon-separated string of the stored (expandable) locations.
         Otherwise, it is returned as an array of SystemPathLocation objects.
+    .PARAMETER Exact
+        Exact folder location; only a location equal to it is returned. Matching is case-insensitive and ignores
+        trailing backslashes.
+        Aliases: Location, Folder.
     .PARAMETER Contains
         Substrings, positional; only locations containing all of them are returned. Taken literally: wildcard and
         regex characters carry no meaning. Matching is case-insensitive and ignores trailing backslashes.
@@ -440,6 +446,10 @@ function Get-SystemPath {
     .EXAMPLE
         Get-SystemPath -User -Join
     .EXAMPLE
+        Get-SystemPath -Process
+    .EXAMPLE
+        Get-SystemPath -Exact "C:\Program Files\Git\bin"
+    .EXAMPLE
         Get-SystemPath Git
     .EXAMPLE
         Get-SystemPath Git bin
@@ -458,7 +468,11 @@ function Get-SystemPath {
         [switch] $User,
         [Parameter(ParameterSetName = "Effective")]
         [switch] $Effective,
+        [Parameter(Mandatory, ParameterSetName = "Process")]
+        [switch] $Process,
         [switch] $Join,
+        [Alias("Location", "Folder")]
+        [string] $Exact,
         [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
         [string[]] $Contains,
         [string[]] $Filter,
@@ -479,7 +493,7 @@ function Get-SystemPath {
         | ForEach-Object { [SystemPathLocation]::new("User", $_, [Environment]::ExpandEnvironmentVariables($_)) }
     }
     else {
-        # effective: the live shell Path, each location tagged with the persisted scope it originates from.
+        # effective and process: the live shell Path, each location tagged with the persisted scope it originates from.
         # The process Path lists machine locations before user locations, so consume the machine occurrences
         # first, then user; a location on both scopes therefore appears once as Machine and once as User.
         # Windows expands the process block, so the stored %...% form is recovered from the originating scope;
@@ -507,7 +521,13 @@ function Get-SystemPath {
         }
     }
 
+    # -Process keeps what the scope tagging above found on neither persisted Path
+    if ($Process) {
+        $allLocations = $allLocations | Where-Object { $_.Scope -eq "Process" }
+    }
+
     $criteria = @{
+        Exact    = $Exact
         Contains = $Contains
         Filter   = $Filter
         Match    = $Match
@@ -918,86 +938,6 @@ function Move-SystemPathLocation {
     }
 }
 
-function Get-SystemPathLocation {
-    <#
-    .SYNOPSIS
-        Finds a location on the system Path.
-    .DESCRIPTION
-        Returns the locations on the system Path that satisfy the given criteria,
-        either for the current user, for the local machine or the system Path in effect in the current context.
-        Each result carries the matched location and the scope it was found in: 'Machine' or 'User', or - for the
-        effective Path - 'Process' when the location is only on the current shell's Path.
-        Multiple criteria, of the same kind or of different kinds, must all be satisfied. At least one of
-        -Location, -Contains, -Filter and -Match is required.
-        Matching is case-insensitive and ignores trailing backslashes. Nothing is returned when no location matches.
-    .PARAMETER Location
-        Exact folder location to look for.
-    .PARAMETER Contains
-        Substrings, positional; only locations containing all of them are returned. Taken literally: wildcard and
-        regex characters carry no meaning.
-    .PARAMETER Filter
-        Wildcard patterns; only locations matching all of them are returned.
-    .PARAMETER Match
-        Regular expressions; only locations matching all of them are returned.
-        An invalid regular expression is a terminating error.
-    .PARAMETER Machine
-        If specified, the system Path for the local machine is searched.
-    .PARAMETER User
-        If specified, the system Path for the current user is searched.
-    .PARAMETER Effective
-        Default; if specified, the system Path in effect in the current shell is searched.
-    .OUTPUTS
-        For each match, an object with a Location and a Scope property.
-    .EXAMPLE
-        Get-SystemPathLocation Git
-    .EXAMPLE
-        Get-SystemPathLocation -Location "C:\Program Files\Git\bin"
-    .EXAMPLE
-        Get-SystemPathLocation -Filter "*\Git\*" -Machine
-    .EXAMPLE
-        Get-SystemPathLocation Git -Match "\\(cmd|bin)$"
-    #>
-    [CmdletBinding()]
-    param (
-        [Alias("Folder")]
-        [string] $Location,
-        [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
-        [string[]] $Contains,
-        [string[]] $Filter,
-        [ValidRegexAttribute()]
-        [string[]] $Match,
-        [Parameter(Mandatory, ParameterSetName = "Machine")]
-        [switch] $Machine,
-        [Parameter(Mandatory, ParameterSetName = "User")]
-        [switch] $User,
-        [Parameter(ParameterSetName = "Effective")]
-        [switch] $Effective
-    )
-
-    if (-not $Location -and -not $Contains -and -not $Filter -and -not $Match) {
-        Write-Error "Specify at least one of -Location, -Contains, -Filter and -Match." `
-            -ErrorId "MissingSearchCriterion" `
-            -Category InvalidArgument `
-            -TargetObject "-Location, -Contains, -Filter, -Match" `
-            -ErrorAction Stop
-    }
-
-    $context = `
-        if ($Machine) { @{ Machine = $true } } `
-        elseif ($User) { @{ User = $true } } `
-        else { @{} }
-
-    $criteria = @{
-        Exact    = $Location
-        Contains = $Contains
-        Filter   = $Filter
-        Match    = $Match
-    }
-
-    # Get-SystemPath already tags each location with its scope, so reuse that instead of recomputing it here
-    Get-SystemPath @context | Where-Object { Test-LocationCriteria -Location $_.Location @criteria }
-}
-
 function Test-SystemPathLocation {
     <#
     .SYNOPSIS
@@ -1023,6 +963,8 @@ function Test-SystemPathLocation {
         If specified, the system Path for the current user is searched.
     .PARAMETER Effective
         Default; if specified, the system Path in effect in the current shell is searched.
+    .PARAMETER Process
+        If specified, only the locations local to the current shell are searched, those on neither persisted Path.
     .OUTPUTS
         Boolean indicating whether a matching location is present.
     .EXAMPLE
@@ -1031,6 +973,8 @@ function Test-SystemPathLocation {
         Test-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
         Test-SystemPathLocation -Filter "*\Git\*" -User
+    .EXAMPLE
+        Test-SystemPathLocation -Location "C:\Temp\session" -Process
     #>
     [CmdletBinding()]
     [OutputType([bool])]
@@ -1047,10 +991,21 @@ function Test-SystemPathLocation {
         [Parameter(Mandatory, ParameterSetName = "User")]
         [switch] $User,
         [Parameter(ParameterSetName = "Effective")]
-        [switch] $Effective
+        [switch] $Effective,
+        [Parameter(Mandatory, ParameterSetName = "Process")]
+        [switch] $Process
     )
 
-    return @(Get-SystemPathLocation @PSBoundParameters).Count -gt 0
+    if (-not $Location -and -not $Contains -and -not $Filter -and -not $Match) {
+        Write-Error "Specify at least one of -Location, -Contains, -Filter and -Match." `
+            -ErrorId "MissingSearchCriterion" `
+            -Category InvalidArgument `
+            -TargetObject "-Location, -Contains, -Filter, -Match" `
+            -ErrorAction Stop
+    }
+
+    # Get-SystemPath takes every parameter of this command, so hand them over as given
+    return @(Get-SystemPath @PSBoundParameters).Count -gt 0
 }
 
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null

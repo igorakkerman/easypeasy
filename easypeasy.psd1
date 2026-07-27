@@ -78,7 +78,6 @@
         'Sync-SystemPath',
         'Add-SystemPathLocation',
         'Remove-SystemPathLocation',
-        'Get-SystemPathLocation',
         'Test-SystemPathLocation',
         'Remove-DuplicateSystemPathLocations',
         'Move-SystemPathLocation',

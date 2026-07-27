@@ -50,7 +50,20 @@ Describe 'Test-SystemPathLocation' {
     }
 
     It 'errors when no criterion is given' {
-        { Test-SystemPathLocation -ErrorAction Stop } | Should -Throw '*at least one*'
+        $errorRecord = { Test-SystemPathLocation -ErrorAction Stop } |
+            Should -Throw '*at least one*' -PassThru
+
+        $errorRecord.CategoryInfo.Category | Should -Be 'InvalidArgument'
+        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'MissingSearchCriterion,*'
+    }
+
+    It 'searches only the process-only locations when -Process is given' {
+        Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Windows' }
+        Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '' }
+        $env:PATH = 'C:\Windows;C:\Temp\session'
+
+        Test-SystemPathLocation -Location 'C:\Temp\session' -Process | Should -BeTrue
+        Test-SystemPathLocation -Location 'C:\Windows' -Process | Should -BeFalse
     }
 
     It 'honors the requested scope' {
