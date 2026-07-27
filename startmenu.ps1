@@ -168,8 +168,9 @@ function New-StartMenuShortcut {
         ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
         : (Get-StartMenuProgramsLocation -AllUsers:$AllUsers)
 
-    # an omitted run location falls back to the folder of the target, as New-Shortcut defaults it
-    $shortcutRunLocation = $PSBoundParameters.ContainsKey("RunLocation") ? $RunLocation : (Split-Path -Parent $Target)
+    # an omitted run location is left to New-Shortcut, which defaults it to the folder of the target.
+    # the name differs from the parameter: a [string] parameter would coerce the hashtable to its type name
+    $runLocationArgument = $PSBoundParameters.ContainsKey("RunLocation") ? @{ RunLocation = $RunLocation } : @{}
 
     # New-Shortcut gates the creation behind its own ShouldProcess, inheriting -WhatIf / -Confirm from here.
     # -CreateFolder states that the folder is there: under -WhatIf New-StartMenuProgramsFolder only reports it.
@@ -177,7 +178,7 @@ function New-StartMenuShortcut {
         -Location "$shortcutFolder\$Name.lnk" `
         -Target $Target `
         -Arguments $Arguments `
-        -RunLocation $shortcutRunLocation `
+        @runLocationArgument `
         -Description $Description `
         -Icon $Icon `
         -Hotkey $Hotkey `
