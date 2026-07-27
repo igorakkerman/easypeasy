@@ -253,7 +253,7 @@ function New-Shortcut {
 
     .PARAMETER CreateFolder
         Create the folder of the shortcut if it does not exist.
-        Without -CreateFolder, a missing folder is reported as an error and no shortcut is created.
+        Without -CreateFolder, a missing folder is reported as a terminating error and no shortcut is created.
 
     .PARAMETER Force
         Completely overwrite the shortcut if it already exists. Omitted optional fields reset to their documented defaults.
@@ -312,8 +312,8 @@ function New-Shortcut {
         Write-Error "Shortcut folder not found, use -CreateFolder to create it: '$shortcutFolder'" `
             -ErrorId "ShortcutFolderNotFound" `
             -Category ObjectNotFound `
-            -TargetObject $shortcutFolder
-        return
+            -TargetObject $shortcutFolder `
+            -ErrorAction Stop
     }
 
     # every field is written, so an overwritten shortcut keeps nothing of its former self

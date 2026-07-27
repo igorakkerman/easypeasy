@@ -42,6 +42,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Removed:** `Set-ShortcutTarget` — pass `-Target` to `Set-Shortcut` instead.
 - **Removed:** `Set-ShortcutRunAsAdministrator` — pass `-Elevated` to `Set-Shortcut` instead.
 - **Fixed:** `Get-Shortcut` reports missing shortcut as `ShortcutNotFound` instead of failing on file read.
+- **Fixed:** `New-Shortcut` reports missing shortcut folder as terminating error.
 
 ### System PATH and environment variables
 - **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.

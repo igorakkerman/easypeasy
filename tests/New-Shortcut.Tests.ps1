@@ -157,23 +157,25 @@ Describe 'New-Shortcut' {
         $result.Elevated    | Should -BeFalse
     }
 
-    It 'reports an error when the shortcut folder does not exist' {
+    It 'reports a terminating error when the shortcut folder does not exist' {
         $missing = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid)\MyApp.lnk"
 
-        New-Shortcut $missing 'C:\Windows\notepad.exe' -ErrorVariable shortcutError -ErrorAction SilentlyContinue
+        $errorRecord = { New-Shortcut $missing 'C:\Windows\notepad.exe' } |
+            Should -Throw '*folder not found*' -PassThru
 
-        $shortcutError.CategoryInfo.Category | Should -Be 'ObjectNotFound'
-        $shortcutError.FullyQualifiedErrorId | Should -BeLike 'ShortcutFolderNotFound,*'
-        $shortcutError.TargetObject | Should -Be (Split-Path -Parent $missing)
+        $errorRecord.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ShortcutFolderNotFound,*'
+        $errorRecord.TargetObject | Should -Be (Split-Path -Parent $missing)
         Test-Path -LiteralPath $missing | Should -BeFalse
     }
 
     It 'reports the missing shortcut folder under -WhatIf too' {
         $missing = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid)\MyApp.lnk"
 
-        New-Shortcut $missing 'C:\Windows\notepad.exe' -WhatIf -ErrorVariable shortcutError -ErrorAction SilentlyContinue
+        $errorRecord = { New-Shortcut $missing 'C:\Windows\notepad.exe' -WhatIf } |
+            Should -Throw '*folder not found*' -PassThru
 
-        $shortcutError.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+        $errorRecord.CategoryInfo.Category | Should -Be 'ObjectNotFound'
     }
 
     It 'creates the missing shortcut folder with -CreateFolder' {
