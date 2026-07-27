@@ -158,6 +158,8 @@ Describe 'Set-Shortcut' {
         Set-Shortcut $missing -Target 'C:\Windows\notepad.exe' -ErrorVariable shortcutError -ErrorAction SilentlyContinue
 
         $shortcutError.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+        $shortcutError.FullyQualifiedErrorId | Should -BeLike 'ShortcutNotFound,*'
+        $shortcutError.TargetObject | Should -Be $missing
         Test-Path -LiteralPath $missing | Should -BeFalse
     }
 

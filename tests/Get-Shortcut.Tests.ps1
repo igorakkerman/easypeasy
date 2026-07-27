@@ -81,6 +81,15 @@ Describe 'Get-Shortcut' {
         }
     }
 
+    It 'reports an error for a missing shortcut' {
+        $missing = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid).lnk"
+
+        { Get-Shortcut -Location $missing -ErrorAction Stop } | Should -Throw
+
+        # reading a shortcut must not create one
+        $missing | Should -Not -Exist
+    }
+
     It 'returns no icon for a shortcut carrying none' {
         $lnkWithoutIcon = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid).lnk"
         $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($lnkWithoutIcon)

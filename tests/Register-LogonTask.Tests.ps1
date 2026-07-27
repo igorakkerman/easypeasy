@@ -17,6 +17,41 @@ Describe 'Register-LogonTask' {
             -ParameterFilter { $TaskName -eq 'MyTask' -and $TaskPath -eq '\MyFolder' }
     }
 
+    It 'registers in the Programs root task path by default' {
+        Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument 'x'
+
+        Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 1 -Exactly `
+            -ParameterFilter { $TaskPath -eq '\' }
+    }
+
+    It 'runs the executable with its argument' {
+        Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument '/t'
+
+        Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 1 -Exactly -ParameterFilter {
+            $InputObject.Actions[0].Execute -eq 'C:\app.exe' -and $InputObject.Actions[0].Arguments -eq '/t'
+        }
+    }
+
+    It 'triggers the task at logon of the current user' {
+        Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument 'x'
+
+        Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 1 -Exactly -ParameterFilter {
+            $InputObject.Triggers[0].CimClass.CimClassName -eq 'MSFT_TaskLogonTrigger' -and
+            $InputObject.Triggers[0].UserId -eq "${env:USERDOMAIN}\${env:USERNAME}"
+        }
+    }
+
+    It 'starts the task when available, on batteries, without a time limit' {
+        Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument 'x'
+
+        Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 1 -Exactly -ParameterFilter {
+            $InputObject.Settings.StartWhenAvailable -and
+            -not $InputObject.Settings.DisallowStartIfOnBatteries -and
+            -not $InputObject.Settings.StopIfGoingOnBatteries -and
+            $InputObject.Settings.ExecutionTimeLimit -eq 'PT0S'
+        }
+    }
+
     It 'passes -Force through when overwriting' {
         Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument 'x' -Force
 

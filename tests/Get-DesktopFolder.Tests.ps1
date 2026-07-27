@@ -9,4 +9,8 @@ Describe 'Get-DesktopFolder' {
         $location | Should -Not -BeNullOrEmpty
         Test-Path -LiteralPath $location -PathType Container | Should -BeTrue
     }
+
+    It 'returns the Desktop special folder' {
+        Get-DesktopFolder | Should -Be ([Environment]::GetFolderPath("Desktop"))
+    }
 }

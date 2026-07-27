@@ -33,4 +33,24 @@ Describe 'New-StartMenuProgramsFolder' {
         Should -Invoke -ModuleName easypeasy New-Item -Times 1 -Exactly `
             -ParameterFilter { $Path -eq "$userPrograms\EasypeasyTest" }
     }
+
+    It 'creates the folder under the all users Programs path with -AllUsers' {
+        Mock -ModuleName easypeasy New-Item { }
+        $allUsersPrograms = New-Object -ComObject WScript.Shell | ForEach-Object { $_.SpecialFolders("AllUsersPrograms") }
+
+        $result = New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers
+
+        $result | Should -Be "$allUsersPrograms\EasypeasyTest"
+        Should -Invoke -ModuleName easypeasy New-Item -Times 1 -Exactly `
+            -ParameterFilter { $Path -eq "$allUsersPrograms\EasypeasyTest" }
+    }
+
+    It 'creates the folder as a directory' {
+        Mock -ModuleName easypeasy New-Item { }
+
+        New-StartMenuProgramsFolder -Name 'EasypeasyTest' | Out-Null
+
+        Should -Invoke -ModuleName easypeasy New-Item -Times 1 -Exactly `
+            -ParameterFilter { $ItemType -eq 'Directory' }
+    }
 }

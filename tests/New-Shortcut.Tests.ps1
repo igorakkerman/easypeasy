@@ -129,6 +129,7 @@ Describe 'New-Shortcut' {
         $errorRecord = { New-Shortcut $lnk 'C:\Windows\regedit.exe' } | Should -Throw '*already exists*' -PassThru
 
         $errorRecord.CategoryInfo.Category | Should -Be 'ResourceExists'
+        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ShortcutAlreadyExists,*'
         $errorRecord.TargetObject | Should -Be $lnk
         (Get-Shortcut $lnk).Target | Should -Be 'C:\Windows\notepad.exe'
     }
@@ -162,6 +163,8 @@ Describe 'New-Shortcut' {
         New-Shortcut $missing 'C:\Windows\notepad.exe' -ErrorVariable shortcutError -ErrorAction SilentlyContinue
 
         $shortcutError.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+        $shortcutError.FullyQualifiedErrorId | Should -BeLike 'ShortcutFolderNotFound,*'
+        $shortcutError.TargetObject | Should -Be (Split-Path -Parent $missing)
         Test-Path -LiteralPath $missing | Should -BeFalse
     }
 
