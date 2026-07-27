@@ -290,30 +290,31 @@ Any combination of fields, the others stay as they are.
 
 for the current user (**default**) or all users (`-AllUsers`, requires administrator) \
 The shortcut will be created as `MyApp` in the Start Menu Programs root; pass `-Folder` to place it in a containing folder.
-The argument `-Debug` will be passed to the executable.
+The argument `-Debug` will be passed to the target.
 ```powershell
 > New-StartMenuShortcut `
         -Name MyApp `
-        -Executable "C:\Program Files\MyApp\MyApp.exe" `
+        -Target "C:\Program Files\MyApp\MyApp.exe" `
         -Arguments "-Debug" `
-        -IconLocation "C:\Program Files\MyApp\MyBeautifulIcon.ico"
+        -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyBeautifulIcon.ico")
 
-> New-StartMenuShortcut -AllUsers -Name MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"  # all users, needs admin
+> New-StartMenuShortcut -AllUsers -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe"  # all users, needs admin
 ```
 
-The icon file may hold several icons; `-IconIndex` picks one (**default**: `0`).
-Alternatively, `-Icon` takes the combined `file,index` form. `-Icon` and `-IconLocation` / `-IconIndex` are mutually exclusive.
+Every field of [`New-Shortcut`](#shortcuts) is available, and the created shortcut is returned as a record.
 ```powershell
-> New-StartMenuShortcut -Name MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
-        -IconLocation "C:\Program Files\MyApp\MyApp.exe" -IconIndex 3
-
-> New-StartMenuShortcut -Name MyApp -Executable "C:\Program Files\MyApp\MyApp.exe" `
-        -Icon "C:\Program Files\MyApp\MyApp.exe,3"
+> New-StartMenuShortcut -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe" `
+        -RunLocation "C:\Data" `
+        -Description "My favourite app" `
+        -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
+        -Hotkey "Ctrl+Alt+M" `
+        -WindowStyle Maximized `
+        -Elevated
 ```
 
 An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it.
 ```powershell
-> New-StartMenuShortcut -Force -Name MyApp -Executable "C:\Program Files\MyApp\MyApp.exe"
+> New-StartMenuShortcut -Force -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe"
 ```
 
 #### Remove a Start Menu shortcut
@@ -335,11 +336,12 @@ The shortcut's containing folder is removed too when it becomes empty. A termina
 
 > New-PowershellStartMenuShortcut -Name "Run System Update" `
        -Script "C:\Scripts\system-update.ps1" `
-       -Maximized -KeepOpen -Admin
+       -KeepOpen -WindowStyle Maximized -Elevated
 ```
 
 `-Script` is an alias for `-Command` that can be used for expressiveness. \
-`-Admin` is an alias for `-RunAsAdministrator` that can be used for conciseness. \
+`-NoExit` is an alias for `-KeepOpen`, named after the `pwsh` switch it passes. \
+The window is minimized unless `-WindowStyle` says otherwise. \
 Both accept `-Force` to overwrite an existing shortcut.
 
 ### Start an application at logon 

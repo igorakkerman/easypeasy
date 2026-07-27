@@ -92,21 +92,31 @@ function New-StartMenuShortcut {
     .PARAMETER Folder
         The name of the folder in Start Menu > Programs to create the shortcut in. If not specified, the shortcut is created directly in Start Menu > Programs.
 
-    .PARAMETER Executable
-        The location of the executable.
+    .PARAMETER Target
+        The location of the file or folder the shortcut opens.
 
     .PARAMETER Arguments
-        The arguments to pass to the executable.
+        The command-line arguments to pass to the target.
+
+    .PARAMETER RunLocation
+        The location the target runs in, shown as "Start in" in the shortcut properties.
+        Default: the folder of the target.
+
+    .PARAMETER Description
+        The free-text description of the shortcut, shown as its comment / tooltip.
 
     .PARAMETER Icon
-        The icon to use for the shortcut, as a combined location in the form "file,index", e.g. "C:\Program Files\MyApp\MyApp.exe,0".
-        Cannot be combined with -IconLocation or -IconIndex.
+        The icon of the shortcut, as a ShortcutIcon record built by New-ShortcutIcon or read by Get-Shortcut.
+        Default: no icon.
 
-    .PARAMETER IconLocation
-        The path to the icon file to use for the shortcut. Cannot be combined with -Icon. Alias: IconFile.
+    .PARAMETER Hotkey
+        The keyboard shortcut that opens the shortcut, e.g. "Ctrl+Alt+N".
 
-    .PARAMETER IconIndex
-        The index of the icon within the icon file given by -IconLocation. Default: 0. Cannot be combined with -Icon.
+    .PARAMETER WindowStyle
+        The window state the target launches in: Normal, Maximized or Minimized. Default: Normal.
+
+    .PARAMETER Elevated
+        Launch the target elevated, ticked as "Run as administrator" in the advanced properties.
 
     .PARAMETER Force
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
@@ -118,12 +128,23 @@ function New-StartMenuShortcut {
         Create the shortcut in the current user's Start Menu Programs folder. (Default.)
 
     .OUTPUTS
-        string - Path to the newly created shortcut in the Start Menu Programs folder.
+        Shortcut record describing the created shortcut, as read by Get-Shortcut. Nothing under -WhatIf.
+
+    .EXAMPLE
+        New-StartMenuShortcut -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe"
+
+    .EXAMPLE
+        New-StartMenuShortcut -Name MyApp -Folder MyCompany -Target "C:\Program Files\MyApp\MyApp.exe" `
+            -Arguments "--profile Default" `
+            -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
+            -WindowStyle Maximized -Elevated
 
     .NOTES
         Default scope is User (current user).
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
+    [OutputType("Shortcut")]
     param (
         [Parameter(Mandatory = $true)]
         [string] $Name,
@@ -132,20 +153,28 @@ function New-StartMenuShortcut {
         [string] $Folder,
 
         [Parameter(Mandatory = $true)]
-        [string] $Executable,
+        [string] $Target,
 
         [Parameter(Mandatory = $false)]
         [string] $Arguments,
 
         [Parameter(Mandatory = $false)]
-        [string] $Icon,
+        [string] $RunLocation,
 
         [Parameter(Mandatory = $false)]
-        [Alias("IconFile")]
-        [string] $IconLocation,
+        [string] $Description,
 
         [Parameter(Mandatory = $false)]
-        [int] $IconIndex = 0,
+        [ShortcutIcon] $Icon,
+
+        [Parameter(Mandatory = $false)]
+        [string] $Hotkey,
+
+        [Parameter(Mandatory = $false)]
+        [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Normal,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $Elevated,
 
         [Parameter(Mandatory = $false)]
         [switch] $Force,
@@ -158,34 +187,27 @@ function New-StartMenuShortcut {
         [switch] $User
     )
 
-    if ($Icon -and ($IconLocation -or $PSBoundParameters.ContainsKey("IconIndex"))) {
-        Write-Error "-Icon cannot be combined with -IconLocation or -IconIndex." -ErrorAction Stop
-    }
-
     $shortcutFolder = $Folder `
         ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
         : (Get-StartMenuProgramsLocation -AllUsers:$AllUsers)
-    $shortcutLocation = "$shortcutFolder\$Name.lnk"
 
-    if (-not $Force -and (Test-Path -LiteralPath $shortcutLocation)) {
-        Write-Error "Shortcut already exists, use -Force to overwrite. location: '$shortcutLocation'" -ErrorAction Stop
-    }
+    # an omitted run location falls back to the folder of the target, as New-Shortcut defaults it
+    $shortcutRunLocation = $PSBoundParameters.ContainsKey("RunLocation") ? $RunLocation : (Split-Path -Parent $Target)
 
-    $shortcut = $wshShell.CreateShortcut($shortcutLocation)
-    $shortcut.TargetPath = $Executable
-    $shortcut.Arguments = $Arguments
-    if ($Icon) {
-        $shortcut.IconLocation = $Icon
-    }
-    elseif ($IconLocation) {
-        $shortcut.IconLocation = "$IconLocation,$IconIndex"
-    }
-
-    if ($PSCmdlet.ShouldProcess($shortcutLocation, "Create shortcut")) {
-        $shortcut.Save()
-    }
-
-    return $shortcutLocation
+    # New-Shortcut gates the creation behind its own ShouldProcess, inheriting -WhatIf / -Confirm from here.
+    # -CreateFolder states that the folder is there: under -WhatIf New-StartMenuProgramsFolder only reports it.
+    return New-Shortcut `
+        -Location "$shortcutFolder\$Name.lnk" `
+        -Target $Target `
+        -Arguments $Arguments `
+        -RunLocation $shortcutRunLocation `
+        -Description $Description `
+        -Icon $Icon `
+        -Hotkey $Hotkey `
+        -WindowStyle $WindowStyle `
+        -Elevated:$Elevated `
+        -CreateFolder `
+        -Force:$Force
 }
 
 function Remove-StartMenuShortcut {
@@ -265,27 +287,27 @@ function New-PowershellStartMenuShortcut {
     .PARAMETER Folder
         The name of the folder in Start Menu > Programs to create the shortcut in. If not specified, the shortcut is created directly in Start Menu > Programs.
 
-    .PARAMETER RunAsAdministrator
-        Whether to run the PowerShell command as an administrator.
-
-    .PARAMETER Visible
-        Whether to show the PowerShell window when the shortcut is run.
-
-    .PARAMETER Maximized
-        Whether to maximize the PowerShell window when the shortcut is run.
-
     .PARAMETER KeepOpen
-        Whether to keep the PowerShell window open after the command has finished running.
+        Whether to keep the PowerShell window open after the command has finished running. Alias: NoExit.
+
+    .PARAMETER RunLocation
+        The location the command runs in, shown as "Start in" in the shortcut properties.
+
+    .PARAMETER Description
+        The free-text description of the shortcut, shown as its comment / tooltip.
 
     .PARAMETER Icon
-        The icon to use for the shortcut, as a combined location in the form "file,index", e.g. "C:\Program Files\MyApp\MyApp.exe,0".
-        Cannot be combined with -IconLocation or -IconIndex.
+        The icon of the shortcut, as a ShortcutIcon record built by New-ShortcutIcon or read by Get-Shortcut.
+        Default: no icon.
 
-    .PARAMETER IconLocation
-        The path to the icon file to use for the shortcut. Cannot be combined with -Icon. Alias: IconFile.
+    .PARAMETER Hotkey
+        The keyboard shortcut that opens the shortcut, e.g. "Ctrl+Alt+N".
 
-    .PARAMETER IconIndex
-        The index of the icon within the icon file given by -IconLocation. Default: 0. Cannot be combined with -Icon.
+    .PARAMETER WindowStyle
+        The window state the PowerShell window launches in: Normal, Maximized or Minimized. Default: Minimized.
+
+    .PARAMETER Elevated
+        Run the PowerShell command elevated, ticked as "Run as administrator" in the advanced properties.
 
     .PARAMETER Force
         Overwrite the shortcut if it already exists. Without -Force, a terminating error is reported when the shortcut exists.
@@ -297,12 +319,22 @@ function New-PowershellStartMenuShortcut {
         Create the shortcut in the current user's Start Menu Programs folder. (Default.)
 
     .OUTPUTS
-        string - Path to the newly created shortcut in the Start Menu Programs folder.
+        Shortcut record describing the created shortcut, as read by Get-Shortcut. Nothing under -WhatIf.
+
+    .EXAMPLE
+        New-PowershellStartMenuShortcut -Name "Kill Node.js" -Command "Stop-Process -Name node -Force"
+
+    .EXAMPLE
+        New-PowershellStartMenuShortcut -Name "Run System Update" -Script "C:\Scripts\system-update.ps1" `
+            -KeepOpen -WindowStyle Maximized -Elevated
 
     .NOTES
         Default scope is User (current user).
+        Alias: Script for -Command, NoExit for -KeepOpen.
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
+    [OutputType("Shortcut")]
     param (
         [Parameter(Mandatory = $true)]
         [Alias("Script")]
@@ -315,28 +347,26 @@ function New-PowershellStartMenuShortcut {
         [string] $Folder,
 
         [Parameter(Mandatory = $false)]
-        [Alias("Administrator", "Admin", "Elevate")]
-        [switch] $RunAsAdministrator = $false,
-
-        [Parameter(Mandatory = $false)]
-        [switch] $Visible = $false,
-
-        [Parameter(Mandatory = $false)]
-        [switch] $Maximized = $false,
-
-        [Parameter(Mandatory = $false)]
         [Alias("NoExit")]
-        [switch] $KeepOpen = $false,
+        [switch] $KeepOpen,
 
         [Parameter(Mandatory = $false)]
-        [string] $Icon,
+        [string] $RunLocation,
 
         [Parameter(Mandatory = $false)]
-        [Alias("IconFile")]
-        [string] $IconLocation,
+        [string] $Description,
 
         [Parameter(Mandatory = $false)]
-        [int] $IconIndex = 0,
+        [ShortcutIcon] $Icon,
+
+        [Parameter(Mandatory = $false)]
+        [string] $Hotkey,
+
+        [Parameter(Mandatory = $false)]
+        [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Minimized,
+
+        [Parameter(Mandatory = $false)]
+        [switch] $Elevated,
 
         [Parameter(Mandatory = $false)]
         [switch] $Force,
@@ -349,10 +379,6 @@ function New-PowershellStartMenuShortcut {
         [switch] $User
     )
 
-    if ($Icon -and ($IconLocation -or $PSBoundParameters.ContainsKey("IconIndex"))) {
-        Write-Error "-Icon cannot be combined with -IconLocation or -IconIndex." -ErrorAction Stop
-    }
-
     $shortcutFolder = $Folder `
         ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
         : (Get-StartMenuProgramsLocation -AllUsers:$AllUsers)
@@ -363,36 +389,19 @@ function New-PowershellStartMenuShortcut {
     }
     $arguments += "-Command `"$Command`""
 
-    $shortcutLocation = "$shortcutFolder\$Name.lnk"
-
-    if (-not $Force -and (Test-Path -LiteralPath $shortcutLocation)) {
-        Write-Error "Shortcut already exists, use -Force to overwrite. location: '$shortcutLocation'" -ErrorAction Stop
-    }
-
-    $shortcut = $wshShell.CreateShortcut($shortcutLocation)
-    $shortcut.TargetPath = "pwsh"
-    $shortcut.Arguments = $arguments -join ' '
-    if (-not $Visible) {
-        $shortcut.WindowStyle = [ShortcutWindowStyle]::Minimized
-    }
-    if ($Maximized) {
-        $shortcut.WindowStyle = [ShortcutWindowStyle]::Maximized
-    }
-
-    if ($Icon) {
-        $shortcut.IconLocation = $Icon
-    }
-    elseif ($IconLocation) {
-        $shortcut.IconLocation = "$IconLocation,$IconIndex"
-    }
-
-    if ($PSCmdlet.ShouldProcess($shortcutLocation, "Create shortcut")) {
-        $shortcut.Save()
-
-        if ($RunAsAdministrator) {
-            Set-ShortcutElevated -Location $shortcutLocation -Elevated $true
-        }
-    }
-
-    return $shortcutLocation
+    # New-Shortcut gates the creation behind its own ShouldProcess, inheriting -WhatIf / -Confirm from here.
+    # -CreateFolder states that the folder is there: under -WhatIf New-StartMenuProgramsFolder only reports it.
+    # an omitted run location stays empty: the bare pwsh target has no folder to fall back to.
+    return New-Shortcut `
+        -Location "$shortcutFolder\$Name.lnk" `
+        -Target "pwsh" `
+        -Arguments ($arguments -join ' ') `
+        -RunLocation $RunLocation `
+        -Description $Description `
+        -Icon $Icon `
+        -Hotkey $Hotkey `
+        -WindowStyle $WindowStyle `
+        -Elevated:$Elevated `
+        -CreateFolder `
+        -Force:$Force
 }

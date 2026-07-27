@@ -8,11 +8,18 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 
 ### Start Menu
 - **Changed:** All Start Menu functions target the current user; pass `-AllUsers` (aliases `-Machine`, `-All`) for the previous All Users default.
-- **Changed:** `-Name` on `New-StartMenuShortcut` is mandatory, no longer inferred from `-Executable`.
+- **Changed:** `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` build on `New-Shortcut` and take its parameters: `-Target`, `-Arguments`, `-RunLocation`, `-Description`, `-Icon`, `-Hotkey`, `-WindowStyle`, `-Elevated`, `-Force`.
+- **Changed:** `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` return `Shortcut` record instead of path string.
+- **Changed:** `-Executable` renamed to `-Target` on `New-StartMenuShortcut`.
+- **Changed:** `-Icon` takes `ShortcutIcon` record built by `New-ShortcutIcon` or read by `Get-Shortcut`.
+- **Changed:** `-RunAsAdministrator` on `New-PowershellStartMenuShortcut` renamed to `-Elevated`.
+- **Changed:** `-Visible` and `-Maximized` on `New-PowershellStartMenuShortcut` replaced by `-WindowStyle`: `Normal`, `Maximized` or `Minimized`. Default: `Minimized`.
+- **Changed:** `-Name` on `New-StartMenuShortcut` is mandatory, no longer inferred from the target.
 - **Changed:** `New-StartMenuShortcut` and `Remove-StartMenuShortcut` use the Programs root when `-Folder` is omitted: `<Programs>\<Name>.lnk`, previously `<Programs>\<Name>\<Name>.lnk`. Pass `-Folder` to keep a containing folder.
-- **Changed:** `-Icon` takes a combined `"file,index"`, e.g. `-Icon "C:\Program Files\MyApp\MyApp.exe,3"`; a plain icon file path goes to `-IconLocation` instead. Mutually exclusive with `-IconLocation` / `-IconIndex`.
-- **Added:** `-IconLocation` (alias `-IconFile`) and `-IconIndex` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` — pick the icon within the file, instead of always index `0`. Default: `0`.
+- **Added:** `-RunLocation`, `-Description` and `-Hotkey` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut`.
 - **Added:** `-AllUsers` (aliases `-Machine`, `-All`) and `-User` on `New-PowershellStartMenuShortcut`, matching the other Start Menu functions. Default stays the current user.
+- **Removed:** `-IconLocation` (alias `-IconFile`) and `-IconIndex` — pass `-Icon (New-ShortcutIcon -Location … -Index …)`.
+- **Removed:** Aliases `-Administrator`, `-Admin` and `-Elevate` on `New-PowershellStartMenuShortcut` — pass `-Elevated`.
 - **Removed:** Aliases `-Group` and `-GroupName` — pass `-Folder`, or `-Name` on `New-StartMenuProgramsFolder`.
 - **Removed:** Aliases `-AppName` and `-Folder` on `New-StartMenuProgramsFolder` — pass `-Name`.
 - **Removed:** Aliases `-App` and `-AppName` on the shortcut functions — pass `-Name`.

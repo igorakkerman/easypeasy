@@ -1,6 +1,5 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../easypeasy.psd1" -Force
-    $script:wsh = New-Object -ComObject WScript.Shell
 }
 
 Describe 'New-PowershellStartMenuShortcut' {
@@ -17,35 +16,55 @@ Describe 'New-PowershellStartMenuShortcut' {
     AfterAll { Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue }
 
     It 'creates a pwsh shortcut that runs the command' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'ShowDate'
+        $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'ShowDate'
 
-        $location | Should -Exist
-        $shortcut = $wsh.CreateShortcut($location)
-        $shortcut.TargetPath | Should -Match 'pwsh'
+        $shortcut.Location  | Should -Exist
+        $shortcut.Target    | Should -Match 'pwsh'
         $shortcut.Arguments | Should -Match '-Command'
     }
 
+    It 'returns the created shortcut' {
+        $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Returned'
+
+        $shortcut.GetType().Name | Should -Be 'Shortcut'
+        $shortcut.Location | Should -Be "$folder\Returned.lnk"
+    }
+
     It 'keeps the window open with -KeepOpen (-NoExit)' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'KeepOpen' -KeepOpen
-        $wsh.CreateShortcut($location).Arguments | Should -Match '-NoExit'
+        (New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'KeepOpen' -KeepOpen).Arguments |
+            Should -Match '-NoExit'
     }
 
-    It 'sets the run-as-administrator flag with -RunAsAdministrator' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AsAdmin' -RunAsAdministrator
+    It 'sets the run-as-administrator flag with -Elevated' {
+        $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AsAdmin' -Elevated
 
-        (Get-Shortcut $location).Elevated | Should -BeTrue
+        (Get-Shortcut $shortcut.Location).Elevated | Should -BeTrue
     }
 
-    It 'leaves the target unelevated without -RunAsAdministrator' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Unelevated'
+    It 'leaves the target unelevated without -Elevated' {
+        $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Unelevated'
 
-        (Get-Shortcut $location).Elevated | Should -BeFalse
+        (Get-Shortcut $shortcut.Location).Elevated | Should -BeFalse
     }
 
-    It 'creates nothing under -WhatIf, even with -RunAsAdministrator' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'WhatIfAdmin' -RunAsAdministrator -WhatIf
+    It 'creates nothing and returns nothing under -WhatIf, even with -Elevated' {
+        $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'WhatIfAdmin' -Elevated -WhatIf
 
-        $location | Should -Not -Exist
+        $shortcut | Should -BeNullOrEmpty
+        "$folder\WhatIfAdmin.lnk" | Should -Not -Exist
+    }
+
+    It 'minimizes the window by default' {
+        (New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'WindowDefault').WindowStyle |
+            Should -Be 'Minimized'
+    }
+
+    It 'launches the window in the given -WindowStyle' {
+        (New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'WindowMaximized' -WindowStyle Maximized).WindowStyle |
+            Should -Be 'Maximized'
+
+        (New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'WindowNormal' -WindowStyle Normal).WindowStyle |
+            Should -Be 'Normal'
     }
 
     It 'creates the shortcut in the given -Folder' {
@@ -90,47 +109,35 @@ Describe 'New-PowershellStartMenuShortcut' {
     It 'overwrites an existing shortcut with -Force' {
         New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'Over' | Out-Null
 
-        $location = New-PowershellStartMenuShortcut -Command 'Get-ChildItem' -Name 'Over' -Force
-        $wsh.CreateShortcut($location).Arguments | Should -Match 'Get-ChildItem'
+        (New-PowershellStartMenuShortcut -Command 'Get-ChildItem' -Name 'Over' -Force).Arguments |
+            Should -Match 'Get-ChildItem'
     }
 
-    It 'uses icon index 0 by default' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconDefault' `
-            -IconLocation 'C:\Windows\explorer.exe'
+    It 'sets every field passed' {
+        $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'EveryField' `
+            -RunLocation 'C:\temp' `
+            -Description 'Show the date' `
+            -Icon (New-ShortcutIcon -Location 'C:\Windows\explorer.exe' -Index 3) `
+            -Hotkey 'Ctrl+Alt+D'
 
-        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,0'
+        $result = Get-Shortcut $shortcut.Location
+        $result.RunLocation     | Should -Be 'C:\temp'
+        $result.Description     | Should -Be 'Show the date'
+        $result.Icon.ToString() | Should -Be 'C:\Windows\explorer.exe,3'
+        $result.Hotkey          | Should -Be 'Alt+Ctrl+D'
     }
 
-    It 'uses the given icon index' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconIndexed' `
-            -IconLocation 'C:\Windows\explorer.exe' -IconIndex 3
+    It 'takes the icon as a ShortcutIcon record' {
+        $icon = (New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconRecord' `
+                -Icon (New-ShortcutIcon 'C:\Windows\explorer.exe,3')).Icon
 
-        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
+        $icon.Location | Should -Be 'C:\Windows\explorer.exe'
+        $icon.Index    | Should -Be 3
     }
 
-    It 'accepts the icon file under the -IconFile alias' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconFileAlias' `
-            -IconFile 'C:\Windows\explorer.exe' -IconIndex 3
-
-        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
-    }
-
-    It 'takes the combined location from -Icon' {
-        $location = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconCombined' `
-            -Icon 'C:\Windows\explorer.exe,3'
-
-        $wsh.CreateShortcut($location).IconLocation | Should -Be 'C:\Windows\explorer.exe,3'
-    }
-
-    It 'fails when -Icon is combined with -IconLocation' {
-        { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconBoth' `
-                -Icon 'C:\Windows\explorer.exe,3' -IconLocation 'C:\Windows\explorer.exe' } |
-            Should -Throw '*cannot be combined*'
-    }
-
-    It 'fails when -Icon is combined with -IconIndex' {
-        { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconBothIndex' `
-                -Icon 'C:\Windows\explorer.exe,3' -IconIndex 0 } |
-            Should -Throw '*cannot be combined*'
+    It 'rejects an icon that is not a ShortcutIcon record' {
+        { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconString' `
+                -Icon 'C:\Windows\explorer.exe,3' } |
+            Should -Throw '*ShortcutIcon*'
     }
 }

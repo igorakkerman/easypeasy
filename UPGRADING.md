@@ -28,6 +28,9 @@ write the **canonical** name, never an alias.
 | Command | v1 parameter | v2 parameter |
 |---|---|---|
 | `Add-SystemPathLocation` | `-Front` | `-First` (`-Front` kept as alias — prefer `-First`) |
+| `New-StartMenuShortcut` | `-Executable` | `-Target` |
+| `New-PowershellStartMenuShortcut` | `-RunAsAdministrator` | `-Elevated` |
+| `New-PowershellStartMenuShortcut` | `-Visible`, `-Maximized` | `-WindowStyle Normal` / `-WindowStyle Maximized` |
 
 ## Removed parameters and aliases → use the canonical name
 
@@ -39,7 +42,8 @@ write the **canonical** name, never an alias.
 | `-Prepend`, `-Start` | `Add-SystemPathLocation` | `-First` |
 | `removepath` alias | `Remove-SystemPathLocation` | `rmpath`, or the full name |
 | `deduppath` alias | `Remove-DuplicateSystemPathLocations` | `cleanpath`, or the full name |
-| `-IconLocation`, `-IconIndex` | `New-Shortcut`, `Set-Shortcut` | `-Icon (New-ShortcutIcon -Location … -Index …)` |
+| `-IconLocation`, `-IconIndex`, `-IconFile` | shortcut and Start Menu shortcut commands | `-Icon (New-ShortcutIcon -Location … -Index …)` |
+| `-Administrator`, `-Admin`, `-Elevate` | `New-PowershellStartMenuShortcut` | `-Elevated` |
 
 ## Changed behavior — review call sites
 
@@ -48,13 +52,18 @@ write the **canonical** name, never an alias.
 - **Start Menu shortcut layout.** `New-StartMenuShortcut` / `Remove-StartMenuShortcut` place the
   shortcut at `<Programs>\<Name>.lnk` when `-Folder` is omitted (v1 nested it as
   `<Programs>\<Name>\<Name>.lnk`). Pass `-Folder` to keep a containing folder.
-- **`New-StartMenuShortcut -Name` is mandatory** and is no longer inferred from `-Executable`.
-- **Start Menu shortcut icon.** On `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut`,
-  `-Icon` now takes a combined `"file,index"` (e.g. `-Icon "C:\App\App.exe,3"`); a plain icon-file
-  path goes to `-IconLocation`. `-Icon` is mutually exclusive with `-IconLocation` / `-IconIndex`.
-  Pick the icon index with `-IconIndex` (default `0`).
-- **Shortcut icon.** On `New-Shortcut` and `Set-Shortcut`, `-Icon` takes a `ShortcutIcon` and nothing
-  else. Build one with `New-ShortcutIcon`, or pass one read by `Get-Shortcut`.
+- **`New-StartMenuShortcut -Name` is mandatory** and is no longer inferred from the target.
+- **Start Menu shortcut parameters.** `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut`
+  build on `New-Shortcut` and take its parameters: `-Target`, `-Arguments`, `-RunLocation`,
+  `-Description`, `-Icon`, `-Hotkey`, `-WindowStyle`, `-Elevated`, `-Force`. Run location defaults to
+  the folder of the target.
+- **Start Menu shortcut return value.** Both return the `Shortcut` record `New-Shortcut` produces, not
+  the `.lnk` path string. Read `.Location` where the path is what the calling code needs.
+- **Shortcut icon.** On `New-Shortcut`, `Set-Shortcut` and the Start Menu shortcut commands, `-Icon`
+  takes a `ShortcutIcon` and nothing else. Build one with `New-ShortcutIcon`, or pass one read by
+  `Get-Shortcut`.
+- **PowerShell shortcut window.** `-Visible` and `-Maximized` give way to
+  `-WindowStyle Normal` / `-WindowStyle Maximized`; the default stays `Minimized`.
 - **`Get-SystemPathLocation` and `Test-SystemPathLocation` require a criterion** — at least one of
   `-Location`, `-Contains`, `-Filter`, `-Match`. A bare call now errors.
 - **Positional path/query argument is `-Contains`** (literal substring), replacing v1 positional
