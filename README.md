@@ -85,11 +85,13 @@ in a specific scope (machine or user) \
 **default**: **effective** in current shell
 
 ```powershell
-> Test-SystemPathLocation "C:\Program Files\Git\bin"          # exact match
-> Test-SystemPathLocation "C:\Program Files\Git\bin" -Machine
+> testpath "C:\Program Files\Git\bin"          # Test-SystemPathLocation, exact match
+> testpath "C:\Program Files\Git\bin" -Machine
 
 True
 ```
+
+The folder is matched exactly, case-insensitively and ignoring a trailing backslash; a substring or a pattern finds nothing.
 
 #### Add or remove a folder to/from the system Path permanently
 in a specific scope (machine 🅰️ or user) \

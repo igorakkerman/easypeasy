@@ -54,6 +54,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Removed:** `Get-SystemPathLocation` — use `Get-SystemPath -Location`, `-Contains`, `-Filter` or `-Match`.
 - **Changed:** positional parameter: `-Contains` replaces `-Filter` / `-Location`, use `path Git`, `-Filter "*Git*"` or `-Match ".*Git.*"`.
 - **Changed:** `-Location` on `Test-SystemPathLocation` is mandatory and positional; `-Filter` removed, exact match only.
+- **Added:** Alias `testpath` for `Test-SystemPathLocation`.
 - **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
 - **Added:** `Add-SystemPathLocation` reports terminating error `PathLocationNotFound` for location naming no existing folder, checked expanded.
 - **Added:** `-Force` on `Add-SystemPathLocation` — adds location naming no existing folder.

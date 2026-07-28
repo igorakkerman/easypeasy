@@ -962,6 +962,8 @@ function Test-SystemPathLocation {
         If specified, only the locations local to the current shell are searched, those on neither persisted Path.
     .OUTPUTS
         Boolean indicating whether the location is present.
+    .NOTES
+        Alias: testpath
     .EXAMPLE
         Test-SystemPathLocation "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -1007,3 +1009,4 @@ New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyConti
 New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name cleanpath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name movepath -Value Move-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name testpath -Value Test-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null

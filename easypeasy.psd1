@@ -117,6 +117,7 @@
         'rmpath',
         'cleanpath',
         'movepath',
+        'testpath',
         'programs',
         'docs',
         'desktop',

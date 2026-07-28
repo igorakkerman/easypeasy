@@ -36,6 +36,10 @@ Describe 'Test-SystemPathLocation' {
         { Test-SystemPathLocation } | Should -Throw '*Location*'
     }
 
+    It 'is exposed through the testpath alias' {
+        testpath 'C:\Program Files\Git\bin' | Should -BeTrue
+    }
+
     It 'searches only the process-only locations when -Process is given' {
         Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Windows' }
         Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '' }
