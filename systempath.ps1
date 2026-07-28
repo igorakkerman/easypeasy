@@ -667,7 +667,7 @@ function Add-SystemPathLocation {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Position = 0, Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [Alias("Folder")]
         [string] $Location,
         [Alias("Front")]
@@ -737,7 +737,7 @@ function Remove-SystemPathLocation {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Position = 0, Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [Alias("Folder")]
         [string] $Location,
         [Parameter(Mandatory, ParameterSetName = "Machine")]
@@ -889,7 +889,7 @@ function Move-SystemPathLocation {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Position = 0, Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [Alias("Folder")]
         [string] $Location,
         [Parameter(Mandatory, ParameterSetName = "ToUser")]
