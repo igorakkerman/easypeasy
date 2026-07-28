@@ -12,6 +12,10 @@ Describe 'Test-SystemPathLocation' {
         Test-SystemPathLocation -Location 'C:\Program Files\Git\bin' | Should -BeTrue
     }
 
+    It 'returns $true for the location given positionally' {
+        Test-SystemPathLocation 'C:\Program Files\Git\bin' | Should -BeTrue
+    }
+
     It 'returns $false when the location is absent' {
         Test-SystemPathLocation -Location 'C:\Nope' | Should -BeFalse
     }
@@ -20,41 +24,16 @@ Describe 'Test-SystemPathLocation' {
         Test-SystemPathLocation -Location 'c:\windows\' | Should -BeTrue
     }
 
-    It 'returns $true for a contained substring given positionally' {
-        Test-SystemPathLocation Git | Should -BeTrue
+    It 'returns $false for a substring of a location' {
+        Test-SystemPathLocation Git | Should -BeFalse
     }
 
-    It 'returns $false for a substring no location contains' {
-        Test-SystemPathLocation Nope | Should -BeFalse
+    It 'returns $false for a wildcard pattern matching a location' {
+        Test-SystemPathLocation '*\Git\*' | Should -BeFalse
     }
 
-    It 'returns $true for a matching -Filter wildcard' {
-        Test-SystemPathLocation -Filter '*\Git\*' | Should -BeTrue
-    }
-
-    It 'returns $false for a non-matching -Filter wildcard' {
-        Test-SystemPathLocation -Filter '*\Nope\*' | Should -BeFalse
-    }
-
-    It 'returns $true for a matching -Match regex' {
-        Test-SystemPathLocation -Match '\\Git\\bin$' | Should -BeTrue
-    }
-
-    It 'rejects an invalid -Match regex, reporting the pattern and the reason' {
-        { Test-SystemPathLocation -Match '(' } |
-            Should -Throw -ExpectedMessage "*Invalid regular expression. pattern: '('*Not enough*"
-    }
-
-    It 'returns $false when one of several criteria fails' {
-        Test-SystemPathLocation Git -Filter '*\cmd' | Should -BeFalse
-    }
-
-    It 'errors when no criterion is given' {
-        $errorRecord = { Test-SystemPathLocation -ErrorAction Stop } |
-            Should -Throw '*at least one*' -PassThru
-
-        $errorRecord.CategoryInfo.Category | Should -Be 'InvalidArgument'
-        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'MissingSearchCriterion,*'
+    It 'requires the location' {
+        { Test-SystemPathLocation } | Should -Throw '*Location*'
     }
 
     It 'searches only the process-only locations when -Process is given' {

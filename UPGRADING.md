@@ -68,8 +68,9 @@ write the **canonical** name, never an alias.
   `PathLocationNotFound`, where v1 persisted whatever string it was given. The location is checked
   expanded, so a `%…%` reference whose variable is not set is rejected too. Pass `-Force` where the
   folder is meant to appear later.
-- **`Test-SystemPathLocation` requires a criterion** — at least one of
-  `-Location`, `-Contains`, `-Filter`, `-Match`. A bare call now errors.
+- **`Test-SystemPathLocation` tests one exact location.** `-Location` is mandatory and positional;
+  v1's `-Filter` is gone. A bare call now errors. Reach for `Get-SystemPath -Contains` / `-Filter` /
+  `-Match` where a pattern is what the calling code needs.
 - **`Register-LogonTask -Name` and `-Executable` are mandatory.** A call omitting either now errors
   instead of registering a task with nothing to run.
 - **Scope switches on the Path lookups are parameter sets.** `Get-SystemPath` and
@@ -121,8 +122,8 @@ write the **canonical** name, never an alias.
   reference stays as indirection; without it the value is written verbatim as `REG_SZ`.
 - `Get-EnvironmentVariable -Expandable` — read the stored expandable value without evaluating its
   `%…%` references.
-- `-Contains` / `-Filter` / `-Match` on `Get-SystemPath` and `Test-SystemPathLocation` — literal
-  substring, wildcard, regular expression. `-Exact` (alias `-Location`) matches exactly, `-Process`
-  narrows to the locations local to the current shell.
+- `-Contains` / `-Filter` / `-Match` on `Get-SystemPath` — literal substring, wildcard, regular
+  expression. `-Exact` (alias `-Location`) matches exactly, `-Process` narrows to the locations local
+  to the current shell.
 - `Sync-SystemPath` (alias `syncpath`) — rebuild the system Path of the current shell from the
   machine and the user Path, for a change made outside easypeasy.

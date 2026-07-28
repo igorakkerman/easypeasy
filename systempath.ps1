@@ -943,20 +943,15 @@ function Test-SystemPathLocation {
     .SYNOPSIS
         Tests whether a location is on the system Path.
     .DESCRIPTION
-        Returns $true if a location satisfying the given criteria is present on the system Path,
-        either for the current user, for the local machine or the system Path in effect in the current context.
-        Multiple criteria, of the same kind or of different kinds, must all be satisfied. At least one of
-        -Location, -Contains, -Filter and -Match is required.
-        Matching is case-insensitive and ignores trailing backslashes.
+        Returns $true if the specified location is present on the system Path, either for the current user,
+        for the local machine or the system Path in effect in the current context.
+        The location is compared exactly, case-insensitively and ignoring trailing backslashes; a substring,
+        a wildcard pattern or a regular expression selects nothing. Use Get-SystemPath -Contains, -Filter or
+        -Match for those.
     .PARAMETER Location
-        Exact folder location to look for.
-    .PARAMETER Contains
-        Substrings, positional; the location must contain all of them. Taken literally: wildcard and regex
-        characters carry no meaning.
-    .PARAMETER Filter
-        Wildcard patterns the location must match.
-    .PARAMETER Match
-        Regular expressions the location must match. An invalid regular expression is a terminating error.
+        Exact folder location to look for, positional. Matching is case-insensitive and ignores trailing
+        backslashes.
+        Alias: Folder.
     .PARAMETER Machine
         If specified, the system Path for the local machine is searched.
     .PARAMETER User
@@ -966,26 +961,20 @@ function Test-SystemPathLocation {
     .PARAMETER Process
         If specified, only the locations local to the current shell are searched, those on neither persisted Path.
     .OUTPUTS
-        Boolean indicating whether a matching location is present.
+        Boolean indicating whether the location is present.
     .EXAMPLE
-        Test-SystemPathLocation Git
+        Test-SystemPathLocation "C:\Program Files\Git\bin"
     .EXAMPLE
-        Test-SystemPathLocation -Location "C:\Program Files\Git\bin"
-    .EXAMPLE
-        Test-SystemPathLocation -Filter "*\Git\*" -User
+        Test-SystemPathLocation "C:\Program Files\Git\bin" -Machine
     .EXAMPLE
         Test-SystemPathLocation -Location "C:\Temp\session" -Process
     #>
     [CmdletBinding()]
     [OutputType([bool])]
     param (
+        [Parameter(Mandatory, Position = 0)]
         [Alias("Folder")]
         [string] $Location,
-        [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
-        [string[]] $Contains,
-        [string[]] $Filter,
-        [ValidRegexAttribute()]
-        [string[]] $Match,
         [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
         [Parameter(Mandatory, ParameterSetName = "User")]
@@ -996,16 +985,22 @@ function Test-SystemPathLocation {
         [switch] $Process
     )
 
-    if (-not $Location -and -not $Contains -and -not $Filter -and -not $Match) {
-        Write-Error "Specify at least one of -Location, -Contains, -Filter and -Match." `
-            -ErrorId "MissingSearchCriterion" `
-            -Category InvalidArgument `
-            -TargetObject "-Location, -Contains, -Filter, -Match" `
-            -ErrorAction Stop
+    # the exact comparison lives in Get-SystemPath -Exact; the scope switch picks its parameter set
+    $locations =
+    if ($Machine) {
+        Get-SystemPath -Exact $Location -Machine
+    }
+    elseif ($User) {
+        Get-SystemPath -Exact $Location -User
+    }
+    elseif ($Process) {
+        Get-SystemPath -Exact $Location -Process
+    }
+    else {
+        Get-SystemPath -Exact $Location -Effective
     }
 
-    # Get-SystemPath takes every parameter of this command, so hand them over as given
-    return @(Get-SystemPath @PSBoundParameters).Count -gt 0
+    return @($locations).Count -gt 0
 }
 
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null

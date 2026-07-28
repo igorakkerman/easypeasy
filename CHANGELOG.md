@@ -47,13 +47,13 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 ### System PATH and environment variables
 - **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.
 - **Added:** Table view for system path locations in output of `Get-SystemPath`. 
-- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath` and `Test-SystemPathLocation` — literal substring, wildcard pattern, regular expression.
-- **Added:** `-Match` on `Get-SystemPath` and `Test-SystemPathLocation` rejects invalid regular expressions.
+- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath` — literal substring, wildcard pattern, regular expression.
+- **Added:** `-Match` on `Get-SystemPath` rejects invalid regular expressions.
 - **Added:** `-Exact` (aliases `-Location`, `-Folder`) on `Get-SystemPath` — exact match, case-insensitive, trailing backslashes ignored.
 - **Added:** `-Process` on `Get-SystemPath` and `Test-SystemPathLocation` — locations local to current shell, on neither persisted Path.
 - **Removed:** `Get-SystemPathLocation` — use `Get-SystemPath -Location`, `-Contains`, `-Filter` or `-Match`.
 - **Changed:** positional parameter: `-Contains` replaces `-Filter` / `-Location`, use `path Git`, `-Filter "*Git*"` or `-Match ".*Git.*"`.
-- **Changed:** `Test-SystemPathLocation` requires at least one of `-Location`, `-Contains`, `-Filter` and `-Match`.
+- **Changed:** `-Location` on `Test-SystemPathLocation` is mandatory and positional; `-Filter` removed, exact match only.
 - **Changed:** `Add-SystemPathLocation`: renamed `-Front` to `-First`. `-Front` stays as an alias.
 - **Added:** `Add-SystemPathLocation` reports terminating error `PathLocationNotFound` for location naming no existing folder, checked expanded.
 - **Added:** `-Force` on `Add-SystemPathLocation` — adds location naming no existing folder.

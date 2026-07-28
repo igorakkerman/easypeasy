@@ -85,9 +85,8 @@ in a specific scope (machine or user) \
 **default**: **effective** in current shell
 
 ```powershell
-> Test-SystemPathLocation -Location "C:\Program Files\Git\bin"
-> Test-SystemPathLocation Git
-> Test-SystemPathLocation -Filter "*\Git\*" -Machine
+> Test-SystemPathLocation "C:\Program Files\Git\bin"          # exact match
+> Test-SystemPathLocation "C:\Program Files\Git\bin" -Machine
 
 True
 ```
