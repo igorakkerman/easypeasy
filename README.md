@@ -98,17 +98,15 @@ in a specific scope (machine 🅰️ or user) \
 **default**: **user** scope
 
 ```powershell
-> addpath "C:\Program Files\MyApp"
+> addpath "C:\Program Files\MyApp" # Add-SystemPathLocation
 > addpath -Machine "C:\Program Files\MyApp" # 🅰️
 > addpath -First "C:\Program Files\MyApp" # this folder will be searched first
 > addpath -Force "%JAVA_HOME%\bin" # adds a location naming no existing folder
 
-> rmpath "C:\Program Files\MyApp" # removes every occurrence of this path
+> rmpath "C:\Program Files\MyApp" # Remove-SystemPathLocation, removes every occurrence of this path
 ```
 
 A location naming no existing folder is rejected; pass `-Force` to add it anyway. The location is checked expanded, so a `%…%` reference whose variable is not set is rejected too.
-
-`addpath` and `rmpath` are aliases for `Add-SystemPathLocation` and `Remove-SystemPathLocation` respectively, which you should use in scripts.
 
 #### Remove duplicate folders from the system Path
 
@@ -116,33 +114,30 @@ in a specific scope (machine 🅰️ or user), or both combined \
 **default**: **both**, keeping a cross-scope duplicate on the machine Path
 
 ```powershell
-> cleanpath                # both scopes; keeps machine on overlap
+> cleanpath                # Remove-DuplicateSystemPathLocations; both scopes, keeps machine on overlap
 > cleanpath -KeepMachine   # both scopes; keeps machine on overlap (explicit)
 > cleanpath -KeepUser      # both scopes; keeps user on overlap
 > cleanpath -Machine       # machine Path only
 > cleanpath -User          # user Path only
 ```
 
-`cleanpath` is an alias for `Remove-DuplicateSystemPathLocations`, which you should use in scripts. \
 Within a scope, the first occurrence of each folder is kept.
 
 #### Move a folder between the machine and user system Path 🅰️
 
 ```powershell
-> movepath "C:\Program Files\Git\bin" -ToUser     # machine -> user
+> movepath "C:\Program Files\Git\bin" -ToUser     # Move-SystemPathLocation; machine -> user
 > movepath "C:\Program Files\Git\bin" -ToMachine  # user -> machine
 ```
 
-`movepath` is an alias for `Move-SystemPathLocation`, which you should use in scripts. \
 The folder is removed from the source Path and added to the target Path.
 
 #### Pick up a system Path change made elsewhere
 
 ```powershell
-> syncpath
+> syncpath   # Sync-SystemPath
 ```
 
-`syncpath` is an alias for `Sync-SystemPath`, which you should use in scripts. \
 The Path of the current shell is rebuilt from the machine and the user Path, the way a fresh shell is given one, so a change made in the Windows settings, in another shell or by an installer takes effect without opening a new one. Folders only this shell knows, such as those a virtual environment added, are kept. The easypeasy Path functions do this themselves, so this is only for a change easypeasy did not make.
 
 A folder **removed** elsewhere is not picked up: no scope carries it any more, which is exactly what a folder this shell added looks like. Open a new shell for that.
@@ -161,28 +156,24 @@ in a specific scope (effective, machine or user) \
 **default**: **effective** in current shell
 
 ```powershell
-> getenv JAVA_HOME
+> getenv JAVA_HOME            # Get-EnvironmentVariable
 > getenv -Machine JAVA_HOME
 > getenv -User JAVA_HOME
 
 C:\Java\jdk-21
 ```
 
-`getenv` is an alias for `Get-EnvironmentVariable`, which you should use in scripts.
-
 
 #### Set the value of a variable or remove it permanently 
 in a specific scope (machine 🅰️ or user) \
 **default**: **user** scope
 ```powershell
-> setenv JAVA_HOME "C:\Java\jdk-21"
+> setenv JAVA_HOME "C:\Java\jdk-21" # Set-EnvironmentVariable
 > setenv -Machine JAVA_HOME "C:\Java\jdk-21" # 🅰️
 
-> rmenv JAVA_HOME
+> rmenv JAVA_HOME # Remove-EnvironmentVariable
 > rmenv -Machine JAVA_HOME # 🅰️
 ```
-
-`setenv` and `rmenv` are aliases for `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` respectively, which you should use in scripts.
 
 #### List the variables of a scope
 
@@ -367,24 +358,20 @@ Register-LogonTask `
 #### Quick timestamp creation
 
 ```powershell
-> time
+> time   # Get-Timestamp
 
 2024-01-01_20.15.00
 
 > & .\system-update.ps1 > "$env:TEMP\system-update-$(time).log"
 ```
 
-`time` is an alias for `Get-Timestamp`, which you should use in scripts.
-
 #### Run a command as administrator
 
 Runs the given command in an elevated PowerShell session, prompting for confirmation through the User Account Control dialog.
 ```powershell
-> sudops New-Item -ItemType Directory "C:\Program Files\MyTool"
-> sudops Restart-Service -Name Spooler
+> sudops New-Item -ItemType Directory "C:\Program Files\MyTool"   # Invoke-Elevated
+> sups Restart-Service -Name Spooler                              # sups is the shorter alias
 ```
-
-`sudops` (and the shorter `sups`) is an alias for `Invoke-Elevated`, which you should use in scripts.
 
 #### Verify that the current user is an administrator
 
@@ -404,29 +391,26 @@ False
 #### Restart Windows Explorer
 
 ```powershell
-> sx
+> sx   # Stop-Explorer
 ```
 
-`sx` is an alias for `Stop-Explorer`, which you should use in scripts. \
 Stopping Explorer generally triggers a restart, which picks up a shell setting that needs one.
 
 #### Locate a special folder
 
 ```powershell
-> programs
+> programs   # Get-ProgramFilesFolder
 
 C:\Program Files
 
-> docs
+> docs   # Get-MyDocumentsFolder
 
 C:\Users\me\Documents
 
-> desktop
+> desktop   # Get-DesktopFolder
 
 C:\Users\me\Desktop
 ```
-
-`programs`, `docs` and `desktop` are aliases for `Get-ProgramFilesFolder`, `Get-MyDocumentsFolder` and `Get-DesktopFolder` respectively, which you should use in scripts.
 
 ## Installation
 ### Installation from PowerShell Gallery
