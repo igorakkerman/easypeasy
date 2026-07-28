@@ -35,6 +35,24 @@ Describe 'Remove-SystemPathLocation' {
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
 
+        It 'holds a UNC root apart from a single leading backslash' {
+            $script:currentEntries = New-PathEntries 'C:\Old;\\server\share'
+
+            Remove-SystemPathLocation -Location '\server\share' -User -WarningVariable warning -WarningAction SilentlyContinue
+
+            $warning | Should -Match 'not on the system Path'
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'removes an entry stored with repeated backslashes' {
+            $script:currentEntries = New-PathEntries 'C:\Old;C:\Gone\\bin'
+
+            Remove-SystemPathLocation -Location 'C:\Gone\bin' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old' }
+        }
+
         It 'targets the user scope by default' {
             Remove-SystemPathLocation -Location 'C:\Gone'
 

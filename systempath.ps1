@@ -72,6 +72,35 @@ function Backup-SystemPath {
     }
 }
 
+function local:Get-LocationKey {
+    <#
+    .SYNOPSIS
+        Reduces a location to the key locations are compared on.
+    .DESCRIPTION
+        Returns the location with repeated backslashes collapsed to one and a trailing backslash removed,
+        so that two spellings of the same folder yield the same key. A leading '\\' is kept, holding a UNC
+        root apart from a single leading backslash.
+        Case is left as it is: comparison is case-insensitive through the operator, not here.
+    .PARAMETER Location
+        The location to reduce.
+    .OUTPUTS
+        The comparison key of the location.
+    .EXAMPLE
+        Get-LocationKey -Location "C:\Program Files\\Git\bin\"
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string] $Location
+    )
+
+    # every run of backslashes collapses to one; a leading run is a UNC root, so its first backslash is
+    # captured and put back
+    return ($Location -replace '(^\\)?\\+', '$1\').TrimEnd("\")
+}
+
 function local:Get-StoredPathString {
     <#
     .SYNOPSIS
@@ -207,9 +236,9 @@ function local:Add-PathLocation {
         [string] $Scope
     )
 
-    $key = [Environment]::ExpandEnvironmentVariables($Location).TrimEnd("\")
+    $key = Get-LocationKey -Location ([Environment]::ExpandEnvironmentVariables($Location))
 
-    $present = @($Entries | Where-Object { $_.Location.TrimEnd("\") -ieq $key })
+    $present = @($Entries | Where-Object { (Get-LocationKey -Location $_.Location) -ieq $key })
 
     if ($present) {
         if (-not $First) {
@@ -218,7 +247,7 @@ function local:Add-PathLocation {
         }
 
         # move the existing entry to the front, keeping its stored form
-        $remaining = @($Entries | Where-Object { $_.Location.TrimEnd("\") -ine $key })
+        $remaining = @($Entries | Where-Object { (Get-LocationKey -Location $_.Location) -ine $key })
         return $present + $remaining
     }
 
@@ -236,7 +265,7 @@ function local:Remove-PathLocation {
         The location argument is treated as expandable and matched on the entries' expanded Location, so either
         the stored (%...%) form or the resolved folder removes the entry.
         Removing is idempotent: if no entry resolves to the location, the entries are returned unchanged.
-        Trailing backslashes on the location argument and on the entries are ignored.
+        Repeated and trailing backslashes on the location argument and on the entries are ignored.
     .PARAMETER Entries
         The current SystemPathLocation entries to remove the location from.
     .PARAMETER Location
@@ -256,9 +285,9 @@ function local:Remove-PathLocation {
         [string] $Location
     )
 
-    $key = [Environment]::ExpandEnvironmentVariables($Location).TrimEnd("\")
+    $key = Get-LocationKey -Location ([Environment]::ExpandEnvironmentVariables($Location))
 
-    return @($Entries | Where-Object { $_.Location.TrimEnd("\") -ine $key })
+    return @($Entries | Where-Object { (Get-LocationKey -Location $_.Location) -ine $key })
 }
 
 function local:Remove-DuplicatePathLocation {
@@ -267,9 +296,9 @@ function local:Remove-DuplicatePathLocation {
         Removes duplicate locations from a list of Path entries.
     .DESCRIPTION
         Returns the SystemPathLocation entries with duplicates removed, keeping the first occurrence of each
-        location. Duplicates are decided on the expanded Location, case-insensitively and ignoring trailing
-        backslashes, so two entries that resolve to the same folder count as one. The kept entry retains its
-        stored form.
+        location. Duplicates are decided on the expanded Location, case-insensitively and ignoring repeated
+        and trailing backslashes, so two entries that resolve to the same folder count as one. The kept entry
+        retains its stored form.
     .PARAMETER Entries
         The SystemPathLocation entries to deduplicate.
     .OUTPUTS
@@ -286,7 +315,7 @@ function local:Remove-DuplicatePathLocation {
 
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    return @($Entries | Where-Object { $seen.Add($_.Location.TrimEnd("\")) })
+    return @($Entries | Where-Object { $seen.Add((Get-LocationKey -Location $_.Location)) })
 }
 
 function local:Get-PathScopeStoredForms {
@@ -295,7 +324,7 @@ function local:Get-PathScopeStoredForms {
         Maps each location on a persisted scope Path to the stored forms it occurs as.
     .DESCRIPTION
         Reads the Path environment variable for the given scope in its stored form and returns a
-        case-insensitive dictionary mapping each expanded, trailing-backslash-trimmed location key to a queue
+        case-insensitive dictionary mapping each expanded location's comparison key to a queue
         of the stored (expandable) values it occurs as, in order. Used to tag the effective Path's locations
         with their origin scope and recover the %...% reference each one is persisted as, by consuming the
         queues in order. A location occurring more than once has one queue entry per occurrence.
@@ -318,7 +347,7 @@ function local:Get-PathScopeStoredForms {
     (Get-EnvironmentVariable @context -Name Path -Expandable -ErrorAction SilentlyContinue) -split $systemPathSeparator `
     | Where-Object { $_ } `
     | ForEach-Object {
-        $key = [Environment]::ExpandEnvironmentVariables($_).TrimEnd("\")
+        $key = Get-LocationKey -Location ([Environment]::ExpandEnvironmentVariables($_))
         if (-not $storedForms.ContainsKey($key)) {
             $storedForms[$key] = [System.Collections.Generic.Queue[string]]::new()
         }
@@ -336,9 +365,11 @@ function local:Test-LocationCriteria {
         Returns $true when the location satisfies every given criterion. Criteria of different kinds, and multiple
         values of the same kind, are combined with AND. An absent criterion is not applied; when no criterion is
         given at all, every location satisfies them.
-        Matching is case-insensitive throughout. Trailing backslashes are ignored on the location and on the
-        -Exact, -Contains and -Filter criteria; the -Match patterns are applied as given, since a trailing
+        Matching is case-insensitive throughout. Repeated and trailing backslashes are ignored on the location
+        and on the -Exact, -Contains and -Filter criteria; the -Match patterns are applied as given, since a
         backslash is meaningful in a regular expression.
+        A leading '\\' is the one run that carries meaning and is kept, holding a UNC root apart from a single
+        leading backslash.
     .PARAMETER Location
         The location to test.
     .PARAMETER Exact
@@ -367,26 +398,27 @@ function local:Test-LocationCriteria {
         [string[]] $Match
     )
 
-    $trimmedLocation = $Location.TrimEnd("\")
+    $locationKey = Get-LocationKey -Location $Location
 
-    if ($Exact -and $trimmedLocation -ine $Exact.TrimEnd("\")) {
+    if ($Exact -and $locationKey -ine (Get-LocationKey -Location $Exact)) {
         return $false
     }
 
     foreach ($substring in $Contains) {
-        if (-not $trimmedLocation.Contains($substring.TrimEnd("\"), [System.StringComparison]::OrdinalIgnoreCase)) {
+        $substringKey = Get-LocationKey -Location $substring
+        if (-not $locationKey.Contains($substringKey, [System.StringComparison]::OrdinalIgnoreCase)) {
             return $false
         }
     }
 
     foreach ($pattern in $Filter) {
-        if ($trimmedLocation -inotlike $pattern.TrimEnd("\")) {
+        if ($locationKey -inotlike (Get-LocationKey -Location $pattern)) {
             return $false
         }
     }
 
     foreach ($pattern in $Match) {
-        if ($trimmedLocation -inotmatch $pattern) {
+        if ($locationKey -inotmatch $pattern) {
             return $false
         }
     }
@@ -423,14 +455,16 @@ function Get-SystemPath {
         Otherwise, it is returned as an array of SystemPathLocation objects.
     .PARAMETER Exact
         Exact folder location; only a location equal to it is returned. Matching is case-insensitive and ignores
-        trailing backslashes.
+        repeated and trailing backslashes, except a leading '\\', which holds a UNC root apart from a single
+        leading backslash.
         Aliases: Location, Folder.
     .PARAMETER Contains
         Substrings, positional; only locations containing all of them are returned. Taken literally: wildcard and
-        regex characters carry no meaning. Matching is case-insensitive and ignores trailing backslashes.
+        regex characters carry no meaning. Matching is case-insensitive and ignores repeated and trailing
+        backslashes.
     .PARAMETER Filter
         Wildcard patterns; only locations matching all of them are returned. Matching is case-insensitive and
-        ignores trailing backslashes.
+        ignores repeated and trailing backslashes.
     .PARAMETER Match
         Regular expressions; only locations matching all of them are returned. Matching is case-insensitive.
         An invalid regular expression is a terminating error.
@@ -504,7 +538,7 @@ function Get-SystemPath {
         $env:PATH -split $systemPathSeparator `
         | Where-Object { $_ } `
         | ForEach-Object {
-            $key = $_.TrimEnd("\")
+            $key = Get-LocationKey -Location $_
             $scope = "Process"
             $stored = $_
 
@@ -908,12 +942,12 @@ function Move-SystemPathLocation {
     }
 
     $sourceEntries = @(Get-SystemPath @source)
-    $key = [Environment]::ExpandEnvironmentVariables($Location).TrimEnd("\")
-    $moved = @($sourceEntries | Where-Object { $_.Location.TrimEnd("\") -ieq $key })
+    $key = Get-LocationKey -Location ([Environment]::ExpandEnvironmentVariables($Location))
+    $moved = @($sourceEntries | Where-Object { (Get-LocationKey -Location $_.Location) -ieq $key })
 
     # not on the source Path: nothing to move
     if ($moved.Count -eq 0) {
-        $onTarget = @(Get-SystemPath @target) | Where-Object { $_.Location.TrimEnd("\") -ieq $key }
+        $onTarget = @(Get-SystemPath @target) | Where-Object { (Get-LocationKey -Location $_.Location) -ieq $key }
 
         $reason = $onTarget ? "already on the $targetName Path" : "not on the $sourceName Path"
         Write-Warning "Nothing to move. reason: $reason, location: '$Location'"
@@ -923,7 +957,7 @@ function Move-SystemPathLocation {
     $newSource = @(Remove-PathLocation -Entries $sourceEntries -Location $Location)
 
     $targetEntries = @(Get-SystemPath @target)
-    $onTarget = @($targetEntries | Where-Object { $_.Location.TrimEnd("\") -ieq $key })
+    $onTarget = @($targetEntries | Where-Object { (Get-LocationKey -Location $_.Location) -ieq $key })
     # append the moved entry, keeping its stored (%...%) form, unless the target already has it
     $newTarget = $onTarget.Count -gt 0 ? $targetEntries : (@($targetEntries) + @($moved[0]))
 
@@ -945,12 +979,12 @@ function Test-SystemPathLocation {
     .DESCRIPTION
         Returns $true if the specified location is present on the system Path, either for the current user,
         for the local machine or the system Path in effect in the current context.
-        The location is compared exactly, case-insensitively and ignoring trailing backslashes; a substring,
-        a wildcard pattern or a regular expression selects nothing. Use Get-SystemPath -Contains, -Filter or
-        -Match for those.
+        The location is compared exactly, case-insensitively and ignoring repeated and trailing backslashes
+        except a leading '\\'; a substring, a wildcard pattern or a regular expression selects nothing.
+        Use Get-SystemPath -Contains, -Filter or -Match for those.
     .PARAMETER Location
-        Exact folder location to look for, positional. Matching is case-insensitive and ignores trailing
-        backslashes.
+        Exact folder location to look for, positional. Matching is case-insensitive and ignores repeated and
+        trailing backslashes, except a leading '\\'.
         Alias: Folder.
     .PARAMETER Machine
         If specified, the system Path for the local machine is searched.

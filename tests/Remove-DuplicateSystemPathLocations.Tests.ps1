@@ -96,6 +96,25 @@ Describe 'Remove-DuplicateSystemPathLocations' {
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\B' }
         }
+
+        It 'holds a UNC root apart from a single leading backslash' {
+            $script:userEntries = New-PathEntries '\\server\share;\server\share'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+
+            Remove-DuplicateSystemPathLocations -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'ignores repeated backslashes' {
+            $script:userEntries = New-PathEntries 'C:\A\bin;C:\A\\bin;C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+
+            Remove-DuplicateSystemPathLocations -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A\bin;C:\B' }
+        }
     }
 
     Context 'expandable locations' {

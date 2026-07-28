@@ -41,6 +41,17 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\X' -ToUser -WhatIf
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
+
+        It 'moves an entry stored with repeated backslashes, keeping its stored form' {
+            $script:machineEntries = New-PathEntries 'C:\A;C:\X\\bin' -Scope Machine
+
+            Move-SystemPathLocation 'C:\X\bin' -ToUser
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\X\\bin' }
+        }
     }
 
     Context 'moving from user to machine (-ToMachine)' {
@@ -92,6 +103,18 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\X' -ToUser -WarningVariable warning -WarningAction SilentlyContinue
 
             $warning | Should -Match 'already on the user Path'
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'holds a UNC root apart from a single leading backslash' {
+            $script:machineEntries = New-PathEntries 'C:\A;\\server\share' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+
+            Move-SystemPathLocation '\server\share' -ToUser -WarningVariable warning -WarningAction SilentlyContinue
+
+            $warning | Should -Match 'not on the machine Path'
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
 

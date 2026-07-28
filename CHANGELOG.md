@@ -49,7 +49,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** Table view for system path locations in output of `Get-SystemPath`. 
 - **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath` — literal substring, wildcard pattern, regular expression.
 - **Added:** `-Match` on `Get-SystemPath` rejects invalid regular expressions.
-- **Added:** `-Exact` (aliases `-Location`, `-Folder`) on `Get-SystemPath` — exact match, case-insensitive, trailing backslashes ignored.
+- **Added:** `-Exact` (aliases `-Location`, `-Folder`) on `Get-SystemPath` — exact match, case-insensitive, repeated and trailing backslashes ignored.
+- **Changed:** Location comparison ignores repeated backslashes anywhere in location, not only trailing ones. Leading `\\` of UNC root kept.
 - **Added:** `-Process` on `Get-SystemPath` and `Test-SystemPathLocation` — locations local to current shell, on neither persisted Path.
 - **Removed:** `Get-SystemPathLocation` — use `Get-SystemPath -Location`, `-Contains`, `-Filter` or `-Match`.
 - **Changed:** positional parameter: `-Contains` replaces `-Filter` / `-Location`, use `path Git`, `-Filter "*Git*"` or `-Match ".*Git.*"`.

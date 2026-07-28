@@ -82,6 +82,24 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\Exists' -User
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
+
+        It 'holds a UNC root apart from a single leading backslash' {
+            $script:currentEntries = New-PathEntries '\\server\share'
+
+            Add-SystemPathLocation -Location '\server\share' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq '\\server\share;\server\share' }
+        }
+
+        It 'treats a location with repeated backslashes as present' {
+            $script:currentEntries = New-PathEntries 'C:\Exists\bin'
+
+            Add-SystemPathLocation -Location 'C:\Exists\\bin' -User -WarningVariable warning -WarningAction SilentlyContinue
+
+            $warning | Should -Match 'already on the system Path'
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
     }
 
     Context 'moving an existing location to the front with -First' {
@@ -106,6 +124,15 @@ Describe 'Add-SystemPathLocation' {
         It 'does not throw for an existing location' {
             { Add-SystemPathLocation -Location 'C:\Exists' -First -User -ErrorAction Stop } |
                 Should -Not -Throw
+        }
+
+        It 'moves the entry for a location with repeated backslashes' {
+            $script:currentEntries = New-PathEntries 'C:\A;C:\Exists\bin;C:\B'
+
+            Add-SystemPathLocation -Location 'C:\Exists\\bin\' -First -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Exists\bin;C:\A;C:\B' }
         }
 
         It 'accepts the Front alias' {

@@ -133,6 +133,29 @@ Describe 'Get-SystemPath' {
             (Get-SystemPath -Exact 'c:\windows\').Location | Should -Be @('C:\Windows')
         }
 
+        It 'ignores repeated backslashes on either side' {
+            $env:PATH = 'C:\Program Files\Git\bin'
+
+            (Get-SystemPath -Exact 'C:\Program Files\\Git\bin').Location |
+                Should -Be @('C:\Program Files\Git\bin')
+
+            $env:PATH = 'C:\Program Files\\Git\bin'
+
+            (Get-SystemPath -Exact 'C:\Program Files\Git\bin').Location |
+                Should -Be @('C:\Program Files\\Git\bin')
+        }
+
+        It 'keeps the leading backslashes of a UNC root' {
+            $env:PATH = '\\server\share'
+
+            (Get-SystemPath -Exact '\\server\\share\').Location | Should -Be @('\\server\share')
+            Get-SystemPath -Exact '\server\share' | Should -BeNullOrEmpty
+
+            $env:PATH = '\server\share'
+
+            Get-SystemPath -Exact '\\server\share' | Should -BeNullOrEmpty
+        }
+
         It 'returns nothing when the location is absent' {
             $env:PATH = 'C:\Windows'
 
@@ -147,6 +170,25 @@ Describe 'Get-SystemPath' {
             (Get-SystemPath -Exact 'C:\Windows').Scope | Should -Be 'Machine'
             (Get-SystemPath -Exact 'C:\Users\me\bin').Scope | Should -Be 'User'
             (Get-SystemPath -Exact 'C:\Temp\session').Scope | Should -Be 'Process'
+        }
+
+        It 'holds a UNC root apart from a single leading backslash when tagging the scope' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { '\\server\share' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '' }
+            $env:PATH = '\server\share'
+
+            (Get-SystemPath -Exact '\server\share').Scope | Should -Be 'Process'
+        }
+
+        It 'tags a location stored with repeated backslashes with its origin scope' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Tools\\bin' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '' }
+            $env:PATH = 'C:\Tools\bin'
+
+            $result = Get-SystemPath -Exact 'C:\Tools\bin'
+
+            $result.Scope | Should -Be 'Machine'
+            $result.ExpandableLocation | Should -Be 'C:\Tools\\bin'
         }
 
         It 'searches the machine Path when -Machine is given' {
@@ -220,6 +262,15 @@ Describe 'Get-SystemPath' {
             (Get-SystemPath -Filter 'C:\Tools').Location | Should -Be @('C:\Tools\')
         }
 
+        It 'ignores repeated backslashes on both sides' {
+            $env:PATH = 'C:\Program Files\\Git\bin'
+
+            (Get-SystemPath -Filter '*\Git\bin').Location |
+                Should -Be @('C:\Program Files\\Git\bin')
+            (Get-SystemPath -Filter '*\\Git\bin').Location |
+                Should -Be @('C:\Program Files\\Git\bin')
+        }
+
         It 'returns the matches joined when -Join is used' {
             $env:PATH = 'C:\A;C:\B;C:\Bin'
 
@@ -261,6 +312,20 @@ Describe 'Get-SystemPath' {
             $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd'
 
             (Get-SystemPath Git bin).Location | Should -Be @('C:\Program Files\Git\bin')
+        }
+
+        It 'ignores repeated backslashes on both sides' {
+            $env:PATH = 'C:\Program Files\\Git\bin'
+
+            (Get-SystemPath '\Git\bin').Location | Should -Be @('C:\Program Files\\Git\bin')
+            (Get-SystemPath 'Files\\Git').Location | Should -Be @('C:\Program Files\\Git\bin')
+        }
+
+        It 'reads a leading \\ as a UNC root, not as a repeated separator' {
+            $env:PATH = 'C:\Program Files\\Git\bin;\\server\share'
+
+            Get-SystemPath '\\Git\bin' | Should -BeNullOrEmpty
+            (Get-SystemPath '\\server').Location | Should -Be @('\\server\share')
         }
 
         It 'returns everything when no criterion is given' {

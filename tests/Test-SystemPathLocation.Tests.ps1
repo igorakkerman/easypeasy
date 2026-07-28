@@ -24,6 +24,17 @@ Describe 'Test-SystemPathLocation' {
         Test-SystemPathLocation -Location 'c:\windows\' | Should -BeTrue
     }
 
+    It 'ignores repeated backslashes in the location argument' {
+        Test-SystemPathLocation -Location 'C:\Program Files\\Git\bin' | Should -BeTrue
+        Test-SystemPathLocation -Location 'C:\\\Program Files\Git\\bin\\' | Should -BeTrue
+    }
+
+    It 'ignores repeated backslashes in the Path entry' {
+        $env:PATH = 'C:\Program Files\\Git\bin'
+
+        Test-SystemPathLocation -Location 'C:\Program Files\Git\bin' | Should -BeTrue
+    }
+
     It 'returns $false for a substring of a location' {
         Test-SystemPathLocation Git | Should -BeFalse
     }

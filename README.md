@@ -91,7 +91,7 @@ in a specific scope (machine or user) \
 True
 ```
 
-The folder is matched exactly, case-insensitively and ignoring a trailing backslash; a substring or a pattern finds nothing.
+The folder is matched exactly, case-insensitively and ignoring repeated and trailing backslashes; a substring or a pattern finds nothing.
 
 #### Add or remove a folder to/from the system Path permanently
 in a specific scope (machine 🅰️ or user) \
