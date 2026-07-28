@@ -24,7 +24,8 @@ ___
 in order of precedence
 
 ```powershell
-> path   # Get-SystemPath
+# Get-SystemPath
+> path
 
 Scope      Location
 -----      --------
@@ -40,9 +41,11 @@ User       C:\Users\me\go\bin
 #### Specific scope
 
 ```powershell
-> path -Machine   # machine scope only
-> path -User      # user scope only
-> path -Process   # process scope only 
+> path -Machine     # machine scope only
+> path -User        # user scope only
+> path -Process     # process scope only 
+> path -Effective   # all scopes, same as without args
+
 
 Scope      Location
 -----      --------
@@ -54,8 +57,8 @@ Machine    C:\Program Files\Git\bin
 #### Find a folder in the system Path
 
 ```powershell
-> path -Contains windows         # literal match, case-insentive, no wildcards
-> path windows                   # same as -Contains
+> path windows             # literal match, case-insentive, no wildcards
+> path -Contains windows   # same as without args
 
 Scope      Location
 -----      --------
@@ -67,16 +70,16 @@ Machine    C:\Windows
 #### Match a folder in the system Path
 
 ```powershell
-> path -Location "C:\Program Files\Git\bin" # exact match
-> path -Filter "*\Git\*"                    # wildcard match
-> path -Match "\\Git\\(cmd|bin)$"           # regex match
+> path -Location "C:\Program Files\Git\bin"   # exact match
+> path -Filter "*\Git\*"                      # wildcard match
+> path -Match "\\Git\\(cmd|bin)$"             # regex match
 ```
 
 #### Multiple Criteria
 
 ```powershell
-> path Git -Filter "*\bin"        # ALL criteria must be met
-> path Git Program                # must contain both strings
+> path Git -Filter "*\bin"   # ALL criteria must be met
+> path Git Program           # must contain both strings
 ```
 
 #### Test whether a folder is on the system Path
@@ -85,62 +88,69 @@ in a specific scope (machine or user) \
 **default**: **effective** in current shell
 
 ```powershell
-> testpath "C:\Program Files\Git\bin"          # Test-SystemPathLocation, exact match
-> testpath "C:\Program Files\Git\bin" -Machine
+# Test-SystemPathLocation
+> testpath "C:\Program Files\Git\bin"              # exact match, case-insensitve
+> testpath "C:\Program Files\Git\bin" -Effective   # same as without args
+> testpath "C:\Program Files\Git\bin" -Machine     # machine scope only
+> testpath "C:\Program Files\Git\bin" -User        # user scope only
+> testpath "C:\Program Files\Git\bin" -Process     # process scope only
 
 True
 ```
 
-The folder is matched exactly, case-insensitively and ignoring repeated and trailing backslashes; a substring or a pattern finds nothing.
-
 #### Add or remove a folder to/from the system Path permanently
-in a specific scope (machine 🅰️ or user) \
-**default**: **user** scope
 
 ```powershell
-> addpath "C:\Program Files\MyApp" # Add-SystemPathLocation
-> addpath -Machine "C:\Program Files\MyApp" # 🅰️
-> addpath -First "C:\Program Files\MyApp" # this folder will be searched first
-> addpath -Force "%JAVA_HOME%\bin" # adds a location naming no existing folder
+# Add-SystemPathLocation
+> addpath "C:\Program Files\MyApp"          # user scope
+> addpath -User "C:\Program Files\MyApp"    # same as without args
+> addpath -Machine "C:\Program Files\MyApp" # machine scope 🅰️
+> addpath -First "C:\Program Files\MyApp"   # this folder will be searched first
+> addpath "%JAVA_HOME%\bin"                 # expandable reference
+> addpath -Force "%JAVA_HOME%\bin"          # non-existent location
 
-> rmpath "C:\Program Files\MyApp" # Remove-SystemPathLocation, removes every occurrence of this path
+# Remove-SystemPathLocation
+> rmpath "C:\Program Files\MyApp"           # removes every occurrence of this path
 ```
 
 A location naming no existing folder is rejected; pass `-Force` to add it anyway. The location is checked expanded, so a `%…%` reference whose variable is not set is rejected too.
 
 #### Remove duplicate folders from the system Path
 
-in a specific scope (machine 🅰️ or user), or both combined \
-**default**: **both**, keeping a cross-scope duplicate on the machine Path
-
 ```powershell
-> cleanpath                # Remove-DuplicateSystemPathLocations; both scopes, keeps machine on overlap
-> cleanpath -KeepMachine   # both scopes; keeps machine on overlap (explicit)
-> cleanpath -KeepUser      # both scopes; keeps user on overlap
-> cleanpath -Machine       # machine Path only
+# Remove-DuplicateSystemPathLocations
+> cleanpath                # both scopes, keeps machine on overlap
+> cleanpath -KeepMachine   # same as without args
+> cleanpath -KeepUser      # both scopes; keeps user on overlap 🅰️
+> cleanpath -Machine       # machine Path only 🅰️
 > cleanpath -User          # user Path only
 ```
 
 Within a scope, the first occurrence of each folder is kept.
 
-#### Move a folder between the machine and user system Path 🅰️
+#### Move a folder between the machine and user system Path
 
 ```powershell
-> movepath "C:\Program Files\Git\bin" -ToUser     # Move-SystemPathLocation; machine -> user
-> movepath "C:\Program Files\Git\bin" -ToMachine  # user -> machine
+# Move-SystemPathLocation
+> movepath "C:\Program Files\Git\bin" -ToUser     # machine -> user 🅰️ 
+> movepath "C:\Program Files\Git\bin" -ToMachine  # user -> machine 🅰️ 
 ```
-
-The folder is removed from the source Path and added to the target Path.
 
 #### Pick up a system Path change made elsewhere
 
 ```powershell
-> syncpath   # Sync-SystemPath
+# Sync-SystemPath
+> syncpath
 ```
 
-The Path of the current shell is rebuilt from the machine and the user Path, the way a fresh shell is given one, so a change made in the Windows settings, in another shell or by an installer takes effect without opening a new one. Folders only this shell knows, such as those a virtual environment added, are kept. The easypeasy Path functions do this themselves, so this is only for a change easypeasy did not make.
+Rebuilds the system Path of the current shell, the same way as in a fresh shell.
+A change made in the Windows settings, in another shell or by an installer takes effect without opening a new one. 
 
-A folder **removed** elsewhere is not picked up: no scope carries it any more, which is exactly what a folder this shell added looks like. Open a new shell for that.
+Keeps this shell's folders, such as those a virtual environment.
+Other system Path functions do this themselves.
+
+A folder **removed** elsewhere is not picked up: 
+It will stay as a process-scoped folder and can be removed manually.
 
 #### Back up the effective system Path environment variable to a file in the temp folder
 
@@ -152,35 +162,36 @@ A folder **removed** elsewhere is not picked up: no scope carries it any more, w
 
 #### Get the value of a variable
 
-in a specific scope (effective, machine or user) \
-**default**: **effective** in current shell
-
 ```powershell
-> getenv JAVA_HOME            # Get-EnvironmentVariable
-> getenv -Machine JAVA_HOME
-> getenv -User JAVA_HOME
+# Get-EnvironmentVariable
+> getenv JAVA_HOME              # effective scope
+> getenv -Machine JAVA_HOME     # machine scope
+> getenv -User JAVA_HOME        # user scope
+> getenv TMP -Expandable        # stored expandable reference, %...% left unevaluated
 
 C:\Java\jdk-21
 ```
 
+#### Set the value of a variable or remove it permanently
 
-#### Set the value of a variable or remove it permanently 
-in a specific scope (machine 🅰️ or user) \
-**default**: **user** scope
 ```powershell
-> setenv JAVA_HOME "C:\Java\jdk-21" # Set-EnvironmentVariable
-> setenv -Machine JAVA_HOME "C:\Java\jdk-21" # 🅰️
+# Set-EnvironmentVariable
+> setenv JAVA_HOME "C:\Java\jdk-21"            # user scope
+> setenv -User JAVA_HOME "C:\Java\jdk-21"      # same as without args
+> setenv -Machine JAVA_HOME "C:\Java\jdk-21"   # machine scope 🅰️
+> setenv TMP "%USERPROFILE%\tmp" -Expandable   # store as expandable reference, expanded on read
 
-> rmenv JAVA_HOME # Remove-EnvironmentVariable
-> rmenv -Machine JAVA_HOME # 🅰️
+# Remove-EnvironmentVariable
+> rmenv JAVA_HOME                              # user scope
+> rmenv -Machine JAVA_HOME                     # machine scope 🅰️
 ```
 
 #### List the variables of a scope
 
-both scopes (**default**), or one of them (`-Machine`, `-User`)
-
 ```powershell
-> Get-Environment
+> Get-Environment            # both scopes
+> Get-Environment -Machine   # machine scope only
+> Get-Environment -User      # user scope only
 
 Scope      Name                           Value
 -----      ----                           -----
@@ -189,7 +200,11 @@ Machine    JAVA_HOME                      C:\Java\jdk-21
 ...
 ```
 
-Each record carries its `Scope`, `Name` and `Value`. Records are ordered by name, and where both scopes define a variable the user record comes first, since the user value is the one in effect. `Path` is no exception: each scope carries its own record.
+Each record carries its `Scope`, `Name` and `Value`.
+
+Records are ordered by name; where both scopes define a variable, the user record comes first, since the user value is the one in effect.
+
+`Path` is no exception: each scope carries its own record.
 
 ### Shortcuts
 
@@ -225,9 +240,10 @@ C:\Program Files\MyApp\MyApp.exe
 
 #### Create a shortcut
 
-Only the shortcut location and its target are mandatory; the run location defaults to the folder of the target.
 ```powershell
-> New-Shortcut "C:\Users\me\Desktop\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe"
+> New-Shortcut "C:\Users\me\Desktop\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe"                 # only location and target are mandatory
+> New-Shortcut "C:\Tools\Shortcuts\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" -CreateFolder    # create missing shortcut folder
+> New-Shortcut "C:\Users\me\Desktop\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" -Force          # overwrite existing shortcut
 
 > New-Shortcut -Location "C:\Users\me\Desktop\MyApp.lnk" -Target "C:\Program Files\MyApp\MyApp.exe" `
         -Arguments "--profile Default" `
@@ -239,24 +255,26 @@ Only the shortcut location and its target are mandatory; the run location defaul
         -Elevated
 ```
 
-The created shortcut is returned, in the same shape `Get-Shortcut` reads it. \
-An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it completely; omitted optional fields reset to their defaults.
+The created shortcut is returned, in the same shape `Get-Shortcut` reads it.
 
-A missing folder is reported as an error, unless `-CreateFolder` is given to create it.
-```powershell
-> New-Shortcut "C:\Tools\Shortcuts\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" -CreateFolder
-```
+The run location defaults to the folder of the target.
+
+An existing shortcut is left untouched and a terminating error is reported, unless `-Force` overwrites it completely; omitted optional fields reset to their defaults.
+
+A missing shortcut folder is reported as an error, unless `-CreateFolder` creates it.
 
 #### Build a shortcut icon
 
-`-Icon` takes a `ShortcutIcon`, built from the icon file and an optional index, or from the combined `file,index` source.
 ```powershell
-> New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe"
-> New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3
-> New-ShortcutIcon "C:\Program Files\MyApp\MyApp.exe,3"
+> New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe"            # index 0
+> New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3   # icon within the icon file
+> New-ShortcutIcon "C:\Program Files\MyApp\MyApp.exe,3"                    # combined file,index source
 ```
 
-`-Index` defaults to `0`. An icon file on its own is only accepted as `-Location`; `-Value` insists on the `file,index` form. \
+`-Icon` takes a `ShortcutIcon`, built from the icon file and an optional index, or from the combined `file,index` source.
+
+An icon file on its own is only accepted as `-Location`; `-Value` insists on the `file,index` form.
+
 An icon read off another shortcut goes straight back in:
 ```powershell
 > New-Shortcut "C:\Users\me\Desktop\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" `
@@ -265,43 +283,29 @@ An icon read off another shortcut goes straight back in:
 
 #### Change a shortcut
 
-Any combination of fields, the others stay as they are.
 ```powershell
-> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Target "C:\Program Files\MyApp\MyApp.exe" -WindowStyle Maximized
+> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Target "C:\Program Files\MyApp\MyApp.exe" -WindowStyle Maximized   # any combination of fields, others stay
 > Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Elevated
 > Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Elevated:$false
-```
-
-`$null` or an empty string clears a field.
-```powershell
-> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Arguments $null -Hotkey '' -Icon $null
-```
-
-`-PassThru` returns the shortcut after the change.
-```powershell
-> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -WindowStyle Minimized -PassThru
+> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Arguments $null -Hotkey '' -Icon $null                             # $null or empty string clears a field
+> Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -WindowStyle Minimized -PassThru                                    # return shortcut after the change
 ```
 
 ### Start Menu Shortcuts
 
 #### Create a shortcut for MyApp in the Start Menu
 
-for the current user (**default**) or all users (`-AllUsers`, requires administrator) \
-The shortcut will be created as `MyApp` in the Start Menu Programs root; pass `-Folder` to place it in a containing folder.
-The argument `-Debug` will be passed to the target.
 ```powershell
-> New-StartMenuShortcut `
-        -Name MyApp `
-        -Target "C:\Program Files\MyApp\MyApp.exe" `
-        -Arguments "-Debug" `
-        -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyBeautifulIcon.ico")
-
-> New-StartMenuShortcut -AllUsers -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe"  # all users, needs admin
+> New-StartMenuShortcut -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe"                       # current user, Programs root
+> New-StartMenuShortcut -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe" -Folder MyCompany     # in a containing folder
+> New-StartMenuShortcut -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe" -AllUsers             # all users, needs admin
+> New-StartMenuShortcut -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe" -Force                # overwrite existing shortcut
 ```
 
 Every field of [`New-Shortcut`](#shortcuts) is available, and the created shortcut is returned as a record.
 ```powershell
 > New-StartMenuShortcut -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe" `
+        -Arguments "-Debug" `
         -RunLocation "C:\Data" `
         -Description "My favourite app" `
         -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
@@ -310,47 +314,49 @@ Every field of [`New-Shortcut`](#shortcuts) is available, and the created shortc
         -Elevated
 ```
 
-An existing shortcut is left untouched and a terminating error is reported, unless `-Force` is given to overwrite it.
-```powershell
-> New-StartMenuShortcut -Force -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe"
-```
+An existing shortcut is left untouched and a terminating error is reported, unless `-Force` overwrites it.
 
 #### Remove a Start Menu shortcut
 
-in the current user's (**default**) or the all-users (`-AllUsers`, requires administrator) Start Menu
 ```powershell
-> Remove-StartMenuShortcut MyApp
-> Remove-StartMenuShortcut -AllUsers MyApp
+> Remove-StartMenuShortcut MyApp                     # current user, Programs root
+> Remove-StartMenuShortcut MyApp -Folder MyCompany   # in a containing folder
+> Remove-StartMenuShortcut MyApp -AllUsers           # all users, needs admin
 ```
 
-The shortcut's containing folder is removed too when it becomes empty. A terminating error is reported if the shortcut does not exist.
+The shortcut's containing folder is removed too when it becomes empty.
+
+A terminating error is reported if the shortcut does not exist.
 
 #### Add shortcut to a PowerShell command to the start menu
 
 ```powershell
 > New-PowershellStartMenuShortcut `
-       -Name "Kill Node.js" ` 
-       -Command "Stop-Process -Name node -Force"
+        -Name "Kill Node.js" `
+        -Command "Stop-Process -Name node -Force"
 
 > New-PowershellStartMenuShortcut -Name "Run System Update" `
-       -Script "C:\Scripts\system-update.ps1" `
-       -KeepOpen -WindowStyle Maximized -Elevated
+        -Script "C:\Scripts\system-update.ps1" `
+        -KeepOpen -WindowStyle Maximized -Elevated
 ```
 
-`-Script` is an alias for `-Command` that can be used for expressiveness. \
-`-NoExit` is an alias for `-KeepOpen`, named after the `pwsh` switch it passes. \
-The window is minimized unless `-WindowStyle` says otherwise. \
+`-Script` is an alias for `-Command` that can be used for expressiveness.
+
+`-NoExit` is an alias for `-KeepOpen`, named after the `pwsh` switch it passes.
+
+The window is minimized unless `-WindowStyle` says otherwise.
+
 Both accept `-Force` to overwrite an existing shortcut.
 
 ### Start an application at logon 
 
 equivalent to checking [Process Explorer](https://learn.microsoft.com/de-de/sysinternals/downloads/process-explorer)'s menu item *Options > Run At Logon* (requires administrator)
 ```powershell
-Register-LogonTask `
-    -Name "Process Explorer-${env:USERDOMAIN}-${env:USERNAME}" `
-    -Executable "$env:LOCALAPPDATA\Microsoft\WindowsApps\procexp.exe" `
-    -Argument "/t" `
-    -Force
+> Register-LogonTask `
+        -Name "Process Explorer-${env:USERDOMAIN}-${env:USERNAME}" `
+        -Executable "$env:LOCALAPPDATA\Microsoft\WindowsApps\procexp.exe" `
+        -Argument "/t" `
+        -Force
 ```
 
 ### Utilities
@@ -358,7 +364,8 @@ Register-LogonTask `
 #### Quick timestamp creation
 
 ```powershell
-> time   # Get-Timestamp
+# Get-Timestamp
+> time
 
 2024-01-01_20.15.00
 
@@ -367,31 +374,35 @@ Register-LogonTask `
 
 #### Run a command as administrator
 
-Runs the given command in an elevated PowerShell session, prompting for confirmation through the User Account Control dialog.
 ```powershell
-> sudops New-Item -ItemType Directory "C:\Program Files\MyTool"   # Invoke-Elevated
+# Invoke-Elevated
+> sudops New-Item -ItemType Directory "C:\Program Files\MyTool"
 > sups Restart-Service -Name Spooler                              # sups is the shorter alias
 ```
+
+Runs the given command in an elevated PowerShell session, prompting for confirmation through the User Account Control dialog.
 
 #### Verify that the current user is an administrator
 
 ```powershell
 > Assert-Elevated
+
 Assert-Elevated: Operation requires administrator privileges.
-```
 
-`Test-Elevated` returns the same fact as a boolean, for a script that offers an unelevated path instead of failing.
-
-```powershell
 > Test-Elevated
 
 False
 ```
 
+`Assert-Elevated` reports a terminating error, ending a command that has no unelevated path.
+
+`Test-Elevated` returns the same fact as a boolean, for a script that offers an unelevated path instead of failing.
+
 #### Restart Windows Explorer
 
 ```powershell
-> sx   # Stop-Explorer
+# Stop-Explorer
+> sx
 ```
 
 Stopping Explorer generally triggers a restart, which picks up a shell setting that needs one.
@@ -399,15 +410,18 @@ Stopping Explorer generally triggers a restart, which picks up a shell setting t
 #### Locate a special folder
 
 ```powershell
-> programs   # Get-ProgramFilesFolder
+# Get-ProgramFilesFolder
+> programs
 
 C:\Program Files
 
-> docs   # Get-MyDocumentsFolder
+# Get-MyDocumentsFolder
+> docs
 
 C:\Users\me\Documents
 
-> desktop   # Get-DesktopFolder
+# Get-DesktopFolder
+> desktop
 
 C:\Users\me\Desktop
 ```
