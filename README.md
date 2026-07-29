@@ -449,7 +449,7 @@ To install the *easypeasy* module, follow these steps:
 
 ## Upgrading
 
-Version 2 renames commands, parameters and aliases, changes defaults and removes a few components. See [UPGRADING.md](UPGRADING.md) for the v1 → v2 migration guide.
+Version 2 renames commands, parameters and aliases, changes defaults and removes a few components. See [UPGRADING-v2.md](UPGRADING-v2.md) for the v1 → v2 migration guide.
 
 ## Contributing
 Please contribute to the *easypeasy* module. Issues and pull requests are very welcome. Thank you!

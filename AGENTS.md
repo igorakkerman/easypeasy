@@ -6,7 +6,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 `easypeasy` is a PowerShell 7 (Core-only) module published to the PowerShell Gallery. It wraps common Windows system-administration tasks (system Path, environment variables, Start Menu shortcuts, scheduled tasks, timestamps, admin checks) behind `Verb-Noun` functions plus short aliases.
 
-Consumer-facing breaking changes and the v1 → v2 migration steps are documented in `UPGRADING.md`; keep it in sync when renaming or removing a public function, parameter or alias.
+Consumer-facing breaking changes and the v1 → v2 migration steps are documented in `UPGRADING-v2.md`; keep it in sync when renaming or removing a public function, parameter or alias.
 
 ## Architecture
 
