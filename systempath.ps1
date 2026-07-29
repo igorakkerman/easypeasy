@@ -4,8 +4,12 @@ class ValidRegexAttribute : System.Management.Automation.ValidateEnumeratedArgum
 
     [void] ValidateElement([object] $element) {
         $pattern = [string] $element
-        try { [void] [regex]::new($pattern) }
-        catch { throw "Invalid regular expression. pattern: '$pattern', reason: $($_.Exception.InnerException.Message)" }
+        try {
+            [void] [regex]::new($pattern)
+        }
+        catch {
+            throw "Invalid regular expression. pattern: '$pattern', reason: $($_.Exception.InnerException.Message)"
+        }
     }
 
     <#
@@ -132,12 +136,16 @@ function local:ConvertTo-NormalizedLocation {
 
     # GetFullPath resolves against [Environment]::CurrentDirectory, which does not follow the shell's
     # location; $PWD is what the current directory means to a caller, where the shell is on a filesystem
-    $base = $PWD.Provider.Name -eq "FileSystem" ? $PWD.ProviderPath : [Environment]::CurrentDirectory
+    $base = $PWD.Provider.Name -eq "FileSystem" `
+        ? $PWD.ProviderPath `
+        : [Environment]::CurrentDirectory
 
     # GetFullPath rejects values it cannot resolve; represent the missing normalized form as null
     try {
         $full = [IO.Path]::GetFullPath($expanded, $base)
-        return $full -ne [IO.Path]::GetPathRoot($full) ? $full.TrimEnd([IO.Path]::DirectorySeparatorChar) : $full
+        return $full -ne [IO.Path]::GetPathRoot($full) `
+            ? $full.TrimEnd([IO.Path]::DirectorySeparatorChar) `
+            : $full
     }
     catch {
         return $null
@@ -163,7 +171,12 @@ function local:Get-StoredPathString {
         [SystemPathLocation[]] $Entries
     )
 
-    return ($Entries | ForEach-Object { $_.StoredValue }) -join $systemPathSeparator
+    return (
+        $Entries `
+            | ForEach-Object {
+                $_.StoredValue
+            }
+    ) -join $systemPathSeparator
 }
 
 function local:Get-ProcessOnlyPathLocations {
@@ -191,7 +204,13 @@ function local:Get-ProcessOnlyPathLocations {
     }
 
     $leading = @($effective | Select-Object -First $firstPersisted)
-    $trailing = @($effective | Select-Object -Skip $firstPersisted | Where-Object { $_.Scope -eq "Process" })
+    $trailing = @(
+        $effective `
+            | Select-Object -Skip $firstPersisted `
+            | Where-Object {
+                $_.Scope -eq "Process"
+            }
+    )
 
     return @{
         LeadingProcessLocations  = $leading
@@ -238,7 +257,12 @@ function local:Sync-ProcessPath {
 
     $locations = @($LeadingProcessLocations) + $persisted + @($TrailingProcessLocations)
 
-    $env:PATH = ($locations | ForEach-Object { $_.Location }) -join $systemPathSeparator
+    $env:PATH = (
+        $locations `
+            | ForEach-Object {
+                $_.Location
+            }
+    ) -join $systemPathSeparator
 }
 
 function local:Add-PathLocation {
@@ -283,7 +307,12 @@ function local:Add-PathLocation {
 
     $normalized = ConvertTo-NormalizedLocation -Location $Location
 
-    $present = @($Entries | Where-Object { $null -ne $normalized -and $_.Location -ieq $normalized })
+    $present = @(
+        $Entries `
+            | Where-Object {
+                $null -ne $normalized -and $_.Location -ieq $normalized
+            }
+    )
 
     if ($present) {
         if (-not $First) {
@@ -292,13 +321,20 @@ function local:Add-PathLocation {
         }
 
         # move the existing entry to the front, keeping its stored form
-        $remaining = @($Entries | Where-Object { $_.Location -ine $normalized })
+        $remaining = @(
+            $Entries `
+                | Where-Object {
+                    $_.Location -ine $normalized
+                }
+        )
         return $present + $remaining
     }
 
     $newEntry = [SystemPathLocation]::new($Scope, $Location, $normalized)
 
-    return $First ? (@($newEntry) + @($Entries)) : (@($Entries) + @($newEntry))
+    return $First `
+        ? (@($newEntry) + @($Entries)) `
+        : (@($Entries) + @($newEntry))
 }
 
 function local:Remove-PathLocation {
@@ -332,7 +368,14 @@ function local:Remove-PathLocation {
 
     $normalized = ConvertTo-NormalizedLocation -Location $Location
 
-    return $null -eq $normalized ? @($Entries) : @($Entries | Where-Object { $_.Location -ine $normalized })
+    return $null -eq $normalized `
+        ? @($Entries) `
+        : @(
+            $Entries `
+                | Where-Object {
+                    $_.Location -ine $normalized
+                }
+        )
 }
 
 function local:Remove-DuplicatePathLocation {
@@ -360,7 +403,12 @@ function local:Remove-DuplicatePathLocation {
 
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    return @($Entries | Where-Object { $null -eq $_.Location -or $seen.Add($_.Location) })
+    return @(
+        $Entries `
+            | Where-Object {
+                $null -eq $_.Location -or $seen.Add($_.Location)
+            }
+    )
 }
 
 function local:Get-PathScopeStoredForms {
@@ -391,17 +439,19 @@ function local:Get-PathScopeStoredForms {
 
     $context = @{ $Scope = $true }
     (Get-EnvironmentVariable @context -Name Path -Expandable -ErrorAction SilentlyContinue) -split $systemPathSeparator `
-    | Where-Object { $_ } `
-    | ForEach-Object {
-        $normalized = ConvertTo-NormalizedLocation -Location $_
-        if ($null -eq $normalized) {
-            return
+        | Where-Object {
+            $_
+        } `
+        | ForEach-Object {
+            $normalized = ConvertTo-NormalizedLocation -Location $_
+            if ($null -eq $normalized) {
+                return
+            }
+            if (-not $storedForms.ContainsKey($normalized)) {
+                $storedForms[$normalized] = [System.Collections.Generic.Queue[string]]::new()
+            }
+            $storedForms[$normalized].Enqueue($_)
         }
-        if (-not $storedForms.ContainsKey($normalized)) {
-            $storedForms[$normalized] = [System.Collections.Generic.Queue[string]]::new()
-        }
-        $storedForms[$normalized].Enqueue($_)
-    }
 
     return $storedForms
 }
@@ -576,13 +626,29 @@ function Get-SystemPath {
     if ($Machine) {
         # read the stored form so a %...% reference is preserved, then resolve it for Location
         (Get-EnvironmentVariable -Machine -Name Path -Expandable -ErrorAction SilentlyContinue) -split $systemPathSeparator `
-        | Where-Object { $_ } `
-        | ForEach-Object { [SystemPathLocation]::new("Machine", $_, (ConvertTo-NormalizedLocation -Location $_)) }
+            | Where-Object {
+                $_
+            } `
+            | ForEach-Object {
+                [SystemPathLocation]::new(
+                    "Machine",
+                    $_,
+                    (ConvertTo-NormalizedLocation -Location $_)
+                )
+            }
     }
     elseif ($User) {
         (Get-EnvironmentVariable -User -Name Path -Expandable -ErrorAction SilentlyContinue) -split $systemPathSeparator `
-        | Where-Object { $_ } `
-        | ForEach-Object { [SystemPathLocation]::new("User", $_, (ConvertTo-NormalizedLocation -Location $_)) }
+            | Where-Object {
+                $_
+            } `
+            | ForEach-Object {
+                [SystemPathLocation]::new(
+                    "User",
+                    $_,
+                    (ConvertTo-NormalizedLocation -Location $_)
+                )
+            }
     }
     else {
         # effective and process: the live shell Path, each location tagged with the persisted scope it originates from.
@@ -594,30 +660,34 @@ function Get-SystemPath {
         $userRemaining = Get-PathScopeStoredForms -Scope User
 
         $env:PATH -split $systemPathSeparator `
-        | Where-Object { $_ } `
-        | ForEach-Object {
-            $normalized = ConvertTo-NormalizedLocation -Location $_
-            $scope = "Process"
-            $stored = $_
+            | Where-Object {
+                $_
+            } `
+            | ForEach-Object {
+                $normalized = ConvertTo-NormalizedLocation -Location $_
+                $scope = "Process"
+                $stored = $_
 
-            if ($null -ne $normalized) {
-                if ($machineRemaining[$normalized].Count -gt 0) {
-                    $scope = "Machine"
-                    $stored = $machineRemaining[$normalized].Dequeue()
+                if ($null -ne $normalized) {
+                    if ($machineRemaining[$normalized].Count -gt 0) {
+                        $scope = "Machine"
+                        $stored = $machineRemaining[$normalized].Dequeue()
+                    }
+                    elseif ($userRemaining[$normalized].Count -gt 0) {
+                        $scope = "User"
+                        $stored = $userRemaining[$normalized].Dequeue()
+                    }
                 }
-                elseif ($userRemaining[$normalized].Count -gt 0) {
-                    $scope = "User"
-                    $stored = $userRemaining[$normalized].Dequeue()
-                }
+
+                [SystemPathLocation]::new($scope, $stored, $normalized)
             }
-
-            [SystemPathLocation]::new($scope, $stored, $normalized)
-        }
     }
 
     # -Process keeps what the scope tagging above found on neither persisted Path
     if ($Process) {
-        $allLocations = $allLocations | Where-Object { $_.Scope -eq "Process" }
+        $allLocations = $allLocations | Where-Object {
+            $_.Scope -eq "Process"
+        }
     }
 
     $criteria = @{
@@ -627,11 +697,19 @@ function Get-SystemPath {
         Match    = $Match
     }
 
-    $selectedLocations = $allLocations | Where-Object { Test-LocationCriteria -Location $_.Location @criteria }
+    $selectedLocations = $allLocations `
+        | Where-Object {
+            Test-LocationCriteria -Location $_.Location @criteria
+        }
 
     # -Join reproduces the stored form (StoredValue), keeping %...% references
     return $Join `
-        ? (($selectedLocations | ForEach-Object { $_.StoredValue }) -join $systemPathSeparator) `
+        ? ((
+            $selectedLocations `
+                | ForEach-Object {
+                    $_.StoredValue
+                }
+        ) -join $systemPathSeparator) `
         : $selectedLocations
 }
 
@@ -706,10 +784,17 @@ function local:Set-SystemPath {
     # the backup location goes to the caller of Backup-SystemPath, not into this function's output
     Backup-SystemPath | Out-Null
 
-    $context = $Machine ? @{ Machine = $true } : @{ User = $true }
+    $context = $Machine `
+        ? @{ Machine = $true } `
+        : @{ User = $true }
 
     # persist the stored form so %...% references survive, as an expandable (REG_EXPAND_SZ) value
-    $value = ($Entries | ForEach-Object { $_.StoredValue }) -join $systemPathSeparator
+    $value = (
+        $Entries `
+            | ForEach-Object {
+                $_.StoredValue
+            }
+    ) -join $systemPathSeparator
 
     # capture what only the session knows before the write, while a removed location is still
     # distinguishable from one the session added
@@ -778,9 +863,15 @@ function Add-SystemPathLocation {
 
     if (-not $Force -and ($null -eq $resolvedLocation -or -not (Test-Path -LiteralPath $resolvedLocation -PathType Container))) {
         $detail =
-        if ($null -eq $resolvedLocation) { "location: '$Location', resolved: `$null" }
-        elseif ($resolvedLocation -ceq $Location) { "location: '$Location'" }
-        else { "location: '$Location', resolved: '$resolvedLocation'" }
+        if ($null -eq $resolvedLocation) {
+            "location: '$Location', resolved: `$null"
+        }
+        elseif ($resolvedLocation -ceq $Location) {
+            "location: '$Location'"
+        }
+        else {
+            "location: '$Location', resolved: '$resolvedLocation'"
+        }
 
         Write-Error "Location is not an existing folder, use -Force to add it anyway. $detail" `
             -ErrorId "PathLocationNotFound" `
@@ -789,8 +880,12 @@ function Add-SystemPathLocation {
             -ErrorAction Stop
     }
 
-    $context = $Machine ? @{ Machine = $true } : @{ User = $true }
-    $scope = $Machine ? "Machine" : "User"
+    $context = $Machine `
+        ? @{ Machine = $true } `
+        : @{ User = $true }
+    $scope = $Machine `
+        ? "Machine" `
+        : "User"
 
     $currentEntries = @(Get-SystemPath @context)
     $newEntries = Add-PathLocation -Entries $currentEntries -Location $Location -First:$First -Scope $scope
@@ -841,7 +936,9 @@ function Remove-SystemPathLocation {
         [switch] $User
     )
 
-    $context = $Machine ? @{ Machine = $true } : @{ User = $true }
+    $context = $Machine `
+        ? @{ Machine = $true } `
+        : @{ User = $true }
 
     $currentEntries = @(Get-SystemPath @context)
     $newEntries = @(Remove-PathLocation -Entries $currentEntries -Location $Location)
@@ -945,8 +1042,12 @@ function Remove-DuplicateSystemPathLocations {
         }
     }
     else {
-        $context = $Machine ? @{ Machine = $true } : @{ User = $true }
-        $scope = $Machine ? "machine" : "user"
+        $context = $Machine `
+            ? @{ Machine = $true } `
+            : @{ User = $true }
+        $scope = $Machine `
+            ? "machine" `
+            : "user"
 
         $currentEntries = @(Get-SystemPath @context)
         $deduped = @(Remove-DuplicatePathLocation -Entries $currentEntries)
@@ -1008,13 +1109,23 @@ function Move-SystemPathLocation {
 
     $sourceEntries = @(Get-SystemPath @source)
     $normalized = ConvertTo-NormalizedLocation -Location $Location
-    $moved = @($sourceEntries | Where-Object { $null -ne $normalized -and $_.Location -ieq $normalized })
+    $moved = @(
+        $sourceEntries `
+            | Where-Object {
+                $null -ne $normalized -and $_.Location -ieq $normalized
+            }
+    )
 
     # not on the source Path: nothing to move
     if ($moved.Count -eq 0) {
-        $onTarget = @(Get-SystemPath @target) | Where-Object { $null -ne $normalized -and $_.Location -ieq $normalized }
+        $onTarget = @(Get-SystemPath @target) `
+            | Where-Object {
+                $null -ne $normalized -and $_.Location -ieq $normalized
+            }
 
-        $reason = $onTarget ? "already on the $targetName Path" : "not on the $sourceName Path"
+        $reason = $onTarget `
+            ? "already on the $targetName Path" `
+            : "not on the $sourceName Path"
         Write-Warning "Nothing to move. reason: $reason, location: '$Location'"
         return
     }
@@ -1022,9 +1133,16 @@ function Move-SystemPathLocation {
     $newSource = @(Remove-PathLocation -Entries $sourceEntries -Location $Location)
 
     $targetEntries = @(Get-SystemPath @target)
-    $onTarget = @($targetEntries | Where-Object { $_.Location -ieq $normalized })
+    $onTarget = @(
+        $targetEntries `
+            | Where-Object {
+                $_.Location -ieq $normalized
+            }
+    )
     # append the moved entry, keeping its stored (%...%) form, unless the target already has it
-    $newTarget = $onTarget.Count -gt 0 ? $targetEntries : (@($targetEntries) + @($moved[0]))
+    $newTarget = $onTarget.Count -gt 0 `
+        ? $targetEntries `
+        : (@($targetEntries) + @($moved[0]))
 
     if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system Path")) {
         return
@@ -1106,6 +1224,7 @@ function Test-SystemPathLocation {
 
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
-New-Alias -Name cleanpath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue | Out-Null
+New-Alias -Name cleanpath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue `
+    | Out-Null
 New-Alias -Name movepath -Value Move-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name testpath -Value Test-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
