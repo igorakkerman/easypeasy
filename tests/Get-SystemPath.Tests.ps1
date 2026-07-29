@@ -35,7 +35,7 @@ Describe 'Get-SystemPath' {
 
             $result = Get-SystemPath
 
-            $result.ExpandableLocation | Should -Be 'C:\A'
+            $result.StoredValue | Should -Be 'C:\A'
             $result.Location | Should -Be 'C:\A'
         }
     }
@@ -56,7 +56,7 @@ Describe 'Get-SystemPath' {
             $result = Get-SystemPath -Contains 'system32\test'
 
             $result.Scope | Should -Be 'User'
-            $result.ExpandableLocation | Should -Be '%windir%\system32\test'
+            $result.StoredValue | Should -Be '%windir%\system32\test'
             $result.Location | Should -Be "$env:windir\system32\test"
         }
 
@@ -64,14 +64,14 @@ Describe 'Get-SystemPath' {
             $result = Get-SystemPath | Where-Object { $_.Location -eq 'C:\OnlyProcess' }
 
             $result.Scope | Should -Be 'Process'
-            $result.ExpandableLocation | Should -Be 'C:\OnlyProcess'
+            $result.StoredValue | Should -Be 'C:\OnlyProcess'
         }
 
         It 'leaves a location persisted without a reference unchanged' {
             $result = Get-SystemPath | Where-Object { $_.Location -eq 'C:\Windows\System32' }
 
             $result.Scope | Should -Be 'Machine'
-            $result.ExpandableLocation | Should -Be 'C:\Windows\System32'
+            $result.StoredValue | Should -Be 'C:\Windows\System32'
         }
     }
 
@@ -83,8 +83,8 @@ Describe 'Get-SystemPath' {
             }
         }
 
-        It 'keeps the stored %...% reference in ExpandableLocation' {
-            (Get-SystemPath -Machine).ExpandableLocation |
+        It 'keeps the stored %...% reference in StoredValue' {
+            (Get-SystemPath -Machine).StoredValue |
                 Should -Be @('%SystemRoot%\S32', 'C:\Plain')
         }
 
@@ -105,7 +105,7 @@ Describe 'Get-SystemPath' {
         }
 
         It 'selects on the expanded location' {
-            (Get-SystemPath -Machine -Contains 'S32').ExpandableLocation |
+            (Get-SystemPath -Machine -Contains 'S32').StoredValue |
                 Should -Be '%SystemRoot%\S32'
         }
     }
@@ -188,7 +188,7 @@ Describe 'Get-SystemPath' {
             $result = Get-SystemPath -Exact 'C:\Tools\bin'
 
             $result.Scope | Should -Be 'Machine'
-            $result.ExpandableLocation | Should -Be 'C:\Tools\\bin'
+            $result.StoredValue | Should -Be 'C:\Tools\\bin'
         }
 
         It 'searches the machine Path when -Machine is given' {

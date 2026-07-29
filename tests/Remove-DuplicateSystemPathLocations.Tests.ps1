@@ -25,18 +25,18 @@ Describe 'Remove-DuplicateSystemPathLocations' {
             Remove-DuplicateSystemPathLocations
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\B' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A;C:\B' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\C' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\C' }
         }
 
         It 'keeps cross-scope duplicates on the user Path with -KeepUser' {
             Remove-DuplicateSystemPathLocations -KeepUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\C' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\C' }
         }
 
         It 'does not persist under -WhatIf' {
@@ -82,7 +82,7 @@ Describe 'Remove-DuplicateSystemPathLocations' {
             Remove-DuplicateSystemPathLocations -Machine
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\B' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A;C:\B' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly `
                 -ParameterFilter { $User }
         }
@@ -94,7 +94,7 @@ Describe 'Remove-DuplicateSystemPathLocations' {
             Remove-DuplicateSystemPathLocations -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\B' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A;C:\B' }
         }
 
         It 'holds a UNC root apart from a single leading backslash' {
@@ -113,21 +113,21 @@ Describe 'Remove-DuplicateSystemPathLocations' {
             Remove-DuplicateSystemPathLocations -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A\bin;C:\B' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A\bin;C:\B' }
         }
     }
 
     Context 'expandable locations' {
 
         It 'treats a %...% entry and its expanded twin as duplicates, keeping the first' {
-            $script:userEntries = @(New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32') +
+            $script:userEntries = @(New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32') +
                 @(New-PathEntries 'C:\WINDOWS\S32;C:\B')
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
 
             Remove-DuplicateSystemPathLocations -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq '%SystemRoot%\S32;C:\B' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq '%SystemRoot%\S32;C:\B' }
         }
     }
 }

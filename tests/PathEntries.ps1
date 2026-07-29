@@ -27,18 +27,18 @@ function New-PathEntry {
     .SYNOPSIS
         Builds a single SystemPathLocation entry whose stored form differs from its expanded location.
     .EXAMPLE
-        New-PathEntry -ExpandableLocation '%SystemRoot%\System32' -Location 'C:\WINDOWS\System32'
+        New-PathEntry -StoredValue '%SystemRoot%\System32' -Location 'C:\WINDOWS\System32'
     #>
     param (
         [Parameter(Mandatory)]
-        [string] $ExpandableLocation,
+        [string] $StoredValue,
         [Parameter(Mandatory)]
         [string] $Location,
         [string] $Scope = "User"
     )
 
-    InModuleScope easypeasy -Parameters @{ expandable = $ExpandableLocation; location = $Location; scope = $Scope } {
-        [SystemPathLocation]::new($scope, $expandable, $location)
+    InModuleScope easypeasy -Parameters @{ stored = $StoredValue; location = $Location; scope = $Scope } {
+        [SystemPathLocation]::new($scope, $stored, $location)
     }
 }
 
@@ -55,5 +55,5 @@ function Get-StoredPath {
         [object[]] $Entries
     )
 
-    return ($Entries | ForEach-Object { $_.ExpandableLocation }) -join ([IO.Path]::PathSeparator)
+    return ($Entries | ForEach-Object { $_.StoredValue }) -join ([IO.Path]::PathSeparator)
 }

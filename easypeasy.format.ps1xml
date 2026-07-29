@@ -103,7 +103,7 @@
               </TableColumnItem>
               <!-- the stored form goes on a second line, shown only where it differs -->
               <TableColumnItem>
-                <ScriptBlock>$_.ExpandableLocation -ne $_.Location ? "$($_.Location)`n$($_.ExpandableLocation)" : $_.Location</ScriptBlock>
+                <ScriptBlock>$_.StoredValue -ne $_.Location ? "$($_.Location)`n$($_.StoredValue)" : $_.Location</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

@@ -22,12 +22,12 @@ class ValidRegexAttribute : System.Management.Automation.ValidateEnumeratedArgum
 class SystemPathLocation {
 
     [string] $Scope
-    [ValidateNotNullOrEmpty()] [string] $ExpandableLocation
+    [ValidateNotNullOrEmpty()] [string] $StoredValue
     [ValidateNotNullOrEmpty()] [string] $Location
 
-    SystemPathLocation($Scope, $ExpandableLocation, $Location) {
+    SystemPathLocation($Scope, $StoredValue, $Location) {
         $this.Scope = $Scope
-        $this.ExpandableLocation = $ExpandableLocation
+        $this.StoredValue = $StoredValue
         $this.Location = $Location
     }
 
@@ -37,7 +37,7 @@ class SystemPathLocation {
     .DESCRIPTION
         Holds a folder location on the system Path together with its scope:
         'Machine' (local machine), 'User' (current user) or 'Process' (local to the current shell).
-        ExpandableLocation is the stored form, keeping any %...% reference as indirection;
+        StoredValue is the stored form, keeping any %...% reference as indirection;
         Location is that value expanded. The two are equal when the location holds no %...% reference.
     .EXAMPLE
         $location = [SystemPathLocation]::new("Machine", "%ProgramFiles%\Git\bin", "C:\Program Files\Git\bin")
@@ -106,7 +106,7 @@ function local:Get-StoredPathString {
     .SYNOPSIS
         Joins the stored (expandable) form of Path entries into a semicolon-separated string.
     .DESCRIPTION
-        Returns the entries' ExpandableLocation values joined by the path separator, the form persisted to the
+        Returns the entries' StoredValue values joined by the path separator, the form persisted to the
         registry. Used to compare two sets of entries for equality.
     .PARAMETER Entries
         The SystemPathLocation entries to join.
@@ -120,7 +120,7 @@ function local:Get-StoredPathString {
         [SystemPathLocation[]] $Entries
     )
 
-    return ($Entries | ForEach-Object { $_.ExpandableLocation }) -join $systemPathSeparator
+    return ($Entries | ForEach-Object { $_.StoredValue }) -join $systemPathSeparator
 }
 
 function local:Get-ProcessOnlyPathLocations {
@@ -202,7 +202,7 @@ function local:Add-PathLocation {
         Adds a location to a list of Path entries.
     .DESCRIPTION
         Adds the specified location to the given SystemPathLocation entries and returns the new entries.
-        The location is treated as expandable: it is stored verbatim as the entry's ExpandableLocation, keeping
+        The location is treated as expandable: it is stored verbatim as the entry's StoredValue, keeping
         any %...% reference, and its expansion becomes the entry's Location. Presence is decided on the expanded
         Location, so an entry stored as %SystemRoot% matches the literal folder it resolves to.
         Adding is idempotent: if an entry already resolves to the location and -First is not specified,
@@ -434,7 +434,7 @@ function Get-SystemPath {
         Retrieves the system Path, either for the current user, for the local machine
         or the system Path in effect in the current context.
         The Path is returned as an array of SystemPathLocation objects by default, each carrying its Scope, its
-        Location and its ExpandableLocation - the stored form keeping any %...% reference, expanded in Location.
+        Location and its StoredValue - the stored form keeping any %...% reference, expanded in Location.
         For the effective Path (the default) each location is tagged with its origin scope: 'Machine' or 'User' when the
         location is on the corresponding persisted Path, or 'Process' when it is only on the current shell's Path.
         For -Machine or -User every location carries that scope.
@@ -469,7 +469,7 @@ function Get-SystemPath {
         Regular expressions; only locations matching all of them are returned. Matching is case-insensitive.
         An invalid regular expression is a terminating error.
     .OUTPUTS
-        SystemPathLocation objects with a Scope, a Location and an ExpandableLocation property, or a
+        SystemPathLocation objects with a Scope, a Location and a StoredValue property, or a
         semicolon-separated string of the stored (expandable) locations when -Join is specified.
     .NOTES
         Alias: path
@@ -569,9 +569,9 @@ function Get-SystemPath {
 
     $selectedLocations = $allLocations | Where-Object { Test-LocationCriteria -Location $_.Location @criteria }
 
-    # -Join reproduces the stored form (ExpandableLocation), keeping %...% references
+    # -Join reproduces the stored form (StoredValue), keeping %...% references
     return $Join `
-        ? (($selectedLocations | ForEach-Object { $_.ExpandableLocation }) -join $systemPathSeparator) `
+        ? (($selectedLocations | ForEach-Object { $_.StoredValue }) -join $systemPathSeparator) `
         : $selectedLocations
 }
 
@@ -617,7 +617,7 @@ function local:Set-SystemPath {
         Modifies the system Path.
     .DESCRIPTION
         Sets the system Path to the given SystemPathLocation entries, either for the current user or for the
-        local machine. The entries' stored form (ExpandableLocation) is persisted, so a %...% reference is kept
+        local machine. The entries' stored form (StoredValue) is persisted, so a %...% reference is kept
         as indirection; the Path is written as an expandable (REG_EXPAND_SZ) value.
         The current process Path is rebuilt from both scopes afterwards, keeping the locations only the session
         knows, which are captured before the write.
@@ -649,7 +649,7 @@ function local:Set-SystemPath {
     $context = $Machine ? @{ Machine = $true } : @{ User = $true }
 
     # persist the stored form so %...% references survive, as an expandable (REG_EXPAND_SZ) value
-    $value = ($Entries | ForEach-Object { $_.ExpandableLocation }) -join $systemPathSeparator
+    $value = ($Entries | ForEach-Object { $_.StoredValue }) -join $systemPathSeparator
 
     # capture what only the session knows before the write, while a removed location is still
     # distinguishable from one the session added

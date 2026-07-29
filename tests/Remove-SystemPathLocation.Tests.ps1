@@ -20,14 +20,14 @@ Describe 'Remove-SystemPathLocation' {
             Remove-SystemPathLocation -Location 'C:\Gone' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old' -and $User }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old' -and $User }
         }
 
         It 'takes the location positionally' {
             Remove-SystemPathLocation 'C:\Gone' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old' }
         }
 
         It 'does not persist under -WhatIf' {
@@ -50,7 +50,7 @@ Describe 'Remove-SystemPathLocation' {
             Remove-SystemPathLocation -Location 'C:\Gone\bin' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old' }
         }
 
         It 'targets the user scope by default' {
@@ -100,7 +100,7 @@ Describe 'Remove-SystemPathLocation' {
 
         BeforeEach {
             $script:originalPath = $env:PATH
-            $script:currentEntries = @(New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32') +
+            $script:currentEntries = @(New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32') +
                 @(New-PathEntries 'C:\Keep')
             Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
             Mock -ModuleName easypeasy Set-SystemPath { }
@@ -112,21 +112,21 @@ Describe 'Remove-SystemPathLocation' {
             Remove-SystemPathLocation -Location 'C:\WINDOWS\S32' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Keep' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Keep' }
         }
 
         It 'removes an entry given its stored %...% form' {
             Remove-SystemPathLocation -Location '%SystemRoot%\S32' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Keep' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Keep' }
         }
 
         It 'keeps the stored form of the remaining entries' {
             Remove-SystemPathLocation -Location 'C:\Keep' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq '%SystemRoot%\S32' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq '%SystemRoot%\S32' }
         }
     }
 

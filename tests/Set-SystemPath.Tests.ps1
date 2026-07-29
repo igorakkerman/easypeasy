@@ -29,7 +29,7 @@ Describe 'Set-SystemPath' {
         }
 
         It 'persists the stored form, keeping a %...% reference unexpanded' {
-            $entries = @(New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32') +
+            $entries = @(New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32') +
                 @(New-PathEntries 'C:\Keep')
 
             InModuleScope easypeasy -Parameters @{ e = $entries } { Set-SystemPath -Entries $e -User }

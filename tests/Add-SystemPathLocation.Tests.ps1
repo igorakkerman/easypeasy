@@ -26,14 +26,14 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\New' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old;C:\New' -and $User }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;C:\New' -and $User }
         }
 
         It 'takes the location positionally' {
             Add-SystemPathLocation 'C:\New' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old;C:\New' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;C:\New' }
         }
 
         It 'does not persist under -WhatIf' {
@@ -89,7 +89,7 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location '\server\share' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq '\\server\share;\server\share' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq '\\server\share;\server\share' }
         }
 
         It 'treats a location with repeated backslashes as present' {
@@ -118,7 +118,7 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\Exists' -First -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Exists;C:\A;C:\B' -and $User }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Exists;C:\A;C:\B' -and $User }
         }
 
         It 'does not throw for an existing location' {
@@ -132,14 +132,14 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\Exists\\bin\' -First -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Exists\bin;C:\A;C:\B' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Exists\bin;C:\A;C:\B' }
         }
 
         It 'accepts the Front alias' {
             Add-SystemPathLocation -Location 'C:\Exists' -User -Front
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Exists;C:\A;C:\B' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Exists;C:\A;C:\B' }
         }
     }
 
@@ -159,7 +159,7 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location '%SystemRoot%\Tools' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\Old;%SystemRoot%\Tools' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;%SystemRoot%\Tools' }
         }
 
         It 'expands a %...% location into the entry Location' {
@@ -173,17 +173,17 @@ Describe 'Add-SystemPathLocation' {
         }
 
         It 'keeps an existing entry stored form when another location is added' {
-            $script:currentEntries = New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32'
+            $script:currentEntries = New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32'
             Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
 
             Add-SystemPathLocation -Location 'C:\New' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq '%SystemRoot%\S32;C:\New' }
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq '%SystemRoot%\S32;C:\New' }
         }
 
         It 'recognizes an existing %...% entry by its expanded location' {
-            $script:currentEntries = New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32'
+            $script:currentEntries = New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32'
             Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
 
             Add-SystemPathLocation -Location 'C:\WINDOWS\S32' -User -WarningAction SilentlyContinue
@@ -245,28 +245,28 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location $env:SystemRoot -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Entries[-1].ExpandableLocation -eq $env:SystemRoot }
+                -ParameterFilter { $Entries[-1].StoredValue -eq $env:SystemRoot }
         }
 
         It 'adds a %...% reference that resolves to an existing folder' {
             Add-SystemPathLocation -Location '%SystemRoot%\system32' -User
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Entries[-1].ExpandableLocation -eq '%SystemRoot%\system32' }
+                -ParameterFilter { $Entries[-1].StoredValue -eq '%SystemRoot%\system32' }
         }
 
         It 'adds a missing folder with -Force' {
             Add-SystemPathLocation -Location $missing -User -Force
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Entries[-1].ExpandableLocation -eq $script:missing }
+                -ParameterFilter { $Entries[-1].StoredValue -eq $script:missing }
         }
 
         It 'stores an unresolved %...% reference unexpanded with -Force' {
             Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User -Force
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Entries[-1].ExpandableLocation -eq '%EASYPEASY_UNSET_XYZ%\bin' }
+                -ParameterFilter { $Entries[-1].StoredValue -eq '%EASYPEASY_UNSET_XYZ%\bin' }
         }
 
         It 'does not create the missing folder with -Force' {

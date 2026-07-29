@@ -32,7 +32,7 @@ Describe 'easypeasy.format.ps1xml' {
             $entry | Should -Not -BeNullOrEmpty
 
             $entry.Location = 'C:\Windows\system32'
-            $entry.ExpandableLocation = '%SystemRoot%\system32'
+            $entry.StoredValue = '%SystemRoot%\system32'
 
             $rendered = $entry | Out-String -Width 200
 
@@ -43,7 +43,7 @@ Describe 'easypeasy.format.ps1xml' {
         It 'renders the location once where the stored form matches it' {
             $entry = Get-SystemPath -Machine | Select-Object -First 1
             $entry.Location = 'C:\Windows\system32'
-            $entry.ExpandableLocation = 'C:\Windows\system32'
+            $entry.StoredValue = 'C:\Windows\system32'
 
             $rendered = $entry | Out-String -Width 200
 

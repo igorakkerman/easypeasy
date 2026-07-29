@@ -25,16 +25,16 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\X' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\X' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\X' }
         }
 
         It 'takes the location positionally' {
             Move-SystemPathLocation 'C:\X' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\X' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\X' }
         }
 
         It 'does not persist under -WhatIf' {
@@ -48,9 +48,9 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\X\bin' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;C:\X\\bin' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\X\\bin' }
         }
     }
 
@@ -67,9 +67,9 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\X' -ToMachine
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A;C:\X' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A;C:\X' }
         }
     }
 
@@ -86,7 +86,7 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\X' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly `
                 -ParameterFilter { $User }
         }
@@ -135,7 +135,7 @@ Describe 'Move-SystemPathLocation' {
 
         BeforeEach {
             $script:machineEntries = @(New-PathEntries 'C:\A' -Scope Machine) +
-                @(New-PathEntry -ExpandableLocation '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32' -Scope Machine)
+                @(New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32' -Scope Machine)
             $script:userEntries = New-PathEntries 'C:\B'
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
             Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
@@ -145,21 +145,21 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\WINDOWS\S32' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;%SystemRoot%\S32' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;%SystemRoot%\S32' }
         }
 
         It 'removes the entry from the source Path' {
             Move-SystemPathLocation 'C:\WINDOWS\S32' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\A' }
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
         }
 
         It 'accepts the stored %...% form as the location to move' {
             Move-SystemPathLocation '%SystemRoot%\S32' -ToUser
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
-                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.ExpandableLocation }) -join ';') -eq 'C:\B;%SystemRoot%\S32' }
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;%SystemRoot%\S32' }
         }
     }
 }
