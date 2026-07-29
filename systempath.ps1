@@ -72,7 +72,7 @@ function Backup-SystemPath {
     }
 }
 
-function local:Get-LocationKey {
+function local:ConvertTo-ComparableLocation {
     <#
     .SYNOPSIS
         Reduces a location to the key locations are compared on.
@@ -86,7 +86,7 @@ function local:Get-LocationKey {
     .OUTPUTS
         The comparison key of the location.
     .EXAMPLE
-        Get-LocationKey -Location "C:\Program Files\\Git\bin\"
+        ConvertTo-ComparableLocation -Location "C:\Program Files\\Git\bin\"
     #>
     [CmdletBinding()]
     [OutputType([string])]
@@ -236,9 +236,9 @@ function local:Add-PathLocation {
         [string] $Scope
     )
 
-    $key = Get-LocationKey -Location ([Environment]::ExpandEnvironmentVariables($Location))
+    $comparable = ConvertTo-ComparableLocation -Location ([Environment]::ExpandEnvironmentVariables($Location))
 
-    $present = @($Entries | Where-Object { (Get-LocationKey -Location $_.Location) -ieq $key })
+    $present = @($Entries | Where-Object { (ConvertTo-ComparableLocation -Location $_.Location) -ieq $comparable })
 
     if ($present) {
         if (-not $First) {
@@ -247,7 +247,7 @@ function local:Add-PathLocation {
         }
 
         # move the existing entry to the front, keeping its stored form
-        $remaining = @($Entries | Where-Object { (Get-LocationKey -Location $_.Location) -ine $key })
+        $remaining = @($Entries | Where-Object { (ConvertTo-ComparableLocation -Location $_.Location) -ine $comparable })
         return $present + $remaining
     }
 
@@ -285,9 +285,9 @@ function local:Remove-PathLocation {
         [string] $Location
     )
 
-    $key = Get-LocationKey -Location ([Environment]::ExpandEnvironmentVariables($Location))
+    $comparable = ConvertTo-ComparableLocation -Location ([Environment]::ExpandEnvironmentVariables($Location))
 
-    return @($Entries | Where-Object { (Get-LocationKey -Location $_.Location) -ine $key })
+    return @($Entries | Where-Object { (ConvertTo-ComparableLocation -Location $_.Location) -ine $comparable })
 }
 
 function local:Remove-DuplicatePathLocation {
@@ -315,7 +315,7 @@ function local:Remove-DuplicatePathLocation {
 
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    return @($Entries | Where-Object { $seen.Add((Get-LocationKey -Location $_.Location)) })
+    return @($Entries | Where-Object { $seen.Add((ConvertTo-ComparableLocation -Location $_.Location)) })
 }
 
 function local:Get-PathScopeStoredForms {
@@ -347,11 +347,11 @@ function local:Get-PathScopeStoredForms {
     (Get-EnvironmentVariable @context -Name Path -Expandable -ErrorAction SilentlyContinue) -split $systemPathSeparator `
     | Where-Object { $_ } `
     | ForEach-Object {
-        $key = Get-LocationKey -Location ([Environment]::ExpandEnvironmentVariables($_))
-        if (-not $storedForms.ContainsKey($key)) {
-            $storedForms[$key] = [System.Collections.Generic.Queue[string]]::new()
+        $comparable = ConvertTo-ComparableLocation -Location ([Environment]::ExpandEnvironmentVariables($_))
+        if (-not $storedForms.ContainsKey($comparable)) {
+            $storedForms[$comparable] = [System.Collections.Generic.Queue[string]]::new()
         }
-        $storedForms[$key].Enqueue($_)
+        $storedForms[$comparable].Enqueue($_)
     }
 
     return $storedForms
@@ -398,27 +398,27 @@ function local:Test-LocationCriteria {
         [string[]] $Match
     )
 
-    $locationKey = Get-LocationKey -Location $Location
+    $comparable = ConvertTo-ComparableLocation -Location $Location
 
-    if ($Exact -and $locationKey -ine (Get-LocationKey -Location $Exact)) {
+    if ($Exact -and $comparable -ine (ConvertTo-ComparableLocation -Location $Exact)) {
         return $false
     }
 
     foreach ($substring in $Contains) {
-        $substringKey = Get-LocationKey -Location $substring
-        if (-not $locationKey.Contains($substringKey, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $comparableSubstring = ConvertTo-ComparableLocation -Location $substring
+        if (-not $comparable.Contains($comparableSubstring, [System.StringComparison]::OrdinalIgnoreCase)) {
             return $false
         }
     }
 
     foreach ($pattern in $Filter) {
-        if ($locationKey -inotlike (Get-LocationKey -Location $pattern)) {
+        if ($comparable -inotlike (ConvertTo-ComparableLocation -Location $pattern)) {
             return $false
         }
     }
 
     foreach ($pattern in $Match) {
-        if ($locationKey -inotmatch $pattern) {
+        if ($comparable -inotmatch $pattern) {
             return $false
         }
     }
@@ -538,17 +538,17 @@ function Get-SystemPath {
         $env:PATH -split $systemPathSeparator `
         | Where-Object { $_ } `
         | ForEach-Object {
-            $key = Get-LocationKey -Location $_
+            $comparable = ConvertTo-ComparableLocation -Location $_
             $scope = "Process"
             $stored = $_
 
-            if ($machineRemaining[$key].Count -gt 0) {
+            if ($machineRemaining[$comparable].Count -gt 0) {
                 $scope = "Machine"
-                $stored = $machineRemaining[$key].Dequeue()
+                $stored = $machineRemaining[$comparable].Dequeue()
             }
-            elseif ($userRemaining[$key].Count -gt 0) {
+            elseif ($userRemaining[$comparable].Count -gt 0) {
                 $scope = "User"
-                $stored = $userRemaining[$key].Dequeue()
+                $stored = $userRemaining[$comparable].Dequeue()
             }
 
             [SystemPathLocation]::new($scope, $stored, $_)
@@ -942,12 +942,12 @@ function Move-SystemPathLocation {
     }
 
     $sourceEntries = @(Get-SystemPath @source)
-    $key = Get-LocationKey -Location ([Environment]::ExpandEnvironmentVariables($Location))
-    $moved = @($sourceEntries | Where-Object { (Get-LocationKey -Location $_.Location) -ieq $key })
+    $comparable = ConvertTo-ComparableLocation -Location ([Environment]::ExpandEnvironmentVariables($Location))
+    $moved = @($sourceEntries | Where-Object { (ConvertTo-ComparableLocation -Location $_.Location) -ieq $comparable })
 
     # not on the source Path: nothing to move
     if ($moved.Count -eq 0) {
-        $onTarget = @(Get-SystemPath @target) | Where-Object { (Get-LocationKey -Location $_.Location) -ieq $key }
+        $onTarget = @(Get-SystemPath @target) | Where-Object { (ConvertTo-ComparableLocation -Location $_.Location) -ieq $comparable }
 
         $reason = $onTarget ? "already on the $targetName Path" : "not on the $sourceName Path"
         Write-Warning "Nothing to move. reason: $reason, location: '$Location'"
@@ -957,7 +957,7 @@ function Move-SystemPathLocation {
     $newSource = @(Remove-PathLocation -Entries $sourceEntries -Location $Location)
 
     $targetEntries = @(Get-SystemPath @target)
-    $onTarget = @($targetEntries | Where-Object { (Get-LocationKey -Location $_.Location) -ieq $key })
+    $onTarget = @($targetEntries | Where-Object { (ConvertTo-ComparableLocation -Location $_.Location) -ieq $comparable })
     # append the moved entry, keeping its stored (%...%) form, unless the target already has it
     $newTarget = $onTarget.Count -gt 0 ? $targetEntries : (@($targetEntries) + @($moved[0]))
 
