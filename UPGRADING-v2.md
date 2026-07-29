@@ -12,9 +12,11 @@ write the **canonical** name, never an alias.
   removed group aliases, `-Name` not the removed app aliases.
 - **User scope is the default now.** Path and environment writes target the current user; pass
   `-Machine` only when a machine-wide change is intended. Do not add `-Machine` by reflex.
-- **Administrator is no longer required by default.** A `-Machine` write auto-elevates through
-  UAC (`Invoke-Elevated` → `sudo --inline`), so drop any "run as admin" wrapping around user-scope
-  calls. Machine-scope writes need the **Windows sudo feature** enabled.
+- **Administrator is no longer required by default.** A `-Machine` **Path or environment** write
+  auto-elevates through UAC (`Invoke-Elevated` → `sudo --inline`), so drop any "run as admin" wrapping
+  around user-scope calls. Machine-scope writes need the **Windows sudo feature** enabled.
+  Start Menu `-AllUsers` writes and `Register-LogonTask` do **not** auto-elevate: they write directly and
+  still need an already-elevated session, so keep the elevated launch or the `Assert-Elevated` guard there.
 
 ## Renamed commands
 
@@ -61,18 +63,33 @@ write the **canonical** name, never an alias.
   the `.lnk` path string. Read `.Location` where the path is what the calling code needs.
 - **Shortcut icon.** On `New-Shortcut`, `Set-Shortcut` and the Start Menu shortcut commands, `-Icon`
   takes a `ShortcutIcon` and nothing else. Build one with `New-ShortcutIcon`, or pass one read by
-  `Get-Shortcut`.
+  `Get-Shortcut`. `-Icon $null` is accepted and means no icon, so an optional icon is built inline
+  rather than through a splat guard:
+
+  ```powershell
+  New-StartMenuShortcut -Name $Name -Target $exe -Icon ($iconLocation ? (New-ShortcutIcon -Location $iconLocation) : $null)
+  ```
+
+  `New-ShortcutIcon` itself never returns `$null`: an empty or `$null` `-Location` is a
+  parameter-binding error, so the guard belongs around the call, not inside it.
+- **`New-ShortcutIcon -Value` takes the combined `"file,index"` form** v1 `-Icon` took. The index is
+  mandatory and must be digits directly after the last comma: `"…\imageres.dll"` and
+  `"…\imageres.dll, 229"` are both rejected with `InvalidShortcutIconValue`. The icon file may itself
+  contain a comma — the split is on the last one — and is taken verbatim, quotes included, so pass it
+  unquoted. An icon file without an index goes to `-Location` instead.
 - **PowerShell shortcut window.** `-Visible` and `-Maximized` give way to
   `-WindowStyle Normal` / `-WindowStyle Maximized`; the default stays `Minimized`.
 - **`Add-SystemPathLocation` rejects a location naming no existing folder** with a terminating
   `PathLocationNotFound`, where v1 persisted whatever string it was given. The location is checked
   expanded, so a `%…%` reference whose variable is not set is rejected too. Pass `-Force` where the
-  folder is meant to appear later.
+  folder is meant to appear later. The folder has to exist at the moment of the call, so a provisioning
+  script putting a folder on the Path before whatever creates it has ever run — `%USERPROFILE%\.local\bin`,
+  a package manager's `bin`, a toolchain folder — needs `-Force` on every such call.
 - **`Test-SystemPathLocation` tests one exact location.** `-Location` is mandatory and positional;
   v1's `-Filter` is gone. A bare call now errors. Reach for `Get-SystemPath -Contains` / `-Filter` /
   `-Match` where a pattern is what the calling code needs.
 - **`Register-LogonTask -Name` and `-Executable` are mandatory.** A call omitting either now errors
-  instead of registering a task with nothing to run.
+  instead of registering a task with nothing to run. `-Argument`, `-Path` and `-Force` are as in v1.
 - **Scope switches on the Path lookups are parameter sets.** `Get-SystemPath` and
   `Test-SystemPathLocation` take `-Machine`, `-User`, `-Process` or `-Effective` (default); passing two of
   them is a parameter-set error. `Remove-DuplicateSystemPathLocations` likewise rejects `-KeepMachine` / `-KeepUser`
@@ -90,6 +107,25 @@ write the **canonical** name, never an alias.
   saved as `REG_EXPAND_SZ`, so editing it no longer freezes `%SystemRoot%\system32` to its expanded
   path. `SystemPathLocation` carries `ExpandableLocation` (stored) next to `Location` (expanded);
   criteria still match on `Location`, but `Get-SystemPath -Join` now returns the stored form.
+
+## Unchanged — leave these call sites alone
+
+- **The location parameter is `-Location`**, mandatory and positional first on `Add-SystemPathLocation`,
+  `Remove-SystemPathLocation`, `Move-SystemPathLocation` and `Test-SystemPathLocation`, with `-Folder`
+  kept as an alias. All three v1 spellings still bind — `Add-SystemPathLocation "C:\Tools\bin"`,
+  `-Location "C:\Tools\bin"`, `-Folder "C:\Tools\bin"` — so only the `-Folder` spelling is worth
+  rewriting, to the canonical `-Location`. On `Get-SystemPath` the exact-match parameter is `-Exact`
+  (aliases `-Location`, `-Folder`), since its positional argument is `-Contains`.
+- **An addition that changes nothing still warns.** `Add-SystemPathLocation` given a location already on
+  the Path leaves the Path unchanged and reports `Location is already on the system Path`, as v1 did, so
+  `-WarningAction SilentlyContinue` in an idempotent setup script is still doing its job.
+  `Remove-SystemPathLocation` and `Move-SystemPathLocation` warn the same way when there is nothing to do.
+  The terminating `PathLocationNotFound` is the missing-folder case alone.
+- **`Set-EnvironmentVariable` keeps its positional order**: `-Name` first, `-Value` second, so
+  `Set-EnvironmentVariable -Machine JAVA_HOME "C:\Java\current"` binds as it did in v1.
+  `Get-EnvironmentVariable` and `Remove-EnvironmentVariable` take `-Name` positional first likewise.
+- **`Register-LogonTask -Argument`** is unchanged: singular, one string, and passed to the task action
+  only when it carries something.
 
 ## Removed components — replace entirely
 
@@ -112,7 +148,10 @@ write the **canonical** name, never an alias.
   folder as default run location. `-CreateFolder` creates the folder of the shortcut when it is missing.
 - `Set-Shortcut` — set any combination of fields on an existing shortcut; `$null` or an empty string
   clears a field, `-Elevated:$false` clears the "Run as administrator" flag, `-PassThru` returns the
-  shortcut.
+  shortcut. `-Location` names the shortcut, mandatory and positional first, mirroring `New-Shortcut`;
+  v1's `-Shortcut` is gone. It takes no pipeline input — `Get-Shortcut … | Set-Shortcut -Elevated` fails
+  on the missing mandatory `-Location` — so pass the location:
+  `Set-Shortcut "$(Get-StartMenuProgramsLocation)\App.lnk" -Elevated`.
 - `New-ShortcutIcon` — build the `ShortcutIcon` that `-Icon` takes, from `-Location` and an optional
   `-Index` (default `0`), or from a combined `-Value` `"file,index"`.
 - `Get-Environment` — environment variables as records (scope, name, value); both scopes by default,
