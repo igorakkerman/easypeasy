@@ -105,8 +105,12 @@ write the **canonical** name, never an alias.
   terminating error on failure or when sudo is unavailable.
 - **System Path keeps `%…%` references.** A persisted Path is read and written in its stored form and
   saved as `REG_EXPAND_SZ`, so editing it no longer freezes `%SystemRoot%\system32` to its expanded
-  path. `SystemPathLocation` carries `StoredValue` (stored) next to `Location` (expanded);
+  path. `SystemPathLocation` carries `StoredValue` (the value as persisted) next to `Location`;
   criteria still match on `Location`, but `Get-SystemPath -Join` now returns the stored form.
+- **`Location` is the absolute normalized folder.** Repeated and trailing backslashes, `.` and `..`
+  segments are resolved, and a relative location is resolved against the current directory, so code
+  comparing `Location` against a literal string must compare against the normalized spelling.
+  `StoredValue` is where the verbatim value lives.
 
 ## Unchanged — leave these call sites alone
 

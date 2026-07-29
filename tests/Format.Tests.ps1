@@ -20,6 +20,28 @@ Describe 'easypeasy.format.ps1xml' {
 
     Context 'SystemPathLocation' {
 
+        BeforeAll {
+            # the escapes $PSStyle emits are stripped at PlainText, so the glyphs and the layout can be
+            # asserted without the host deciding whether colour is on
+            $script:originalRendering = $PSStyle.OutputRendering
+            $PSStyle.OutputRendering = 'PlainText'
+
+            # a folder that exists and one that does not, both outside anything the module writes
+            $script:present = $env:SystemRoot
+            $script:absent = Join-Path $env:SystemRoot 'EasypeasyNoSuchFolder'
+
+            function script:New-Rendered {
+                param ([string] $StoredValue, [AllowNull()] $Location)
+
+                $entry = InModuleScope easypeasy -Parameters @{ s = $StoredValue; l = $Location } {
+                    [SystemPathLocation]::new('Machine', $s, $l)
+                }
+                return $entry | Out-String -Width 200
+            }
+        }
+
+        AfterAll { $PSStyle.OutputRendering = $script:originalRendering }
+
         It 'renders scope and location as table columns' {
             $rendered = Get-SystemPath -Machine | Select-Object -First 1 | Out-String -Width 200
 
@@ -27,27 +49,69 @@ Describe 'easypeasy.format.ps1xml' {
             $rendered | Should -Match 'Location'
         }
 
-        It 'renders the stored form underneath the expanded location where they differ' {
-            $entry = Get-SystemPath -Machine | Select-Object -First 1
-            $entry | Should -Not -BeNullOrEmpty
+        It 'renders the stored value alone where the location matches it' {
+            $rendered = New-Rendered -StoredValue $present -Location $present
 
-            $entry.Location = 'C:\Windows\system32'
-            $entry.StoredValue = '%SystemRoot%\system32'
-
-            $rendered = $entry | Out-String -Width 200
-
-            $rendered | Should -Match ([regex]::Escape('C:\Windows\system32'))
-            $rendered | Should -Match ([regex]::Escape('%SystemRoot%\system32'))
+            @([regex]::Matches($rendered, [regex]::Escape($present))).Count | Should -Be 1
+            $rendered | Should -Not -Match '↳'
         }
 
-        It 'renders the location once where the stored form matches it' {
-            $entry = Get-SystemPath -Machine | Select-Object -First 1
-            $entry.Location = 'C:\Windows\system32'
-            $entry.StoredValue = 'C:\Windows\system32'
+        It 'renders the resolved location underneath a %...% reference' {
+            $rendered = New-Rendered -StoredValue '%SystemRoot%\system32' -Location $present
 
-            $rendered = $entry | Out-String -Width 200
+            $rendered | Should -Match "$([regex]::Escape('%SystemRoot%\system32'))\r?\n\s*↳ $([regex]::Escape($present))"
+        }
 
-            @([regex]::Matches($rendered, [regex]::Escape('C:\Windows\system32'))).Count | Should -Be 1
+        It 'renders the stored value alone where <case> hid no folder' -ForEach @(
+            @{ case = 'repeated backslashes'; stored = 'C:\Tools\\bin' }
+            @{ case = 'a trailing backslash'; stored = 'C:\Tools\bin\' }
+            @{ case = 'a .. segment'; stored = 'C:\Tools\other\..\bin' }
+        ) {
+            $rendered = New-Rendered -StoredValue $stored -Location 'C:\Tools\bin'
+
+            $rendered | Should -Match ([regex]::Escape($stored))
+            $rendered | Should -Not -Match '↳'
+        }
+
+        It 'renders no warning symbol for a location naming no existing folder' {
+            $rendered = New-Rendered -StoredValue '%SystemRoot%\EasypeasyNoSuchFolder' -Location $absent
+
+            $rendered | Should -Match "↳ $([regex]::Escape($absent))"
+            $rendered | Should -Not -Match '⚠'
+        }
+
+        It 'accents the resolved location where its folder does not exist' {
+            $PSStyle.OutputRendering = 'Ansi'
+            try { $rendered = New-Rendered -StoredValue '%SystemRoot%\EasypeasyNoSuchFolder' -Location $absent }
+            finally { $PSStyle.OutputRendering = 'PlainText' }
+
+            $rendered | Should -Match "$([regex]::Escape($PSStyle.Foreground.Red))↳ $([regex]::Escape($absent))"
+        }
+
+        It 'accents the stored value where the location cannot be resolved' {
+            $PSStyle.OutputRendering = 'Ansi'
+            try { $rendered = New-Rendered -StoredValue 'C:\Invalid' -Location $null }
+            finally { $PSStyle.OutputRendering = 'PlainText' }
+
+            $rendered | Should -Match "$([regex]::Escape($PSStyle.Foreground.Red))C:\\Invalid"
+            $rendered | Should -Not -Match '↳'
+        }
+
+        It 'accents the single row where the stored value is itself the missing folder' {
+            $PSStyle.OutputRendering = 'Ansi'
+            try { $rendered = New-Rendered -StoredValue $absent -Location $absent }
+            finally { $PSStyle.OutputRendering = 'PlainText' }
+
+            $rendered | Should -Match "$([regex]::Escape($PSStyle.Foreground.Red))$([regex]::Escape($absent))"
+            $rendered | Should -Not -Match '↳'
+        }
+
+        It 'leaves a location naming an existing folder unaccented' {
+            $PSStyle.OutputRendering = 'Ansi'
+            try { $rendered = New-Rendered -StoredValue $present -Location $present }
+            finally { $PSStyle.OutputRendering = 'PlainText' }
+
+            $rendered | Should -Not -Match ([regex]::Escape($PSStyle.Foreground.Red))
         }
     }
 

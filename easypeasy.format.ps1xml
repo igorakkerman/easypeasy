@@ -101,9 +101,29 @@
               <TableColumnItem>
                 <PropertyName>Scope</PropertyName>
               </TableColumnItem>
-              <!-- the stored form goes on a second line, shown only where it differs -->
+              <!--
+                StoredValue is shown as persisted. A %...% reference is the one form that hides which
+                folder an entry names, so that entry carries a second line with the resolved Location.
+                An entry naming no existing folder is accented.
+              -->
               <TableColumnItem>
-                <ScriptBlock>$_.StoredValue -ne $_.Location ? "$($_.Location)`n$($_.StoredValue)" : $_.Location</ScriptBlock>
+                <ScriptBlock>
+                  $missing = $null -eq $_.Location -or
+                      -not (Test-Path -LiteralPath $_.Location -PathType Container -ErrorAction Ignore)
+                  $accent = $PSStyle.Foreground.Red
+                  $reset = $PSStyle.Reset
+
+                  if ($null -eq $_.Location) {
+                      "$accent$($_.StoredValue)$reset"
+                  }
+                  elseif ($_.StoredValue -match '%[^%]+%' -and $_.Location -cne $_.StoredValue) {
+                      $resolved = $missing ? "$accent↳ $($_.Location)$reset" : "↳ $($_.Location)"
+                      "$($_.StoredValue)`n$resolved"
+                  }
+                  else {
+                      $missing ? "$accent$($_.StoredValue)$reset" : $_.StoredValue
+                  }
+                </ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

@@ -231,14 +231,19 @@ Describe 'Add-SystemPathLocation' {
         }
 
         It 'reports a %...% reference whose variable is not set' {
-            # an unset variable is left verbatim, so the expansion adds nothing and is not reported
+            # an unset variable is left verbatim, so what is left resolves against the current directory
             { Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User } |
-                Should -Throw "*location: '%EASYPEASY_UNSET_XYZ%\bin'"
+                Should -Throw "*location: '%EASYPEASY_UNSET_XYZ%\bin', resolved: '$PWD\%EASYPEASY_UNSET_XYZ%\bin'"
         }
 
-        It 'names both forms when the expansion differs' {
+        It 'names both forms when the resolved location differs' {
             { Add-SystemPathLocation -Location '%SystemRoot%\EasypeasyNoSuchFolder' -User } |
-                Should -Throw "*location: '%SystemRoot%\EasypeasyNoSuchFolder', expanded: '$env:SystemRoot\EasypeasyNoSuchFolder'"
+                Should -Throw "*location: '%SystemRoot%\EasypeasyNoSuchFolder', resolved: '$env:SystemRoot\EasypeasyNoSuchFolder'"
+        }
+
+        It 'names the location once when it is already normalized' {
+            { Add-SystemPathLocation -Location 'C:\EasypeasyNoSuchFolder' -User } |
+                Should -Throw "*location: 'C:\EasypeasyNoSuchFolder'"
         }
 
         It 'adds an existing folder' {

@@ -4,7 +4,7 @@
 function New-PathEntries {
     <#
     .SYNOPSIS
-        Builds SystemPathLocation entries from a semicolon-separated path, stored form equal to expanded.
+        Builds SystemPathLocation entries from a semicolon-separated stored path, normalizing each Location.
     .EXAMPLE
         New-PathEntries 'C:\A;C:\B' -Scope Machine
     #>
@@ -17,7 +17,7 @@ function New-PathEntries {
 
     InModuleScope easypeasy -Parameters @{ path = $Path; scope = $Scope } {
         @($path -split ([IO.Path]::PathSeparator) | Where-Object { $_ } | ForEach-Object {
-                [SystemPathLocation]::new($scope, $_, $_)
+                [SystemPathLocation]::new($scope, $_, (ConvertTo-NormalizedLocation -Location $_))
             })
     }
 }
@@ -25,7 +25,7 @@ function New-PathEntries {
 function New-PathEntry {
     <#
     .SYNOPSIS
-        Builds a single SystemPathLocation entry whose stored form differs from its expanded location.
+        Builds a single SystemPathLocation entry whose stored value differs from its resolved location.
     .EXAMPLE
         New-PathEntry -StoredValue '%SystemRoot%\System32' -Location 'C:\WINDOWS\System32'
     #>
@@ -45,7 +45,7 @@ function New-PathEntry {
 function Get-StoredPath {
     <#
     .SYNOPSIS
-        Joins the stored (expandable) form of entries, for asserting what would be persisted.
+        Joins the stored values of entries, for asserting what would be persisted.
     .EXAMPLE
         Get-StoredPath $Entries | Should -Be 'C:\A;C:\B'
     #>

@@ -66,7 +66,12 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `-Expandable` on `Set-EnvironmentVariable` — writes `REG_EXPAND_SZ` so a `%…%` reference stays as indirection; default `REG_SZ`.
 - **Added:** `-Expandable` on `Get-EnvironmentVariable` — reads stored expandable value without evaluating `%…%` references.
 - **Changed:** System Path operations preserve `%…%` references and persist Path as `REG_EXPAND_SZ`.
-- **Added:** `StoredValue` on `SystemPathLocation` — stored form next to expanded `Location`, listed underneath it where they differ.
+- **Added:** `StoredValue` on `SystemPathLocation` — value as persisted, keeping `%…%` references and stray backslashes verbatim.
+- **Changed:** `Location` on `SystemPathLocation` holds absolute normalized folder — repeated and trailing backslashes, `.` and `..` segments resolved. Relative location resolved against current directory.
+- **Changed:** System Path listing leads with `StoredValue`; resolved `Location` follows on `↳` row where stored value carries `%…%` reference.
+- **Added:** Location naming no existing folder rendered in red.
+- **Changed:** Process Path built from resolved locations, so `Sync-SystemPath` normalizes what it writes.
+- **Changed:** `Add-SystemPathLocation` names resolved location, previously expanded, in `PathLocationNotFound`.
 - **Changed:** `Get-SystemPath -Join` returns stored (expandable) locations.
 - **Fixed:** Process Path derived from machine and user Path instead of patched, so a location carried by both scopes is listed once per scope and a removal in one scope leaves the other scope's location in place. Locations only the session knows are kept.
 - **Added:** `Sync-SystemPath` and alias `syncpath` — rebuild system Path of current shell from persisted Path, for a change made outside easypeasy.

@@ -31,12 +31,17 @@ Scope      Location
 -----      --------
 Process    C:\Program Files\PowerShell\7
 Machine    C:\Program Files\Microsoft VS Code\bin
-Machine    C:\Windows\system32    # expanded location
-           %SystemRoot%\system32  # actually stored expandable reference
+Machine    %SystemRoot%\system32     # value as stored
+           ↳ C:\Windows\System32     # folder it resolves to
 Machine    C:\Windows
 User       C:\Users\me\go\bin
+User       C:\Users\me\uninstalled   # in red: no such folder
 ...
 ```
+
+The first row is the value as the registry holds it, `%...%` references and all. A `%...%` reference
+hides the folder it names, so that folder follows on a `↳` row. A location naming no existing folder
+is shown in red.
 
 #### Specific scope
 
@@ -49,8 +54,8 @@ User       C:\Users\me\go\bin
 
 Scope      Location
 -----      --------
-Machine    C:\Windows\system32
-           %SystemRoot%\system32
+Machine    %SystemRoot%\system32
+           ↳ C:\Windows\System32
 Machine    C:\Program Files\Git\bin
 ```
 

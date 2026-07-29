@@ -110,6 +110,85 @@ Describe 'Get-SystemPath' {
         }
     }
 
+    Context 'normalized locations' {
+
+        BeforeAll { $script:originalPath = $env:PATH }
+        AfterAll { $env:PATH = $script:originalPath }
+
+        It 'normalizes <case> in Location, keeping the stored value verbatim' -ForEach @(
+            @{ case = 'repeated backslashes'; stored = 'C:\Tools\\bin'; location = 'C:\Tools\bin' }
+            @{ case = 'a trailing backslash'; stored = 'C:\Tools\bin\'; location = 'C:\Tools\bin' }
+            @{ case = 'a .. segment'; stored = 'C:\Tools\other\..\bin'; location = 'C:\Tools\bin' }
+            @{ case = 'a . segment'; stored = 'C:\Tools\.\bin'; location = 'C:\Tools\bin' }
+        ) {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { $stored }
+
+            $result = Get-SystemPath -Machine
+
+            $result.StoredValue | Should -BeExactly $stored
+            $result.Location | Should -BeExactly $location
+        }
+
+        It 'keeps the trailing backslash of a drive root, which names a folder' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\' }
+
+            (Get-SystemPath -Machine).Location | Should -BeExactly 'C:\'
+        }
+
+        It 'keeps the leading backslashes of a UNC root' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { '\\server\\share\bin\' }
+
+            (Get-SystemPath -Machine).Location | Should -BeExactly '\\server\share\bin'
+        }
+
+        It 'resolves a relative location against the current directory' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'bin' }
+
+            (Get-SystemPath -Machine).Location | Should -BeExactly (Join-Path $PWD 'bin')
+        }
+
+        It 'returns null when a location cannot be normalized' {
+            $stored = 'C:\' + ('a' * 40000)
+            $result = InModuleScope easypeasy -Parameters @{ stored = $stored } {
+                ConvertTo-NormalizedLocation -Location $stored
+            }
+
+            $result | Should -BeNullOrEmpty
+        }
+
+        It 'keeps an unresolvable stored value with a null Location' {
+            $stored = 'C:\' + ('a' * 40000)
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { $stored }
+
+            $result = Get-SystemPath -Machine
+
+            $result.StoredValue | Should -BeExactly $stored
+            $result.Location | Should -BeNullOrEmpty
+        }
+
+        It 'normalizes a location on the effective Path too' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { '' }
+            $env:PATH = 'C:\Tools\\bin\'
+
+            $result = Get-SystemPath
+
+            $result.StoredValue | Should -BeExactly 'C:\Tools\\bin\'
+            $result.Location | Should -BeExactly 'C:\Tools\bin'
+        }
+
+        It 'tags a location whose stored spelling differs from the process one' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Tools\\bin' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '' }
+            $env:PATH = 'C:\Tools\bin\'
+
+            $result = Get-SystemPath
+
+            $result.Scope | Should -Be 'Machine'
+            $result.StoredValue | Should -BeExactly 'C:\Tools\\bin'
+            $result.Location | Should -BeExactly 'C:\Tools\bin'
+        }
+    }
+
     Context '-Exact' {
 
         BeforeAll { $script:originalPath = $env:PATH }
@@ -141,8 +220,10 @@ Describe 'Get-SystemPath' {
 
             $env:PATH = 'C:\Program Files\\Git\bin'
 
-            (Get-SystemPath -Exact 'C:\Program Files\Git\bin').Location |
-                Should -Be @('C:\Program Files\\Git\bin')
+            $result = Get-SystemPath -Exact 'C:\Program Files\Git\bin'
+
+            $result.StoredValue | Should -Be @('C:\Program Files\\Git\bin')
+            $result.Location | Should -Be @('C:\Program Files\Git\bin')
         }
 
         It 'keeps the leading backslashes of a UNC root' {
@@ -259,15 +340,15 @@ Describe 'Get-SystemPath' {
         It 'ignores trailing backslashes on both sides' {
             $env:PATH = 'C:\Tools\'
 
-            (Get-SystemPath -Filter 'C:\Tools').Location | Should -Be @('C:\Tools\')
+            (Get-SystemPath -Filter 'C:\Tools').StoredValue | Should -Be @('C:\Tools\')
         }
 
         It 'ignores repeated backslashes on both sides' {
             $env:PATH = 'C:\Program Files\\Git\bin'
 
-            (Get-SystemPath -Filter '*\Git\bin').Location |
+            (Get-SystemPath -Filter '*\Git\bin').StoredValue |
                 Should -Be @('C:\Program Files\\Git\bin')
-            (Get-SystemPath -Filter '*\\Git\bin').Location |
+            (Get-SystemPath -Filter '*\\Git\bin').StoredValue |
                 Should -Be @('C:\Program Files\\Git\bin')
         }
 
@@ -317,8 +398,8 @@ Describe 'Get-SystemPath' {
         It 'ignores repeated backslashes on both sides' {
             $env:PATH = 'C:\Program Files\\Git\bin'
 
-            (Get-SystemPath '\Git\bin').Location | Should -Be @('C:\Program Files\\Git\bin')
-            (Get-SystemPath 'Files\\Git').Location | Should -Be @('C:\Program Files\\Git\bin')
+            (Get-SystemPath '\Git\bin').StoredValue | Should -Be @('C:\Program Files\\Git\bin')
+            (Get-SystemPath 'Files\\Git').StoredValue | Should -Be @('C:\Program Files\\Git\bin')
         }
 
         It 'reads a leading \\ as a UNC root, not as a repeated separator' {
