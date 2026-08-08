@@ -80,6 +80,10 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error.
 - **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` force inline execution in the current terminal via `sudo --inline`, and report a terminating error on failure.
 - **Added:** `Invoke-Elevated` reports terminating error when sudo not available.
+- **Fixed:** `Move-SystemPathLocation` elevates once for whole move, before either Path is written.
+- **Changed:** `Move-SystemPathLocation` writes target Path before source Path.
+- **Fixed:** `Invoke-Elevated` quotes every argument, doubling embedded single quote.
+- **Fixed:** `Invoke-Elevated` reports command elevated session cannot resolve, instead of reporting success.
 - **Changed:** `Assert-Administrator` renamed to `Assert-Elevated`.
 - **Added:** `Test-Elevated` — returns whether the current session is elevated.
 - **Added:** Error id, category and target on every reported error.
