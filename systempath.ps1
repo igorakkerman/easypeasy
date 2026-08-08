@@ -223,11 +223,13 @@ function local:Sync-ProcessPath {
     .SYNOPSIS
         Rebuilds the current process Path from the persisted scopes.
     .DESCRIPTION
-        Sets the current process Path to the machine Path followed by the user Path, each location resolved -
-        the order Windows itself builds a process Path in, so a shell easypeasy has touched holds what a fresh
-        shell would. A location on both scopes therefore appears once per scope, as Windows leaves it.
-        Where Windows only expands a location, this normalizes it as well, so the process Path carries the
-        absolute folder rather than the spelling the registry happens to hold.
+        Sets the current process Path to the machine Path followed by the user Path - the order Windows itself
+        builds a process Path in, so a shell easypeasy has touched holds what a fresh shell would. A location
+        on both scopes therefore appears once per scope, as Windows leaves it.
+        Each location is expanded, and expanded only: nothing expands a %...% reference while a command is
+        looked up, so a process Path carrying one would name no folder. The spelling is kept otherwise, as
+        Windows keeps it, so the process Path holds each location as its scope Path spells it rather than a
+        normalized rewrite of it.
         The Path is derived, never patched, so a location added to or removed from one scope cannot disturb the
         other scope's locations.
         Locations only the session knows are passed in, having been captured before the write, and are put back
@@ -252,15 +254,16 @@ function local:Sync-ProcessPath {
         [SystemPathLocation[]] $TrailingProcessLocations = @()
     )
 
-    # Location already carries the resolved form, which is what a process Path holds
     $persisted = @(Get-SystemPath -Machine) + @(Get-SystemPath -User)
 
     $locations = @($LeadingProcessLocations) + $persisted + @($TrailingProcessLocations)
 
+    # StoredValue expanded, not Location: expansion is all Windows does to a scope Path location,
+    # so the stored spelling survives into the process Path
     $env:PATH = (
         $locations `
             | ForEach-Object {
-                $_.Location
+                [Environment]::ExpandEnvironmentVariables($_.StoredValue)
             }
     ) -join $systemPathSeparator
 }
