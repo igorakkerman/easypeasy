@@ -32,7 +32,7 @@ Describe 'Invoke-Elevated' {
             $args -contains '--inline' -and
             $args -contains '-NoProfile' -and
             $args -contains '-EncodedCommand' -and
-            ([System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -eq 'addpath -machine C:\Tools; exit $LASTEXITCODE')
+            ([System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -eq 'try { addpath -machine ''C:\Tools'' } catch { Write-Error -ErrorRecord $_; exit 1 }; exit ($LASTEXITCODE ?? 0)')
         }
     }
 
@@ -42,7 +42,27 @@ Describe 'Invoke-Elevated' {
         Invoke-Elevated New-Item 'C:\Program Files\X'
 
         Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
-            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -eq "New-Item 'C:\Program Files\X'; exit `$LASTEXITCODE"
+            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -like "try { New-Item 'C:\Program Files\X' } catch *"
+        }
+    }
+
+    It 'single-quotes an argument containing a semicolon, so it cannot reach the child as syntax' {
+        Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
+
+        Invoke-Elevated setenv -Name Path -Value 'C:\A;C:\B'
+
+        Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
+            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -like "try { setenv -Name 'Path' -Value 'C:\A;C:\B' } catch *"
+        }
+    }
+
+    It 'doubles a single quote inside an argument' {
+        Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
+
+        Invoke-Elevated New-Item "C:\Sam's Tools"
+
+        Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
+            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -like "try { New-Item 'C:\Sam''s Tools' } catch *"
         }
     }
 
@@ -55,7 +75,7 @@ Describe 'Invoke-Elevated' {
         & $alias rmenv -Machine JAVA_HOME
 
         Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
-            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -eq 'rmenv -Machine JAVA_HOME; exit $LASTEXITCODE'
+            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -like "try { rmenv -Machine 'JAVA_HOME' } catch *"
         }
     }
 
@@ -66,7 +86,7 @@ Describe 'Invoke-Elevated' {
 
         $errorRecord.CategoryInfo.Category | Should -Be 'OperationStopped'
         $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ElevatedCommandFailed,*'
-        $errorRecord.TargetObject | Should -Be 'addpath -Machine C:\Tools'
+        $errorRecord.TargetObject | Should -Be "addpath -Machine 'C:\Tools'"
     }
 
     It 'treats a non-terminating error in the elevated command as success' {
@@ -85,6 +105,26 @@ Describe 'Invoke-Elevated' {
         }
 
         { Invoke-Elevated Write-Error non-terminating } | Should -Not -Throw
+    }
+
+    It 'reports a terminating error when the elevated session cannot resolve the command' {
+        # run the payload in a normal child process to exercise the real exit-code logic
+        Mock -ModuleName easypeasy sudo {
+            $stderr = New-TemporaryFile
+            try {
+                $child = Microsoft.PowerShell.Management\Start-Process -FilePath $args[1] `
+                    -ArgumentList $args[2..($args.Count - 1)] -Wait -PassThru -NoNewWindow `
+                    -RedirectStandardError $stderr.FullName
+                $global:LASTEXITCODE = $child.ExitCode
+            }
+            finally {
+                Remove-Item $stderr.FullName -ErrorAction SilentlyContinue
+            }
+        }
+
+        $errorRecord = { Invoke-Elevated Invoke-NoSuchEasypeasyCommand } | Should -Throw '*exitCode: 1*' -PassThru
+
+        $errorRecord.FullyQualifiedErrorId | Should -BeLike 'ElevatedCommandFailed,*'
     }
 
     It 'reports a terminating error when sudo is not available' {
