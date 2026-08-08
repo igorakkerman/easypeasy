@@ -113,7 +113,10 @@ function New-StartMenuShortcut {
         The free-text description of the shortcut, shown as its comment / tooltip.
 
     .PARAMETER Icon
-        The icon of the shortcut, as a ShortcutIcon record built by New-ShortcutIcon or read by Get-Shortcut.
+        The icon of the shortcut, as the icon file, e.g. "C:\Program Files\MyApp\MyApp.exe", or as the
+        icon file and the index of the icon within it, "file,index", e.g. "C:\Windows\imageres.dll,229".
+        Without an index the first icon of the file is taken. An icon file whose own name ends in a
+        comma and a number needs ",0" appended.
         Default: no icon.
 
     .PARAMETER Hotkey
@@ -144,7 +147,7 @@ function New-StartMenuShortcut {
     .EXAMPLE
         New-StartMenuShortcut -Name MyApp -Folder MyCompany -Target "C:\Program Files\MyApp\MyApp.exe" `
             -Arguments "--profile Default" `
-            -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
+            -Icon "C:\Program Files\MyApp\MyApp.exe,3" `
             -WindowStyle Maximized -Elevated
 
     .NOTES
@@ -163,7 +166,7 @@ function New-StartMenuShortcut {
         [string] $Arguments,
         [string] $RunLocation,
         [string] $Description,
-        [ShortcutIcon] $Icon,
+        [string] $Icon,
         [string] $Hotkey,
         [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Normal,
         [Alias("Administrator")]
@@ -296,7 +299,10 @@ function New-PowershellStartMenuShortcut {
         The free-text description of the shortcut, shown as its comment / tooltip.
 
     .PARAMETER Icon
-        The icon of the shortcut, as a ShortcutIcon record built by New-ShortcutIcon or read by Get-Shortcut.
+        The icon of the shortcut, as the icon file, e.g. "C:\Program Files\MyApp\MyApp.exe", or as the
+        icon file and the index of the icon within it, "file,index", e.g. "C:\Windows\imageres.dll,229".
+        Without an index the first icon of the file is taken. An icon file whose own name ends in a
+        comma and a number needs ",0" appended.
         Default: no icon.
 
     .PARAMETER Hotkey
@@ -346,7 +352,7 @@ function New-PowershellStartMenuShortcut {
         [switch] $KeepOpen,
         [string] $RunLocation,
         [string] $Description,
-        [ShortcutIcon] $Icon,
+        [string] $Icon,
         [string] $Hotkey,
         [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Minimized,
         [Alias("Administrator")]

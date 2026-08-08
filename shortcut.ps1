@@ -129,86 +129,6 @@ function Get-Shortcut {
     }
 }
 
-function New-ShortcutIcon {
-    <#
-    .SYNOPSIS
-        Creates a shortcut icon.
-
-    .DESCRIPTION
-        Creates the ShortcutIcon record that New-Shortcut and Set-Shortcut take as their -Icon.
-        Give the icon file on its own with -Location, optionally picking the icon within it with -Index,
-        or give the combined source with -Value.
-
-    .PARAMETER Location
-        The path of the icon file. The icon file may itself contain a comma.
-
-    .PARAMETER Index
-        The index of the icon within the icon file. Default: 0.
-
-    .PARAMETER Value
-        The combined icon source in the form "file,index", e.g. "C:\Program Files\MyApp\MyApp.exe,3".
-        An icon file on its own is rejected here; pass it as -Location instead.
-
-    .OUTPUTS
-        ShortcutIcon record with a Location and Index property, combined back by ToString().
-
-    .EXAMPLE
-        New-ShortcutIcon "C:\Program Files\MyApp\MyApp.exe,3"
-
-    .EXAMPLE
-        New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe"
-
-    .EXAMPLE
-        New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3
-    #>
-    [CmdletBinding(DefaultParameterSetName = "Value")]
-    [OutputType([ShortcutIcon])]
-    param (
-        [Parameter(Mandatory, Position = 0, ParameterSetName = "Value")]
-        [string] $Value,
-        [Parameter(Mandatory, ParameterSetName = "Location")]
-        [string] $Location,
-        [Parameter(ParameterSetName = "Location")]
-        [int] $Index = 0
-    )
-
-    if ($PSCmdlet.ParameterSetName -eq "Location") {
-        if (-not $Location) {
-            Write-Error "Icon file is required: -Location." `
-                -ErrorId "BlankShortcutIconLocation" `
-                -Category InvalidArgument `
-                -TargetObject $Location `
-                -ErrorAction Stop
-        }
-
-        return [ShortcutIcon] @{
-            Location = $Location
-            Index    = $Index
-        }
-    }
-
-    if ($Value -notmatch ',\d+$') {
-        Write-Error "Icon source must be an icon file and an index, as 'file,index'. Pass an icon file on its own as -Location. value: '$Value'" `
-            -ErrorId "InvalidShortcutIconValue" `
-            -Category InvalidArgument `
-            -TargetObject $Value `
-            -ErrorAction Stop
-    }
-
-    # the icon file may contain a comma, so the index is split off at the last one
-    $icon = ConvertTo-ShortcutIcon -Value $Value
-
-    if (-not $icon) {
-        Write-Error "Icon source names no icon file. value: '$Value'" `
-            -ErrorId "BlankShortcutIconLocation" `
-            -Category InvalidArgument `
-            -TargetObject $Value `
-            -ErrorAction Stop
-    }
-
-    return $icon
-}
-
 function New-Shortcut {
     <#
     .SYNOPSIS
@@ -238,7 +158,10 @@ function New-Shortcut {
         The free-text description of the shortcut, shown as its comment / tooltip.
 
     .PARAMETER Icon
-        The icon of the shortcut, as a ShortcutIcon record built by New-ShortcutIcon or read by Get-Shortcut.
+        The icon of the shortcut, as the icon file, e.g. "C:\Program Files\MyApp\MyApp.exe", or as the
+        icon file and the index of the icon within it, "file,index", e.g. "C:\Windows\imageres.dll,229".
+        Without an index the first icon of the file is taken. An icon file whose own name ends in a
+        comma and a number needs ",0" appended.
         Default: no icon.
 
     .PARAMETER Hotkey
@@ -268,7 +191,7 @@ function New-Shortcut {
     .EXAMPLE
         New-Shortcut -Location "C:\Users\me\Desktop\MyApp.lnk" -Target "C:\Program Files\MyApp\MyApp.exe" `
             -Arguments "--profile Default" -Description "My favourite app" `
-            -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
+            -Icon "C:\Program Files\MyApp\MyApp.exe,3" `
             -Hotkey "Ctrl+Alt+M" -WindowStyle Maximized -Elevated
 
     .EXAMPLE
@@ -287,7 +210,7 @@ function New-Shortcut {
         [string] $Arguments,
         [string] $RunLocation,
         [string] $Description,
-        [ShortcutIcon] $Icon,
+        [string] $Icon,
         [string] $Hotkey,
         [ShortcutWindowStyle] $WindowStyle = [ShortcutWindowStyle]::Normal,
         [Alias("Administrator")]
@@ -322,13 +245,15 @@ function New-Shortcut {
             New-Item -ItemType Directory -Path $shortcutFolder -Force | Out-Null
         }
 
+        $shortcutIcon = ConvertTo-ShortcutIcon -Value $Icon
+
         $obj = $wshShell.CreateShortcut($Location)
         $obj.TargetPath = $Target
         $obj.Arguments = $Arguments
         $obj.WorkingDirectory = $PSBoundParameters.ContainsKey("RunLocation") ? $RunLocation : (Split-Path -Parent $Target)
         $obj.Description = $Description
         # a shortcut carrying no icon stores ',0'; IconLocation rejects an empty string or $null
-        $obj.IconLocation = $Icon ? $Icon.ToString() : ",0"
+        $obj.IconLocation = $shortcutIcon ? $shortcutIcon.ToString() : ",0"
         $obj.Hotkey = $Hotkey
         $obj.WindowStyle = [int] $WindowStyle
         $obj.Save()
@@ -365,8 +290,10 @@ function Set-Shortcut {
         The free-text description of the shortcut, shown as its comment / tooltip.
 
     .PARAMETER Icon
-        The icon of the shortcut, as a ShortcutIcon record built by New-ShortcutIcon or read by Get-Shortcut.
-        Pass $null to clear the icon.
+        The icon of the shortcut, as the icon file, e.g. "C:\Program Files\MyApp\MyApp.exe", or as the
+        icon file and the index of the icon within it, "file,index", e.g. "C:\Windows\imageres.dll,229".
+        Without an index the first icon of the file is taken. An icon file whose own name ends in a
+        comma and a number needs ",0" appended. Pass $null or an empty string to clear the icon.
 
     .PARAMETER Hotkey
         The keyboard shortcut that opens the shortcut, e.g. "Ctrl+Alt+N".
@@ -394,7 +321,7 @@ function Set-Shortcut {
         Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Arguments $null -Icon $null
 
     .EXAMPLE
-        Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Icon (New-ShortcutIcon "C:\Program Files\MyApp\MyApp.exe,3")
+        Set-Shortcut "C:\Users\me\Desktop\MyApp.lnk" -Icon "C:\Program Files\MyApp\MyApp.exe,3"
 
     .NOTES
         Alias: Administrator for -Elevated.
@@ -408,7 +335,7 @@ function Set-Shortcut {
         [string] $Arguments,
         [string] $RunLocation,
         [string] $Description,
-        [ShortcutIcon] $Icon,
+        [string] $Icon,
         [string] $Hotkey,
         [ShortcutWindowStyle] $WindowStyle,
         [Alias("Administrator")]
@@ -446,8 +373,11 @@ function Set-Shortcut {
             if ($PSBoundParameters.ContainsKey("Arguments")) { $obj.Arguments = $Arguments }
             if ($PSBoundParameters.ContainsKey("RunLocation")) { $obj.WorkingDirectory = $RunLocation }
             if ($PSBoundParameters.ContainsKey("Description")) { $obj.Description = $Description }
-            # a shortcut carrying no icon stores ',0'; IconLocation rejects an empty string or $null
-            if ($PSBoundParameters.ContainsKey("Icon")) { $obj.IconLocation = $Icon ? $Icon.ToString() : ",0" }
+            if ($PSBoundParameters.ContainsKey("Icon")) {
+                # a shortcut carrying no icon stores ',0'; IconLocation rejects an empty string or $null
+                $shortcutIcon = ConvertTo-ShortcutIcon -Value $Icon
+                $obj.IconLocation = $shortcutIcon ? $shortcutIcon.ToString() : ",0"
+            }
             if ($PSBoundParameters.ContainsKey("Hotkey")) { $obj.Hotkey = $Hotkey }
             if ($PSBoundParameters.ContainsKey("WindowStyle")) { $obj.WindowStyle = [int] $WindowStyle }
 
@@ -503,16 +433,21 @@ function local:ConvertTo-ShortcutIcon {
     .SYNOPSIS
         Converts a shortcut icon source into a ShortcutIcon record.
     .DESCRIPTION
-        Splits an icon source of the form "file,index" into its icon file location and icon index.
-        The icon file path may itself contain a comma, so the index is split off at the last one.
+        Splits an icon source into its icon file location and icon index.
+        A source ending in a comma and a number carries the index; the icon file path may itself
+        contain a comma, so the index is split off at the last one. Any other source names the icon
+        file alone and takes index 0.
         A shortcut carrying no icon reports ',0': a blank location means there is no icon to
         describe, and $null is returned.
     .PARAMETER Value
-        The icon source to convert, as reported by WScript.Shell: "file,index".
+        The icon source to convert: an icon file, or an icon file and an index as "file,index".
+        WScript.Shell always reports the combined form.
     .OUTPUTS
         ShortcutIcon record, or $null when the icon source names no icon file.
     .EXAMPLE
         ConvertTo-ShortcutIcon -Value "C:\Program Files\MyApp\MyApp.exe,3"
+    .EXAMPLE
+        ConvertTo-ShortcutIcon -Value "C:\Program Files\MyApp\MyApp.exe"
     #>
     [CmdletBinding()]
     [OutputType([ShortcutIcon])]
@@ -522,9 +457,10 @@ function local:ConvertTo-ShortcutIcon {
         [string] $Value
     )
 
+    $carriesIndex = $Value -match ',\d+$'
     $separatorPosition = $Value.LastIndexOf(',')
-    $location = $separatorPosition -ge 0 ? $Value.Substring(0, $separatorPosition) : $Value
-    $index = $separatorPosition -ge 0 ? $Value.Substring($separatorPosition + 1) : 0
+    $location = $carriesIndex ? $Value.Substring(0, $separatorPosition) : $Value
+    $index = $carriesIndex ? $Value.Substring($separatorPosition + 1) : 0
 
     if (-not $location) {
         return $null

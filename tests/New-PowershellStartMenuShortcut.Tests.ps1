@@ -136,7 +136,7 @@ Describe 'New-PowershellStartMenuShortcut' {
         $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'EveryField' `
             -RunLocation 'C:\temp' `
             -Description 'Show the date' `
-            -Icon (New-ShortcutIcon -Location 'C:\Windows\explorer.exe' -Index 3) `
+            -Icon 'C:\Windows\explorer.exe,3' `
             -Hotkey 'Ctrl+Alt+D'
 
         $result = Get-Shortcut $shortcut.Location
@@ -146,17 +146,19 @@ Describe 'New-PowershellStartMenuShortcut' {
         $result.Hotkey          | Should -Be 'Alt+Ctrl+D'
     }
 
-    It 'takes the icon as a ShortcutIcon record' {
-        $icon = (New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconRecord' `
-                -Icon (New-ShortcutIcon 'C:\Windows\explorer.exe,3')).Icon
+    It 'takes the icon as an icon file and an index' {
+        $icon = (New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconWithIndex' `
+                -Icon 'C:\Windows\explorer.exe,3').Icon
 
         $icon.Location | Should -Be 'C:\Windows\explorer.exe'
         $icon.Index    | Should -Be 3
     }
 
-    It 'rejects an icon that is not a ShortcutIcon record' {
-        { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconString' `
-                -Icon 'C:\Windows\explorer.exe,3' } |
-            Should -Throw '*ShortcutIcon*'
+    It 'takes the icon as an icon file on its own, at index 0' {
+        $icon = (New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'IconFileOnly' `
+                -Icon 'C:\Windows\explorer.exe').Icon
+
+        $icon.Location | Should -Be 'C:\Windows\explorer.exe'
+        $icon.Index    | Should -Be 0
     }
 }

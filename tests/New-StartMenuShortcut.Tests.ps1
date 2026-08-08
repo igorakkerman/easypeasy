@@ -155,7 +155,7 @@ Describe 'New-StartMenuShortcut' {
             -Arguments '/A C:\temp\file.txt' `
             -RunLocation 'C:\temp' `
             -Description 'Edit file' `
-            -Icon (New-ShortcutIcon -Location 'C:\Windows\explorer.exe' -Index 3) `
+            -Icon 'C:\Windows\explorer.exe,3' `
             -Hotkey 'Ctrl+Alt+N' `
             -WindowStyle Maximized `
             -Elevated
@@ -170,17 +170,19 @@ Describe 'New-StartMenuShortcut' {
         $result.Elevated        | Should -BeTrue
     }
 
-    It 'takes the icon as a ShortcutIcon record' {
-        $icon = (New-StartMenuShortcut -Name 'IconRecord' -Target 'C:\Windows\notepad.exe' `
-                -Icon (New-ShortcutIcon 'C:\Windows\explorer.exe,3')).Icon
+    It 'takes the icon as an icon file and an index' {
+        $icon = (New-StartMenuShortcut -Name 'IconWithIndex' -Target 'C:\Windows\notepad.exe' `
+                -Icon 'C:\Windows\explorer.exe,3').Icon
 
         $icon.Location | Should -Be 'C:\Windows\explorer.exe'
         $icon.Index    | Should -Be 3
     }
 
-    It 'rejects an icon that is not a ShortcutIcon record' {
-        { New-StartMenuShortcut -Name 'IconString' -Target 'C:\Windows\notepad.exe' `
-                -Icon 'C:\Windows\explorer.exe,3' } |
-            Should -Throw '*ShortcutIcon*'
+    It 'takes the icon as an icon file on its own, at index 0' {
+        $icon = (New-StartMenuShortcut -Name 'IconFileOnly' -Target 'C:\Windows\notepad.exe' `
+                -Icon 'C:\Windows\explorer.exe').Icon
+
+        $icon.Location | Should -Be 'C:\Windows\explorer.exe'
+        $icon.Index    | Should -Be 0
     }
 }

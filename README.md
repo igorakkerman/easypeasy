@@ -254,7 +254,7 @@ C:\Program Files\MyApp\MyApp.exe
         -Arguments "--profile Default" `
         -RunLocation "C:\Users\me\Documents" `
         -Description "My favourite app" `
-        -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
+        -Icon "C:\Program Files\MyApp\MyApp.exe,3" `
         -Hotkey "Ctrl+Alt+M" `
         -WindowStyle Maximized `
         -Elevated
@@ -268,17 +268,16 @@ An existing shortcut is left untouched and a terminating error is reported, unle
 
 A missing shortcut folder is reported as an error, unless `-CreateFolder` creates it.
 
-#### Build a shortcut icon
+#### Give a shortcut an icon
 
 ```powershell
-> New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe"            # index 0
-> New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3   # icon within the icon file
-> New-ShortcutIcon "C:\Program Files\MyApp\MyApp.exe,3"                    # combined file,index source
+> New-Shortcut "C:\Users\me\Desktop\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" -Icon "C:\Program Files\MyApp\MyApp.exe"   # index 0
+> New-Shortcut "C:\Users\me\Desktop\MyApp.lnk" "C:\Program Files\MyApp\MyApp.exe" -Icon "C:\Windows\imageres.dll,229"        # icon within the icon file
 ```
 
-`-Icon` takes a `ShortcutIcon`, built from the icon file and an optional index, or from the combined `file,index` source.
+`-Icon` takes the icon file, optionally followed by a comma and the index of the icon within it.
 
-An icon file on its own is only accepted as `-Location`; `-Value` insists on the `file,index` form.
+The icon file may itself contain a comma — the split is on the last one, and only where a number follows it. An icon file whose own name ends in a comma and a number needs `,0` appended.
 
 An icon read off another shortcut goes straight back in:
 ```powershell
@@ -313,7 +312,7 @@ Every field of [`New-Shortcut`](#shortcuts) is available, and the created shortc
         -Arguments "-Debug" `
         -RunLocation "C:\Data" `
         -Description "My favourite app" `
-        -Icon (New-ShortcutIcon -Location "C:\Program Files\MyApp\MyApp.exe" -Index 3) `
+        -Icon "C:\Program Files\MyApp\MyApp.exe,3" `
         -Hotkey "Ctrl+Alt+M" `
         -WindowStyle Maximized `
         -Elevated

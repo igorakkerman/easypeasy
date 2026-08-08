@@ -130,7 +130,7 @@ Describe 'easypeasy.format.ps1xml' {
 
         BeforeAll {
             $script:lnk = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid).lnk"
-            New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon (New-ShortcutIcon 'C:\Windows\explorer.exe,3') | Out-Null
+            New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon 'C:\Windows\explorer.exe,3' | Out-Null
         }
 
         AfterAll { Remove-Item $lnk -Force -ErrorAction SilentlyContinue }

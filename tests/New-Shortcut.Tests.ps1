@@ -68,7 +68,7 @@ Describe 'New-Shortcut' {
             -Arguments '/A C:\temp\file.txt' `
             -RunLocation 'C:\temp' `
             -Description 'Edit file' `
-            -Icon (New-ShortcutIcon 'C:\Windows\notepad.exe,0') `
+            -Icon 'C:\Windows\notepad.exe,0' `
             -Hotkey 'Ctrl+Alt+N' `
             -WindowStyle Maximized `
             -Elevated | Out-Null
@@ -84,18 +84,38 @@ Describe 'New-Shortcut' {
         $result.Elevated    | Should -BeTrue
     }
 
-    It 'takes the icon as a ShortcutIcon record' {
-        $icon = New-ShortcutIcon -Location 'C:\Windows\explorer.exe' -Index 3
+    It 'takes the icon as an icon file and an index' {
+        $result = (New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon 'C:\Windows\explorer.exe,3').Icon
 
-        $result = (New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon $icon).Icon
         $result.Location | Should -Be 'C:\Windows\explorer.exe'
         $result.Index    | Should -Be 3
+    }
+
+    It 'takes the icon as an icon file on its own, at index 0' {
+        $result = (New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon 'C:\Windows\explorer.exe').Icon
+
+        $result.Location | Should -Be 'C:\Windows\explorer.exe'
+        $result.Index    | Should -Be 0
+    }
+
+    It 'splits an icon file containing a comma at the last comma' {
+        $result = (New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon 'C:\My,Apps\App.exe,2').Icon
+
+        $result.Location | Should -Be 'C:\My,Apps\App.exe'
+        $result.Index    | Should -Be 2
+    }
+
+    It 'keeps an icon file whole where the comma is followed by no number' {
+        $result = (New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon 'C:\My,Apps\App.exe').Icon
+
+        $result.Location | Should -Be 'C:\My,Apps\App.exe'
+        $result.Index    | Should -Be 0
     }
 
     It 'takes the icon read off another shortcut' {
         $source = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-$(New-Guid).lnk"
         try {
-            $icon = (New-Shortcut $source 'C:\Windows\notepad.exe' -Icon (New-ShortcutIcon 'C:\Windows\explorer.exe,4')).Icon
+            $icon = (New-Shortcut $source 'C:\Windows\notepad.exe' -Icon 'C:\Windows\explorer.exe,4').Icon
 
             (New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon $icon).Icon.ToString() | Should -Be 'C:\Windows\explorer.exe,4'
         }
@@ -104,11 +124,8 @@ Describe 'New-Shortcut' {
         }
     }
 
-    It 'rejects an icon that is not a ShortcutIcon record' {
-        { New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon 'C:\Windows\explorer.exe,1' } |
-            Should -Throw '*ShortcutIcon*'
-
-        Test-Path -LiteralPath $lnk | Should -BeFalse
+    It 'creates no icon for an icon passed as an empty string' {
+        (New-Shortcut $lnk 'C:\Windows\notepad.exe' -Icon '').Icon | Should -BeNullOrEmpty
     }
 
     It 'clears the run location passed as $null, where omitting it defaults to the folder of the target' {
@@ -139,7 +156,7 @@ Describe 'New-Shortcut' {
             -Arguments '/A C:\temp\file.txt' `
             -RunLocation 'C:\temp' `
             -Description 'Old description' `
-            -Icon (New-ShortcutIcon 'C:\Windows\explorer.exe,3') `
+            -Icon 'C:\Windows\explorer.exe,3' `
             -Hotkey 'Ctrl+Alt+N' `
             -WindowStyle Maximized `
             -Elevated | Out-Null

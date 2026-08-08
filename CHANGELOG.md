@@ -11,14 +11,14 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` build on `New-Shortcut` and take its parameters: `-Target`, `-Arguments`, `-RunLocation`, `-Description`, `-Icon`, `-Hotkey`, `-WindowStyle`, `-Elevated`, `-Force`.
 - **Changed:** `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut` return `Shortcut` record instead of path string.
 - **Changed:** `-Executable` renamed to `-Target` on `New-StartMenuShortcut`.
-- **Changed:** `-Icon` takes `ShortcutIcon` record built by `New-ShortcutIcon` or read by `Get-Shortcut`.
+- **Changed:** `-Icon` takes icon file, optionally followed by comma and index of icon within it.
 - **Changed:** `-RunAsAdministrator` on `New-PowershellStartMenuShortcut` renamed to `-Elevated`.
 - **Changed:** `-Visible` and `-Maximized` on `New-PowershellStartMenuShortcut` replaced by `-WindowStyle`: `Normal`, `Maximized` or `Minimized`. Default: `Minimized`.
 - **Changed:** `-Name` on `New-StartMenuShortcut` is mandatory, no longer inferred from the target.
 - **Changed:** `New-StartMenuShortcut` and `Remove-StartMenuShortcut` use the Programs root when `-Folder` is omitted: `<Programs>\<Name>.lnk`, previously `<Programs>\<Name>\<Name>.lnk`. Pass `-Folder` to keep a containing folder.
 - **Added:** `-RunLocation`, `-Description` and `-Hotkey` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut`.
 - **Added:** `-AllUsers` (aliases `-Machine`, `-All`) and `-User` on `New-PowershellStartMenuShortcut`, matching the other Start Menu functions. Default stays the current user.
-- **Removed:** `-IconLocation` (alias `-IconFile`) and `-IconIndex` — pass `-Icon (New-ShortcutIcon -Location … -Index …)`.
+- **Removed:** `-IconLocation` (alias `-IconFile`) and `-IconIndex` — pass `-Icon "file,index"`.
 - **Removed:** Aliases `-Admin` and `-Elevate` on `New-PowershellStartMenuShortcut` — pass `-Elevated`, or its alias `-Administrator`.
 - **Added:** Alias `-Administrator` for `-Elevated` on `New-StartMenuShortcut` and `New-PowershellStartMenuShortcut`, matching `New-Shortcut`.
 - **Removed:** Aliases `-Group` and `-GroupName` — pass `-Folder`, or `-Name` on `New-StartMenuProgramsFolder`.
@@ -34,7 +34,6 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `New-Shortcut` — creates shortcut at any location and returns it; only `-Location` and `-Target` mandatory, run location defaults to folder of target, `-Force` performs complete overwrite.
 - **Added:** `Set-Shortcut` — sets any combination of shortcut fields, returns shortcut with `-PassThru`; `$null` or empty string clears a field.
 - **Added:** `-CreateFolder` on `New-Shortcut` — creates folder of shortcut when missing; without it, missing folder is reported as error.
-- **Added:** `New-ShortcutIcon` — builds `ShortcutIcon` for `-Icon`, from `-Location` and optional `-Index`, or from combined `-Value` `"file,index"`.
 - **Added:** `Get-Shortcut` — every readable field of a shortcut as one record: `Location`, `Target`, `Arguments`, `RunLocation`, `Description`, `Icon`, `Hotkey`, `WindowStyle`, `Elevated`.
 - **Added:** `Icon` as `ShortcutIcon` record — `Location` and `Index`, combined back by `ToString()`; `$null` when shortcut carries no icon.
 - **Added:** `WindowStyle` as `ShortcutWindowStyle` enum — `Normal`, `Maximized`, `Minimized`.

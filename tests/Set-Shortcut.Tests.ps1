@@ -10,7 +10,7 @@ Describe 'Set-Shortcut' {
             -Arguments '/A C:\temp\file.txt' `
             -RunLocation 'C:\temp' `
             -Description 'Edit file' `
-            -Icon (New-ShortcutIcon -Location 'C:\Windows\explorer.exe' -Index 1) `
+            -Icon 'C:\Windows\explorer.exe,1' `
             -Hotkey 'Ctrl+Alt+N' `
             -WindowStyle Maximized | Out-Null
     }
@@ -60,34 +60,35 @@ Describe 'Set-Shortcut' {
     }
 
     It 'sets the icon' {
-        Set-Shortcut $lnk -Icon (New-ShortcutIcon 'C:\Windows\notepad.exe,2')
+        Set-Shortcut $lnk -Icon 'C:\Windows\notepad.exe,2'
 
         (Get-Shortcut $lnk).Icon.ToString() | Should -Be 'C:\Windows\notepad.exe,2'
+    }
+
+    It 'sets the icon given as an icon file on its own, at index 0' {
+        Set-Shortcut $lnk -Icon 'C:\Windows\notepad.exe'
+
+        (Get-Shortcut $lnk).Icon.ToString() | Should -Be 'C:\Windows\notepad.exe,0'
     }
 
     It 'sets the icon read off another shortcut' {
         $icon = (Get-Shortcut $lnk).Icon
 
-        Set-Shortcut $lnk -Icon (New-ShortcutIcon 'C:\Windows\notepad.exe,2')
+        Set-Shortcut $lnk -Icon 'C:\Windows\notepad.exe,2'
         Set-Shortcut $lnk -Icon $icon
 
         (Get-Shortcut $lnk).Icon.ToString() | Should -Be 'C:\Windows\explorer.exe,1'
     }
 
-    It 'rejects an icon that is not a ShortcutIcon record' {
-        { Set-Shortcut $lnk -Icon 'C:\Windows\notepad.exe,2' } | Should -Throw '*ShortcutIcon*'
-
-        (Get-Shortcut $lnk).Icon.ToString() | Should -Be 'C:\Windows\explorer.exe,1'
-    }
-
     It 'clears a field passed as an empty string' {
-        Set-Shortcut $lnk -Arguments '' -RunLocation '' -Description '' -Hotkey ''
+        Set-Shortcut $lnk -Arguments '' -RunLocation '' -Description '' -Hotkey '' -Icon ''
 
         $result = Get-Shortcut $lnk
         $result.Arguments   | Should -BeNullOrEmpty
         $result.RunLocation | Should -BeNullOrEmpty
         $result.Description | Should -BeNullOrEmpty
         $result.Hotkey      | Should -BeNullOrEmpty
+        $result.Icon        | Should -BeNullOrEmpty
     }
 
     It 'clears a field passed as $null' {

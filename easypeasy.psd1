@@ -89,7 +89,6 @@
         'Get-Shortcut',
         'New-Shortcut',
         'Set-Shortcut',
-        'New-ShortcutIcon',
         'New-StartMenuShortcut',
         'Remove-StartMenuShortcut',
         'New-PowershellStartMenuShortcut',

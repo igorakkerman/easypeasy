@@ -44,7 +44,7 @@ write the **canonical** name, never an alias.
 | `-Prepend`, `-Start` | `Add-SystemPathLocation` | `-First` |
 | `removepath` alias | `Remove-SystemPathLocation` | `rmpath`, or the full name |
 | `deduppath` alias | `Remove-DuplicateSystemPathLocations` | `cleanpath`, or the full name |
-| `-IconLocation`, `-IconIndex`, `-IconFile` | shortcut and Start Menu shortcut commands | `-Icon (New-ShortcutIcon -Location … -Index …)` |
+| `-IconLocation`, `-IconIndex`, `-IconFile` | shortcut and Start Menu shortcut commands | `-Icon "file,index"`, or `-Icon "file"` for the first icon |
 | `-Admin`, `-Elevate` | `New-PowershellStartMenuShortcut` | `-Elevated` (`-Administrator` kept as alias — prefer `-Elevated`) |
 
 ## Changed behavior — review call sites
@@ -62,21 +62,19 @@ write the **canonical** name, never an alias.
 - **Start Menu shortcut return value.** Both return the `Shortcut` record `New-Shortcut` produces, not
   the `.lnk` path string. Read `.Location` where the path is what the calling code needs.
 - **Shortcut icon.** On `New-Shortcut`, `Set-Shortcut` and the Start Menu shortcut commands, `-Icon`
-  takes a `ShortcutIcon` and nothing else. Build one with `New-ShortcutIcon`, or pass one read by
-  `Get-Shortcut`. `-Icon $null` is accepted and means no icon, so an optional icon is built inline
-  rather than through a splat guard:
+  takes the icon file, optionally followed by a comma and the index of the icon within it — the
+  combined `"file,index"` form v1 `-Icon` took, now with the index optional:
 
   ```powershell
-  New-StartMenuShortcut -Name $Name -Target $exe -Icon ($iconLocation ? (New-ShortcutIcon -Location $iconLocation) : $null)
+  New-StartMenuShortcut -Name $Name -Target $exe -Icon "$env:WINDIR\imageres.dll,229"
+  New-StartMenuShortcut -Name $Name -Target $exe -Icon $iconLocation
   ```
 
-  `New-ShortcutIcon` itself never returns `$null`: an empty or `$null` `-Location` is a
-  parameter-binding error, so the guard belongs around the call, not inside it.
-- **`New-ShortcutIcon -Value` takes the combined `"file,index"` form** v1 `-Icon` took. The index is
-  mandatory and must be digits directly after the last comma: `"…\imageres.dll"` and
-  `"…\imageres.dll, 229"` are both rejected with `InvalidShortcutIconValue`. The icon file may itself
-  contain a comma — the split is on the last one — and is taken verbatim, quotes included, so pass it
-  unquoted. An icon file without an index goes to `-Location` instead.
+  The index is read only where digits follow the last comma directly: `"…\imageres.dll, 229"` names
+  an icon file called `imageres.dll, 229`. The icon file is taken verbatim, quotes included, so pass
+  it unquoted; an icon file whose own name ends in a comma and a number needs `,0` appended. An
+  empty or `$null` `-Icon` means no icon, so an optional icon needs no splat guard. An icon read by
+  `Get-Shortcut` is accepted as it stands.
 - **PowerShell shortcut window.** `-Visible` and `-Maximized` give way to
   `-WindowStyle Normal` / `-WindowStyle Maximized`; the default stays `Minimized`.
 - **`Add-SystemPathLocation` rejects a location naming no existing folder** with a terminating
@@ -156,8 +154,6 @@ write the **canonical** name, never an alias.
   v1's `-Shortcut` is gone. It takes no pipeline input — `Get-Shortcut … | Set-Shortcut -Elevated` fails
   on the missing mandatory `-Location` — so pass the location:
   `Set-Shortcut "$(Get-StartMenuProgramsLocation)\App.lnk" -Elevated`.
-- `New-ShortcutIcon` — build the `ShortcutIcon` that `-Icon` takes, from `-Location` and an optional
-  `-Index` (default `0`), or from a combined `-Value` `"file,index"`.
 - `Get-Environment` — environment variables as records (scope, name, value); both scopes by default,
   or `-Machine` / `-User`.
 - `Test-Elevated` — whether the current session is elevated.
