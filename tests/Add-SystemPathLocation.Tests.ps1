@@ -141,6 +141,31 @@ Describe 'Add-SystemPathLocation' {
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Exists;C:\A;C:\B' }
         }
+
+        It 'moves the stored %...% form, not the resolved location, addressed by <address>' -ForEach @(
+            @{ address = 'C:\WINDOWS\S32' }
+            @{ address = '%SystemRoot%\S32' }
+        ) {
+            $script:currentEntries = @(New-PathEntries 'C:\A') +
+                @(New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32') +
+                @(New-PathEntries 'C:\B')
+
+            Add-SystemPathLocation -Location $address -First -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq '%SystemRoot%\S32;C:\A;C:\B' }
+        }
+
+        It 'moves the stored form of an entry spelled with forward slashes' {
+            $script:currentEntries = @(New-PathEntries 'C:\A') +
+                @(New-PathEntry -StoredValue 'c:/fwd/slash/' -Location 'C:\fwd\slash') +
+                @(New-PathEntries 'C:\B')
+
+            Add-SystemPathLocation -Location 'C:\fwd\slash' -First -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'c:/fwd/slash/;C:\A;C:\B' }
+        }
     }
 
     Context 'expandable locations' {
