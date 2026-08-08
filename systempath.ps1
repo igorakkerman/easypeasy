@@ -1070,8 +1070,10 @@ function Move-SystemPathLocation {
         The location is removed from the source Path and added to the target Path.
         If the location is not on the source Path - whether it is already on the target Path or on neither -
         nothing is moved and a warning is reported.
-        Moving to or from the machine Path elevates through User Account Control when the session is not
-        already elevated.
+        A move that changes the machine Path elevates through User Account Control when the session is not
+        already elevated: the whole move runs in the elevated session, so it is applied as a whole or not
+        at all. Moving to the machine Path a location the machine Path already holds changes the user Path
+        alone and does not elevate.
     .PARAMETER Location
         Folder location to move, positional.
     .PARAMETER ToUser
@@ -1080,8 +1082,8 @@ function Move-SystemPathLocation {
         Move the location from the user system Path to the machine system Path.
     .NOTES
         Alias: movepath
-        Both scope Paths are written, each on its own: an unelevated move therefore prompts for elevation
-        once per scope and leaves one backup file per write.
+        An unelevated move prompts for elevation once, before either Path is written.
+        Both scope Paths are written, each on its own, leaving one backup file per write.
     .EXAMPLE
         Move-SystemPathLocation "C:\Program Files\Git\bin" -ToUser
     .EXAMPLE
@@ -1140,19 +1142,47 @@ function Move-SystemPathLocation {
             }
     )
     # append the moved entry, keeping its stored (%...%) form, unless the target already has it
-    $newTarget = $onTarget.Count -gt 0 `
-        ? $targetEntries `
-        : (@($targetEntries) + @($moved[0]))
+    $targetChanged = $onTarget.Count -eq 0
+    $newTarget = $targetChanged `
+        ? (@($targetEntries) + @($moved[0])) `
+        : $targetEntries
+
+    if (-not $targetChanged) {
+        Write-Verbose "Target Path already holds location. scope: $targetName, location: '$Location'"
+    }
+
+    # the machine Path is written whenever it is the source, and as the target only when it changes
+    $writesMachine = $ToUser -or $targetChanged
 
     if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system Path")) {
         return
     }
 
-    Set-SystemPath @source -Entries $newSource
+    # when not already elevated, the whole move runs in an elevated session instead of in-process:
+    # one prompt for both writes, and no half-applied move when it is declined
+    if ($writesMachine -and -not (Test-Elevated)) {
+        # capture what only the session knows before the elevated writes, while a removed location is
+        # still distinguishable from one the session added
+        $processLocations = Get-ProcessOnlyPathLocations
 
-    if ((Get-StoredPathString -Entries $newTarget) -ne (Get-StoredPathString -Entries $targetEntries)) {
+        if ($ToUser) {
+            Invoke-Elevated Move-SystemPathLocation $Location -ToUser
+        }
+        else {
+            Invoke-Elevated Move-SystemPathLocation $Location -ToMachine
+        }
+
+        # the elevated session synced its own process Path; this one derives its own from both scopes
+        Sync-ProcessPath @processLocations
+        return
+    }
+
+    # target first, so a failing write leaves the location on its source Path rather than on neither
+    if ($targetChanged) {
         Set-SystemPath @target -Entries $newTarget
     }
+
+    Set-SystemPath @source -Entries $newSource
 }
 
 function Test-SystemPathLocation {

@@ -8,6 +8,8 @@ Describe 'Move-SystemPathLocation' {
     BeforeEach {
         $script:originalPath = $env:PATH
         Mock -ModuleName easypeasy Set-SystemPath { }
+        # the in-process writes; the unelevated re-invocation has its own context
+        Mock -ModuleName easypeasy Test-Elevated { $true }
     }
 
     AfterEach { $env:PATH = $originalPath }
@@ -71,6 +73,20 @@ Describe 'Move-SystemPathLocation' {
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A;C:\X' }
         }
+
+        It 'writes the target Path before the source Path' {
+            $global:pathWrites = [System.Collections.Generic.List[string]]::new()
+            Mock -ModuleName easypeasy Set-SystemPath { $global:pathWrites.Add($Machine ? 'machine' : 'user') }
+
+            try {
+                Move-SystemPathLocation 'C:\X' -ToMachine
+
+                $global:pathWrites | Should -Be @('machine', 'user')
+            }
+            finally {
+                Remove-Variable -Name pathWrites -Scope Global -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     Context 'when the location is on both scopes' {
@@ -89,6 +105,83 @@ Describe 'Move-SystemPathLocation' {
                 -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly `
                 -ParameterFilter { $User }
+        }
+
+        It 'removes from the user Path and leaves the machine Path unchanged (-ToMachine)' {
+            $script:userEntries = New-PathEntries 'C:\B;C:\X'
+
+            Move-SystemPathLocation 'C:\X' -ToMachine
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B' }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly `
+                -ParameterFilter { $Machine }
+        }
+    }
+
+    Context 'when not elevated' {
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Get-ProcessOnlyPathLocations { @{} }
+            Mock -ModuleName easypeasy Sync-ProcessPath { }
+
+            $script:machineEntries = New-PathEntries 'C:\A;C:\M' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\B;C:\U'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+        }
+
+        It 'runs the whole move elevated, writing neither Path in-process (-ToMachine)' {
+            Move-SystemPathLocation 'C:\U' -ToMachine
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains 'Move-SystemPathLocation' -and
+                $Command -contains 'C:\U' -and
+                $Command -contains '-ToMachine'
+            }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'runs the whole move elevated, writing neither Path in-process (-ToUser)' {
+            Move-SystemPathLocation 'C:\M' -ToUser
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains 'Move-SystemPathLocation' -and
+                $Command -contains 'C:\M' -and
+                $Command -contains '-ToUser'
+            }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'syncs the current process Path after the elevated move' {
+            Move-SystemPathLocation 'C:\U' -ToMachine
+
+            Should -Invoke -ModuleName easypeasy Sync-ProcessPath -Times 1 -Exactly
+        }
+
+        It 'does not elevate when the machine Path does not change' {
+            $script:machineEntries = New-PathEntries 'C:\A;C:\U' -Scope Machine
+
+            Move-SystemPathLocation 'C:\U' -ToMachine
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B' }
+        }
+
+        It 'does not elevate under -WhatIf' {
+            Move-SystemPathLocation 'C:\U' -ToMachine -WhatIf
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'does not elevate when the location is not on the source Path' {
+            Move-SystemPathLocation 'C:\Z' -ToMachine -WarningAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
     }
 
