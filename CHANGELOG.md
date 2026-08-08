@@ -69,7 +69,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Location` on `SystemPathLocation` holds absolute normalized folder — repeated and trailing backslashes, `.` and `..` segments resolved. Relative location resolved against current directory.
 - **Changed:** System Path listing leads with `StoredValue`; resolved `Location` follows on `↳` row where stored value carries `%…%` reference.
 - **Added:** Location naming no existing folder rendered in red.
-- **Changed:** Process Path built from resolved locations, so `Sync-SystemPath` normalizes what it writes.
+- **Changed:** Process Path carries each location as its scope Path spells it, `%…%` references expanded and nothing else.
 - **Changed:** `Add-SystemPathLocation` names resolved location, previously expanded, in `PathLocationNotFound`.
 - **Changed:** `Get-SystemPath -Join` returns stored (expandable) locations.
 - **Fixed:** Process Path derived from machine and user Path instead of patched, so a location carried by both scopes is listed once per scope and a removal in one scope leaves the other scope's location in place. Locations only the session knows are kept.
