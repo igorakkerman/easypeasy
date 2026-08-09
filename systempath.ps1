@@ -429,6 +429,49 @@ function local:Remove-PathLocation {
     )
 }
 
+function local:Remove-PathLocations {
+    <#
+    .SYNOPSIS
+        Removes several locations from a list of Path entries and returns the entries.
+    .DESCRIPTION
+        Removes each location from what the ones before it left, so a single write covers them all.
+        Removing one location is Remove-PathLocation's business; this is the plural of it, and reports
+        a location that was not there in a warning of its own.
+    .PARAMETER Entries
+        The current SystemPathLocation entries to remove the locations from.
+    .PARAMETER Locations
+        Folder locations to remove, each treated as expandable.
+    .OUTPUTS
+        The SystemPathLocation entries with the locations removed.
+    .EXAMPLE
+        Remove-PathLocations -Entries $entries -Locations @("C:\Program Files\Git\bin", "C:\Tools")
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [SystemPathLocation[]] $Entries,
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [string[]] $Locations
+    )
+
+    $remaining = @($Entries)
+
+    foreach ($pathLocation in $Locations) {
+        $trimmed = @(Remove-PathLocation -Entries $remaining -Location $pathLocation)
+
+        # idempotent: nothing changed means the location is not present
+        if ((Get-StoredPathString -Entries $trimmed) -eq (Get-StoredPathString -Entries $remaining)) {
+            Write-Warning "Location is not on the system Path: '$pathLocation'"
+        }
+
+        $remaining = $trimmed
+    }
+
+    return $remaining
+}
+
 function local:Remove-DuplicatePathLocation {
     <#
     .SYNOPSIS
@@ -874,118 +917,6 @@ function local:Set-SystemPath {
     Sync-ProcessPath @processLocations
 }
 
-function local:Get-ScopePathRemoval {
-    <#
-    .SYNOPSIS
-        Works out what one scope Path holds once the given locations are removed.
-    .DESCRIPTION
-        Reads the scope Path and removes each location from what the ones before it left, so a single write
-        covers them all. A location that is not present leaves the entries unchanged and is reported in a
-        warning of its own.
-        Returns null where no location was present, so the caller leaves the scope alone without asking its
-        ShouldProcess gate.
-    .PARAMETER Locations
-        Folder locations to remove.
-    .PARAMETER Scope
-        Scope to remove them from.
-    .OUTPUTS
-        A hashtable holding the Scope, the Locations and the resulting Entries, or null where the Path
-        would not change.
-    .EXAMPLE
-        $removal = Get-ScopePathRemoval -Locations @("C:\Program Files\Git\bin") -Scope Machine
-    #>
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory)]
-        [string[]] $Locations,
-        [Parameter(Mandatory)]
-        [ValidateSet("Machine", "User")]
-        [string] $Scope
-    )
-
-    $context = $Scope -eq "Machine" `
-        ? @{ Machine = $true } `
-        : @{ User = $true }
-
-    # the read stays quiet: the command reports the references of the locations it was given
-    $currentEntries = @(Get-SystemPath @context -ErrorAction SilentlyContinue)
-
-    $newEntries = $currentEntries
-    foreach ($pathLocation in $Locations) {
-        $remainingEntries = @(Remove-PathLocation -Entries $newEntries -Location $pathLocation)
-
-        # idempotent: nothing changed means the location is not present
-        if ((Get-StoredPathString -Entries $remainingEntries) -eq (Get-StoredPathString -Entries $newEntries)) {
-            Write-Warning "Location is not on the system Path: '$pathLocation'"
-        }
-
-        $newEntries = $remainingEntries
-    }
-
-    if ((Get-StoredPathString -Entries $newEntries) -eq (Get-StoredPathString -Entries $currentEntries)) {
-        return $null
-    }
-
-    return @{
-        Scope     = $Scope
-        Locations = $Locations
-        Entries   = $newEntries
-    }
-}
-
-function local:Get-ProcessPathRemoval {
-    <#
-    .SYNOPSIS
-        Works out which process-only locations survive the removal of the given ones.
-    .DESCRIPTION
-        Takes the locations only the current shell knows - those on neither persisted Path - and drops the
-        given ones, keeping the split by position the process Path is rebuilt from. A location that is not
-        among them is reported in a warning of its own.
-        Returns null where no location was present, so the caller leaves the shell's Path alone.
-    .PARAMETER Locations
-        Folder locations to remove.
-    .OUTPUTS
-        A hashtable ready to splat into Sync-ProcessPath, or null where the Path would not change.
-    .EXAMPLE
-        $removal = Get-ProcessPathRemoval -Locations @("C:\Temp\session")
-    #>
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory)]
-        [string[]] $Locations
-    )
-
-    $processLocations = Get-ProcessOnlyPathLocations
-    $leading = @($processLocations.LeadingProcessLocations)
-    $trailing = @($processLocations.TrailingProcessLocations)
-
-    $newLeading = $leading
-    $newTrailing = $trailing
-    foreach ($pathLocation in $Locations) {
-        $remainingLeading = @(Remove-PathLocation -Entries $newLeading -Location $pathLocation)
-        $remainingTrailing = @(Remove-PathLocation -Entries $newTrailing -Location $pathLocation)
-
-        # idempotent: nothing changed means the location is not among the process-only ones
-        if ((Get-StoredPathString -Entries $remainingLeading) -eq (Get-StoredPathString -Entries $newLeading) `
-                -and (Get-StoredPathString -Entries $remainingTrailing) -eq (Get-StoredPathString -Entries $newTrailing)) {
-            Write-Warning "Location is not on the system Path: '$pathLocation'"
-        }
-
-        $newLeading = $remainingLeading
-        $newTrailing = $remainingTrailing
-    }
-
-    if ((Get-StoredPathString -Entries $newLeading) -eq (Get-StoredPathString -Entries $leading) `
-            -and (Get-StoredPathString -Entries $newTrailing) -eq (Get-StoredPathString -Entries $trailing)) {
-        return $null
-    }
-
-    return @{
-        LeadingProcessLocations  = $newLeading
-        TrailingProcessLocations = $newTrailing
-    }
-}
-
 function Add-SystemPathLocation {
     <#
     .SYNOPSIS
@@ -1272,65 +1203,88 @@ function Remove-SystemPathLocation {
             Write-UnresolvedVariableError -Value $request.Location
         }
 
-        # each scope is read and folded before the gate, so a removal that changes nothing neither asks
-        # nor writes
-        $removals = @()
-        foreach ($scope in @("Machine", "User")) {
-            $scopeLocations = @($requested | Where-Object { $_.Scope -eq $scope } | ForEach-Object { $_.Location })
-            if (-not $scopeLocations) {
-                continue
-            }
-
-            $removal = Get-ScopePathRemoval -Locations $scopeLocations -Scope $scope
-            if ($removal) {
-                $removals += $removal
-            }
-        }
-
-        # a process-only location is on no persisted Path: it goes from the Path of this shell alone
+        $machineLocations = @($requested | Where-Object { $_.Scope -eq "Machine" } | ForEach-Object { $_.Location })
+        $userLocations = @($requested | Where-Object { $_.Scope -eq "User" } | ForEach-Object { $_.Location })
         $shellLocations = @($requested | Where-Object { $_.Scope -eq "Process" } | ForEach-Object { $_.Location })
-        $shellRemoval = $shellLocations `
-            ? (Get-ProcessPathRemoval -Locations $shellLocations) `
-            : $null
 
-        # no location was present anywhere: every Path is left unchanged
-        if (-not $removals -and -not $shellRemoval) {
-            return
+        # the reads stay quiet: this command reports the references of the locations it was given, not
+        # those the Path already carries. A scope no location names is left unread
+        $machineEntries = $machineLocations `
+            ? @(Get-SystemPath -Machine -ErrorAction SilentlyContinue) `
+            : @()
+        $userEntries = $userLocations `
+            ? @(Get-SystemPath -User -ErrorAction SilentlyContinue) `
+            : @()
+
+        $machineTrimmed = @(Remove-PathLocations -Entries $machineEntries -Locations $machineLocations)
+        $userTrimmed = @(Remove-PathLocations -Entries $userEntries -Locations $userLocations)
+
+        # a process-only location is on no persisted Path: it goes from the Path of this shell alone,
+        # from whichever side of the persisted ones it sits on
+        $shellLeading = @()
+        $shellTrailing = @()
+        $shellChanged = $false
+        if ($shellLocations) {
+            $processLocations = Get-ProcessOnlyPathLocations
+            $shellLeading = @($processLocations.LeadingProcessLocations)
+            $shellTrailing = @($processLocations.TrailingProcessLocations)
+
+            foreach ($shellLocation in $shellLocations) {
+                $trimmedLeading = @(Remove-PathLocation -Entries $shellLeading -Location $shellLocation)
+                $trimmedTrailing = @(Remove-PathLocation -Entries $shellTrailing -Location $shellLocation)
+
+                # gone from neither side means the location is not among the ones only this shell knows
+                if ((Get-StoredPathString -Entries $trimmedLeading) -eq (Get-StoredPathString -Entries $shellLeading) `
+                        -and (Get-StoredPathString -Entries $trimmedTrailing) -eq (Get-StoredPathString -Entries $shellTrailing)) {
+                    Write-Warning "Location is not on the system Path: '$shellLocation'"
+                }
+                else {
+                    $shellChanged = $true
+                }
+
+                $shellLeading = $trimmedLeading
+                $shellTrailing = $trimmedTrailing
+            }
         }
 
-        # fail fast: a machine write that cannot elevate stops before the gate is asked and before any
-        # Path is written. A piped entry names its own scope, so this is where that machine write is known
-        if (($removals | Where-Object { $_.Scope -eq "Machine" }) -and -not (Test-Elevated)) {
+        $machineChanged = (Get-StoredPathString -Entries $machineTrimmed) -ne (Get-StoredPathString -Entries $machineEntries)
+
+        # fail fast: a machine write that cannot elevate stops before the first gate is asked and before
+        # any Path is written. A piped entry names its own scope, so this is where that write is known
+        if ($machineChanged -and -not (Test-Elevated)) {
             Assert-SudoAvailable
         }
 
-        if (-not $PSCmdlet.ShouldProcess((($requested.Location | Select-Object -Unique) -join ", "), "Remove location from system Path")) {
-            return
-        }
+        # as in Remove-DuplicateSystemPathLocations: every gate is asked before any write, so -WhatIf
+        # reports every scope a real run would write
+        $writeMachine = $machineChanged `
+            -and $PSCmdlet.ShouldProcess("machine", "Remove location from system Path")
+        $writeUser = (Get-StoredPathString -Entries $userTrimmed) -ne (Get-StoredPathString -Entries $userEntries) `
+            -and $PSCmdlet.ShouldProcess("user", "Remove location from system Path")
+        $writeShell = $shellChanged `
+            -and $PSCmdlet.ShouldProcess("current shell", "Remove location from system Path")
 
         # the machine Path goes first: an elevation the user declines ends the command with the other
         # scopes whole, rather than half applied
-        foreach ($removal in $removals) {
-            $context = $removal.Scope -eq "Machine" `
-                ? @{ Machine = $true } `
-                : @{ User = $true }
-
+        if ($writeMachine -and -not (Test-Elevated)) {
             # as in Add-SystemPathLocation: an unelevated machine write runs the whole removal elevated
-            if ($removal.Scope -eq "Machine" -and -not (Test-Elevated)) {
-                $processLocations = Get-ProcessOnlyPathLocations
-                Invoke-Elevated Remove-SystemPathLocation -Location $removal.Locations -Machine
-                Sync-ProcessPath @processLocations
-                continue
-            }
-
+            $processLocations = Get-ProcessOnlyPathLocations
+            Invoke-Elevated Remove-SystemPathLocation -Location $machineLocations -Machine
+            Sync-ProcessPath @processLocations
+        }
+        elseif ($writeMachine) {
             # Set-SystemPath rebuilds the process Path from both scopes, so the location stays available
             # when the other scope still carries it
-            Set-SystemPath @context -Entries $removal.Entries
+            Set-SystemPath -Machine -Entries $machineTrimmed
+        }
+
+        if ($writeUser) {
+            Set-SystemPath -User -Entries $userTrimmed
         }
 
         # last, so the snapshot each persisted write takes of the process-only locations is untouched
-        if ($shellRemoval) {
-            Sync-ProcessPath @shellRemoval
+        if ($writeShell) {
+            Sync-ProcessPath -LeadingProcessLocations $shellLeading -TrailingProcessLocations $shellTrailing
         }
     }
 }
