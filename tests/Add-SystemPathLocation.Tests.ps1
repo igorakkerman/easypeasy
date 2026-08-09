@@ -182,6 +182,7 @@ Describe 'Add-SystemPathLocation' {
             Mock -ModuleName easypeasy Set-SystemPath { }
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
             Mock -ModuleName easypeasy Get-ProcessOnlyPathLocations { @{} }
             Mock -ModuleName easypeasy Sync-ProcessPath { }
         }
@@ -234,6 +235,16 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\Old' -Machine -WarningAction SilentlyContinue
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'fails for -Machine before reading the Path when sudo is not available' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Add-SystemPathLocation -Location 'C:\New' -Machine } | Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Get-SystemPath -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
     }
 

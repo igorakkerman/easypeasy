@@ -44,6 +44,10 @@ Describe 'Set-EnvironmentVariable' {
 
     Context 'machine scope' {
 
+        BeforeEach {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
+        }
+
         It 'auto-elevates instead of writing in-process when not administrator' {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
@@ -65,6 +69,17 @@ Describe 'Set-EnvironmentVariable' {
             Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '42' -Machine -WhatIf
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'fails before writing when sudo is not available' {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '42' -Machine } | Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'Machine') | Should -BeNullOrEmpty
         }
     }
 
@@ -107,6 +122,7 @@ Describe 'Set-EnvironmentVariable' {
         It 'auto-elevates through Invoke-Elevated, passing -Expandable, for a machine write when not administrator' {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
 
             Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -Machine -Expandable
 
@@ -117,6 +133,17 @@ Describe 'Set-EnvironmentVariable' {
                 $Command -contains '-Expandable'
             }
             [Environment]::GetEnvironmentVariable('EASYPEASY_TEST', 'Machine') | Should -BeNullOrEmpty
+        }
+
+        It 'fails before writing an expandable machine value when sudo is not available' {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%SystemRoot%\tools' -Machine -Expandable } |
+                Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
     }
 }

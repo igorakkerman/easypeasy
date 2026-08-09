@@ -124,6 +124,7 @@ Describe 'Remove-DuplicateSystemPathLocations' {
         BeforeEach {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
             Mock -ModuleName easypeasy Get-ProcessOnlyPathLocations { @{} }
             Mock -ModuleName easypeasy Sync-ProcessPath { }
 
@@ -190,6 +191,30 @@ Describe 'Remove-DuplicateSystemPathLocations' {
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'fails before any Path is written when sudo is not available' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Remove-DuplicateSystemPathLocations } | Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'fails for -Machine before the Path is read when sudo is not available' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Remove-DuplicateSystemPathLocations -Machine } | Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Get-SystemPath -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'does not check sudo for a user-only cleanup' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Remove-DuplicateSystemPathLocations -User } | Should -Not -Throw
         }
     }
 

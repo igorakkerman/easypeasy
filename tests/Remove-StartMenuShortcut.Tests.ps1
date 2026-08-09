@@ -104,6 +104,7 @@ Describe 'Remove-StartMenuShortcut' {
             Mock -ModuleName easypeasy Get-ChildItem { }
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
         }
 
         It 'removes the shortcut in an elevated session with -AllUsers' {
@@ -144,6 +145,15 @@ Describe 'Remove-StartMenuShortcut' {
 
             { Remove-StartMenuShortcut -Name 'Foo' -AllUsers } | Should -Throw '*not found*'
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'fails for -AllUsers before anything is removed when sudo is not available' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Remove-StartMenuShortcut -Name 'Foo' -AllUsers } | Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Remove-Item -Times 0 -Exactly
         }
     }
 }

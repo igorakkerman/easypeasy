@@ -59,6 +59,10 @@ Describe 'Remove-EnvironmentVariable' {
 
     Context 'machine scope' {
 
+        BeforeEach {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
+        }
+
         It 'auto-elevates instead of writing in-process when not administrator' {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
@@ -79,6 +83,18 @@ Describe 'Remove-EnvironmentVariable' {
 
             Remove-EnvironmentVariable -Name EASYPEASY_TEST -Machine -WhatIf
 
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'fails before reading the variable when sudo is not available' {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'present' }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Remove-EnvironmentVariable -Name EASYPEASY_TEST -Machine } | Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -Times 0 -Exactly
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
     }

@@ -124,6 +124,7 @@ Describe 'Move-SystemPathLocation' {
         BeforeEach {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
             Mock -ModuleName easypeasy Get-ProcessOnlyPathLocations { @{} }
             Mock -ModuleName easypeasy Sync-ProcessPath { }
 
@@ -182,6 +183,22 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\Z' -ToMachine -WarningAction SilentlyContinue
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'fails before any Path is written when sudo is not available' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Move-SystemPathLocation 'C:\U' -ToMachine } | Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'does not check sudo when the machine Path does not change' {
+            $script:machineEntries = New-PathEntries 'C:\A;C:\U' -Scope Machine
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { Move-SystemPathLocation 'C:\U' -ToMachine } | Should -Not -Throw
         }
     }
 

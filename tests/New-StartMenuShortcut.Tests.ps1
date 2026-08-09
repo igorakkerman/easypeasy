@@ -119,6 +119,7 @@ Describe 'New-StartMenuShortcut' {
         BeforeEach {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
             Mock -ModuleName easypeasy Get-Shortcut { 'read back' }
         }
 
@@ -153,6 +154,15 @@ Describe 'New-StartMenuShortcut' {
             New-StartMenuShortcut -Name 'WhatIfAllUsers' -Target 'C:\Windows\notepad.exe' -AllUsers -WhatIf | Out-Null
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'fails for -AllUsers before anything is created when sudo is not available' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { New-StartMenuShortcut -Name 'NoSudo' -Target 'C:\Windows\notepad.exe' -AllUsers } | Should -Throw '*sudo*'
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 0 -Exactly
         }
     }
 

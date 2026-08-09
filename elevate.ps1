@@ -48,6 +48,90 @@ function Assert-Elevated {
     }
 }
 
+function local:Get-SudoModeValue {
+    <#
+    .SYNOPSIS
+        Reads the sudo mode from a registry key.
+
+    .DESCRIPTION
+        Returns the Enabled value of the given machine key, or $null where key or value is missing.
+
+    .PARAMETER Key
+        Machine registry key holding the value, without the hive.
+
+    .OUTPUTS
+        Mode as integer, or $null where key or value is missing.
+
+    .EXAMPLE
+        Get-SudoModeValue -Key "SOFTWARE\Policies\Microsoft\Windows\Sudo"
+    #>
+    [CmdletBinding()]
+    [OutputType([int])]
+    param (
+        [Parameter(Mandatory)]
+        [string] $Key
+    )
+
+    return [Microsoft.Win32.Registry]::GetValue("HKEY_LOCAL_MACHINE\$Key", "Enabled", $null)
+}
+
+function local:Assert-SudoAvailable {
+    <#
+    .SYNOPSIS
+        Requires the Windows sudo feature to be usable.
+
+    .DESCRIPTION
+        Reports a terminating error when Invoke-Elevated could not elevate: sudo missing from the system,
+        the sudo feature switched off in Settings or by group policy, or its mode capped below the inline
+        mode the elevation runs in. A command that will elevate asserts before it reads or writes anything,
+        so an impossible elevation fails it up front rather than halfway through.
+
+    .EXAMPLE
+        Assert-SudoAvailable
+
+    .EXAMPLE
+        if ($Machine -and -not (Test-Elevated)) { Assert-SudoAvailable }
+    #>
+    [CmdletBinding()]
+    param ()
+
+    if (-not (Get-Command sudo -ErrorAction SilentlyContinue)) {
+        Write-Error "Elevation denied: sudo not found." `
+            -ErrorId "SudoNotAvailable" `
+            -Category NotInstalled `
+            -TargetObject "sudo" `
+            -ErrorAction Stop
+    }
+
+    # the values sudo itself reads: Settings writes the first, group policy the second.
+    # Each names a mode - 0 disabled, 1 new window, 2 input closed, 3 inline - capped at 3.
+    # Sudo takes an unset toggle for disabled, an unset policy for every mode allowed,
+    # and runs in the lower of the two.
+    $settingValue = Get-SudoModeValue -Key "SOFTWARE\Microsoft\Windows\CurrentVersion\Sudo"
+    $policyValue = Get-SudoModeValue -Key "SOFTWARE\Policies\Microsoft\Windows\Sudo"
+
+    $setting = $null -eq $settingValue ? 0 : [Math]::Min([int] $settingValue, 3)
+    $policy = $null -eq $policyValue ? 3 : [Math]::Min([int] $policyValue, 3)
+    $mode = [Math]::Min($setting, $policy)
+
+    if ($mode -le 0) {
+        Write-Error "Elevation denied: sudo disabled. mode: $mode, setting: $setting, policy: $policy" `
+            -ErrorId "SudoDisabled" `
+            -Category NotEnabled `
+            -TargetObject "sudo" `
+            -ErrorAction Stop
+    }
+
+    # elevation runs sudo --inline, the mode sudo calls Normal
+    if ($mode -lt 3) {
+        Write-Error "Elevation denied: sudo inline mode forbidden. mode: $mode, setting: $setting, policy: $policy" `
+            -ErrorId "SudoInlineNotAllowed" `
+            -Category NotEnabled `
+            -TargetObject "sudo" `
+            -ErrorAction Stop
+    }
+}
+
 function local:ConvertTo-ElevatedCommand {
     <#
     .SYNOPSIS
@@ -158,13 +242,7 @@ function Invoke-Elevated {
     $line = (@($Command[0]) + $arguments) -join ' '
 
     if ($PSCmdlet.ShouldProcess($line, "Run elevated")) {
-        if (-not (Get-Command sudo -ErrorAction SilentlyContinue)) {
-            Write-Error "Elevation requires sudo. Enable Windows sudo feature." `
-                -ErrorId "SudoNotAvailable" `
-                -Category NotInstalled `
-                -TargetObject "sudo" `
-                -ErrorAction Stop
-        }
+        Assert-SudoAvailable
         # only a real failure sets the exit code: a terminating error - including a command the elevated
         # session cannot resolve, which would otherwise fall through to a successful exit - or a native
         # non-zero exit. A non-terminating error alone does not, and an unset $LASTEXITCODE after a

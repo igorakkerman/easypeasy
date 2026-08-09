@@ -862,6 +862,11 @@ function Add-SystemPathLocation {
         [switch] $Force
     )
 
+    # fail fast: a machine write that cannot elevate stops before anything is read or written
+    if ($Machine -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
+
     # the location is checked before anything is read or written, so -WhatIf reports the error a real run would hit
     $resolvedLocation = ConvertTo-NormalizedLocation -Location $Location
 
@@ -957,6 +962,11 @@ function Remove-SystemPathLocation {
         [switch] $User
     )
 
+    # fail fast: a machine write that cannot elevate stops before anything is read or written
+    if ($Machine -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
+
     $context = $Machine `
         ? @{ Machine = $true } `
         : @{ User = $true }
@@ -1041,6 +1051,11 @@ function Remove-DuplicateSystemPathLocations {
             -ErrorAction Stop
     }
 
+    # fail fast: a machine cleanup that cannot elevate stops before any Path is read
+    if ($Machine -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
+
     # clean both scopes when neither scope switch is given
     if (-not $Machine -and -not $User) {
         $machineEntries = @(Get-SystemPath -Machine)
@@ -1065,8 +1080,15 @@ function Remove-DuplicateSystemPathLocations {
             }
         }
 
+        $machineChanged = (Get-StoredPathString -Entries $machineDeduped) -ne (Get-StoredPathString -Entries $machineEntries)
+
+        # fail fast: a cleanup that cannot elevate stops before the first gate is asked
+        if ($machineChanged -and -not (Test-Elevated)) {
+            Assert-SudoAvailable
+        }
+
         # both gates are asked before either write, so -WhatIf reports every scope a real run would write
-        $writeMachine = (Get-StoredPathString -Entries $machineDeduped) -ne (Get-StoredPathString -Entries $machineEntries) `
+        $writeMachine = $machineChanged `
             -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system Path")
         $writeUser = (Get-StoredPathString -Entries $userDeduped) -ne (Get-StoredPathString -Entries $userEntries) `
             -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system Path")
@@ -1220,6 +1242,11 @@ function Move-SystemPathLocation {
 
     # the machine Path is written whenever it is the source, and as the target only when it changes
     $writesMachine = $ToUser -or $targetChanged
+
+    # fail fast: a move that cannot elevate stops before the gate is asked and before any Path is written
+    if ($writesMachine -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
 
     if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system Path")) {
         return

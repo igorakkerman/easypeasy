@@ -72,6 +72,7 @@ Describe 'New-StartMenuProgramsFolder' {
         BeforeEach {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
             Mock -ModuleName easypeasy New-Item { }
         }
 
@@ -98,6 +99,15 @@ Describe 'New-StartMenuProgramsFolder' {
 
         It 'does not elevate under -WhatIf' {
             New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers -WhatIf | Out-Null
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy New-Item -Times 0 -Exactly
+        }
+
+        It 'fails for -AllUsers before anything is created when sudo is not available' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers } | Should -Throw '*sudo*'
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
             Should -Invoke -ModuleName easypeasy New-Item -Times 0 -Exactly

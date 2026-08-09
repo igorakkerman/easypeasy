@@ -252,6 +252,11 @@ function Set-EnvironmentVariable() {
         [switch] $Expandable
     )
 
+    # fail fast: a machine write that cannot elevate stops before anything is written
+    if ($Machine -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
+
     # an expandable (REG_EXPAND_SZ) write is delegated to the dedicated writer, which owns
     # its own ShouldProcess, auto-elevation and current-process sync
     if ($Expandable) {
@@ -320,6 +325,11 @@ function Remove-EnvironmentVariable() {
         [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
+
+    # fail fast: a machine write that cannot elevate stops before anything is written
+    if ($Machine -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
 
     if ($Machine) {
         $environment = [System.EnvironmentVariableTarget]::Machine
@@ -471,6 +481,11 @@ function local:Set-EnvironmentVariableExpandable {
         [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
+
+    # fail fast: a machine write that cannot elevate stops before anything is written
+    if ($Machine -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
 
     $scope = $Machine ? "Machine" : "User"
 

@@ -78,6 +78,11 @@ function New-StartMenuProgramsFolder {
         [switch] $User
     )
 
+    # fail fast: an All Users run that cannot elevate stops before anything is created
+    if ($AllUsers -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
+
     $programsLocation = Get-StartMenuProgramsLocation -AllUsers:$AllUsers
     $shortcutFolderName = "$programsLocation\$Name"
 
@@ -189,6 +194,11 @@ function New-StartMenuShortcut {
         [switch] $User
     )
 
+    # fail fast: an All Users run that cannot elevate stops before anything is created
+    if ($AllUsers -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
+
     # elevate before the folder is touched, so folder and shortcut are created in one elevated session
     # behind one prompt; the record comes from reading back what that session wrote
     if ($AllUsers -and -not $WhatIfPreference -and -not (Test-Elevated)) {
@@ -271,6 +281,11 @@ function Remove-StartMenuShortcut {
         [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
+
+    # fail fast: an All Users run that cannot elevate stops before anything is removed
+    if ($AllUsers -and -not (Test-Elevated)) {
+        Assert-SudoAvailable
+    }
 
     $programsLocation = Get-StartMenuProgramsLocation -AllUsers:$AllUsers
     $shortcutFolder = $Folder ? "$programsLocation\$Folder" : $programsLocation
