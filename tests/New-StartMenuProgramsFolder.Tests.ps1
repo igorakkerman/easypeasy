@@ -4,6 +4,11 @@ BeforeAll {
 
 Describe 'New-StartMenuProgramsFolder' {
 
+    BeforeEach {
+        Mock -ModuleName easypeasy Test-Elevated { $true }
+        Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
+    }
+
     It 'creates the folder under Start Menu > Programs and returns its path' {
         Mock -ModuleName easypeasy New-Item { }
 
@@ -60,5 +65,42 @@ Describe 'New-StartMenuProgramsFolder' {
 
         Should -Invoke -ModuleName easypeasy New-Item -Times 1 -Exactly `
             -ParameterFilter { $ItemType -eq 'Directory' }
+    }
+
+    Context 'when not elevated' {
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy New-Item { }
+        }
+
+        It 'creates the folder in an elevated session with -AllUsers, returning its path' {
+            $allUsersPrograms = New-Object -ComObject WScript.Shell | ForEach-Object { $_.SpecialFolders("AllUsersPrograms") }
+
+            $result = New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers
+
+            $result | Should -Be "$allUsersPrograms\EasypeasyTest"
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains 'New-StartMenuProgramsFolder' -and
+                $Command -contains 'EasypeasyTest' -and
+                $Command -contains '-AllUsers'
+            }
+            Should -Invoke -ModuleName easypeasy New-Item -Times 0 -Exactly
+        }
+
+        It 'does not elevate for the current user' {
+            New-StartMenuProgramsFolder -Name 'EasypeasyTest' -User | Out-Null
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy New-Item -Times 1 -Exactly
+        }
+
+        It 'does not elevate under -WhatIf' {
+            New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers -WhatIf | Out-Null
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy New-Item -Times 0 -Exactly
+        }
     }
 }

@@ -836,6 +836,7 @@ function Add-SystemPathLocation {
     .NOTES
         Alias: addpath
         Default scope is User.
+        An unelevated machine write prompts for elevation once and runs the whole addition elevated.
     .EXAMPLE
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -899,10 +900,26 @@ function Add-SystemPathLocation {
         return
     }
 
-    if ($PSCmdlet.ShouldProcess($Location, "Add location to system Path")) {
-        # Set-SystemPath rebuilds the process Path, so the new location takes effect immediately
-        Set-SystemPath @context -Entries $newEntries
+    if (-not $PSCmdlet.ShouldProcess($Location, "Add location to system Path")) {
+        return
     }
+
+    # when not already elevated, the whole addition runs in an elevated session instead of in-process,
+    # so the Path is read and written on the same side of the boundary and never crosses it
+    if ($Machine -and -not (Test-Elevated)) {
+        $processLocations = Get-ProcessOnlyPathLocations
+
+        $command = @("Add-SystemPathLocation", $Location, "-Machine")
+        if ($First) { $command += "-First" }
+        if ($Force) { $command += "-Force" }
+        Invoke-Elevated $command
+
+        Sync-ProcessPath @processLocations
+        return
+    }
+
+    # Set-SystemPath rebuilds the process Path, so the new location takes effect immediately
+    Set-SystemPath @context -Entries $newEntries
 }
 
 function Remove-SystemPathLocation {
@@ -921,6 +938,7 @@ function Remove-SystemPathLocation {
     .NOTES
         Alias: rmpath
         Default scope is User.
+        An unelevated machine write prompts for elevation once and runs the whole removal elevated.
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
@@ -952,11 +970,21 @@ function Remove-SystemPathLocation {
         return
     }
 
-    if ($PSCmdlet.ShouldProcess($Location, "Remove location from system Path")) {
-        # Set-SystemPath rebuilds the process Path from both scopes, so the location stays available
-        # when the other scope still carries it
-        Set-SystemPath @context -Entries $newEntries
+    if (-not $PSCmdlet.ShouldProcess($Location, "Remove location from system Path")) {
+        return
     }
+
+    # as in Add-SystemPathLocation: an unelevated machine write runs the whole removal elevated
+    if ($Machine -and -not (Test-Elevated)) {
+        $processLocations = Get-ProcessOnlyPathLocations
+        Invoke-Elevated Remove-SystemPathLocation $Location -Machine
+        Sync-ProcessPath @processLocations
+        return
+    }
+
+    # Set-SystemPath rebuilds the process Path from both scopes, so the location stays available
+    # when the other scope still carries it
+    Set-SystemPath @context -Entries $newEntries
 }
 
 function Remove-DuplicateSystemPathLocations {

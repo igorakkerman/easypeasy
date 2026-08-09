@@ -5,6 +5,11 @@ BeforeAll {
 
 Describe 'Remove-SystemPathLocation' {
 
+    BeforeEach {
+        Mock -ModuleName easypeasy Test-Elevated { $true }
+        Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
+    }
+
     Context 'delegation' {
 
         BeforeEach {
@@ -65,6 +70,54 @@ Describe 'Remove-SystemPathLocation' {
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $Machine -and -not $User }
+        }
+    }
+
+    Context 'when not elevated' {
+
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            $script:currentEntries = New-PathEntries 'C:\Old;C:\Gone'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
+            Mock -ModuleName easypeasy Set-SystemPath { }
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Get-ProcessOnlyPathLocations { @{} }
+            Mock -ModuleName easypeasy Sync-ProcessPath { }
+        }
+
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'runs the whole removal elevated for -Machine, passing no Path' {
+            Remove-SystemPathLocation -Location 'C:\Gone' -Machine
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains 'Remove-SystemPathLocation' -and
+                $Command -contains 'C:\Gone' -and
+                $Command -contains '-Machine' -and
+                -not ($Command -join ' ').Contains('C:\Old')
+            }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'does not elevate for the user scope' {
+            Remove-SystemPathLocation -Location 'C:\Gone' -User
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly
+        }
+
+        It 'does not elevate under -WhatIf' {
+            Remove-SystemPathLocation -Location 'C:\Gone' -Machine -WhatIf
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'does not elevate when the location is absent' {
+            Remove-SystemPathLocation -Location 'C:\Missing' -Machine -WarningAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
     }
 

@@ -12,6 +12,8 @@ Describe 'New-StartMenuShortcut' {
     BeforeEach {
         Mock -ModuleName easypeasy New-StartMenuProgramsFolder { $folder }
         Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $folder }
+        Mock -ModuleName easypeasy Test-Elevated { $true }
+        Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
     }
 
     AfterAll { Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue }
@@ -110,6 +112,48 @@ Describe 'New-StartMenuShortcut' {
 
         Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsLocation -Times 1 -Exactly `
             -ParameterFilter { -not $AllUsers }
+    }
+
+    Context 'when not elevated' {
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Get-Shortcut { 'read back' }
+        }
+
+        It 'creates folder and shortcut in one elevated session with -AllUsers' {
+            New-StartMenuShortcut -Name 'AllUsersApp' -Target 'C:\Windows\notepad.exe' -Folder 'MyFolder' -AllUsers | Out-Null
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains 'New-StartMenuShortcut' -and
+                $Command -contains 'AllUsersApp' -and
+                $Command -contains '-AllUsers' -and
+                $Command -contains '-Folder' -and
+                $Command -contains 'MyFolder'
+            }
+            Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 0 -Exactly
+        }
+
+        It 'returns the shortcut the elevated session wrote' {
+            $result = New-StartMenuShortcut -Name 'AllUsersApp' -Target 'C:\Windows\notepad.exe' -AllUsers
+
+            $result | Should -Be 'read back'
+            Should -Invoke -ModuleName easypeasy Get-Shortcut -Times 1 -Exactly `
+                -ParameterFilter { $Location -like '*\AllUsersApp.lnk' }
+        }
+
+        It 'does not elevate for the current user' {
+            New-StartMenuShortcut -Name 'UserApp' -Target 'C:\Windows\notepad.exe' | Out-Null
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'does not elevate under -WhatIf' {
+            New-StartMenuShortcut -Name 'WhatIfAllUsers' -Target 'C:\Windows\notepad.exe' -AllUsers -WhatIf | Out-Null
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
     }
 
     It 'requires -Name' {

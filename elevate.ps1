@@ -48,6 +48,63 @@ function Assert-Elevated {
     }
 }
 
+function local:ConvertTo-ElevatedCommand {
+    <#
+    .SYNOPSIS
+        Builds the command line that re-runs a command in an elevated session.
+
+    .DESCRIPTION
+        Returns the command name followed by the parameters it was called with, as a string array ready
+        for Invoke-Elevated. A switch contributes its name alone and only where it is present; every
+        other parameter contributes its name and its value. Common parameters are left out, the elevated
+        session taking its own.
+
+    .PARAMETER Name
+        Name of the command to re-run, as the elevated session resolves it - an exported one.
+
+    .PARAMETER BoundParameters
+        The calling command's $PSBoundParameters.
+
+    .OUTPUTS
+        The command and its arguments as a string array.
+
+    .EXAMPLE
+        Invoke-Elevated (ConvertTo-ElevatedCommand -Name New-StartMenuShortcut -BoundParameters $PSBoundParameters)
+    #>
+    [CmdletBinding()]
+    [OutputType([string[]])]
+    param (
+        [Parameter(Mandatory)]
+        [string] $Name,
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary] $BoundParameters
+    )
+
+    $common = @([System.Management.Automation.PSCmdlet]::CommonParameters) +
+        @([System.Management.Automation.PSCmdlet]::OptionalCommonParameters)
+
+    $command = @($Name)
+
+    foreach ($parameter in $BoundParameters.GetEnumerator()) {
+        if ($parameter.Key -in $common) {
+            continue
+        }
+
+        if ($parameter.Value -is [switch]) {
+            if ($parameter.Value.IsPresent) {
+                $command += "-$($parameter.Key)"
+            }
+            continue
+        }
+
+        $command += "-$($parameter.Key)"
+        $command += [string] $parameter.Value
+    }
+
+    # comma keeps the array whole where the caller assigns a single value
+    return , $command
+}
+
 function Invoke-Elevated {
     <#
     .SYNOPSIS

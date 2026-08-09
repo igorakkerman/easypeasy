@@ -11,6 +11,8 @@ Describe 'New-PowershellStartMenuShortcut' {
 
     BeforeEach {
         Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $folder }
+        Mock -ModuleName easypeasy Test-Elevated { $true }
+        Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
     }
 
     AfterAll { Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue }

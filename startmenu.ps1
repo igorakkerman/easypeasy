@@ -65,6 +65,7 @@ function New-StartMenuProgramsFolder {
 
     .NOTES
         Default scope is User (current user).
+        An unelevated -AllUsers run prompts for elevation once and creates the folder elevated.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -79,6 +80,14 @@ function New-StartMenuProgramsFolder {
 
     $programsLocation = Get-StartMenuProgramsLocation -AllUsers:$AllUsers
     $shortcutFolderName = "$programsLocation\$Name"
+
+    # the All Users Programs folder is writable by administrators alone: when not already elevated,
+    # the folder is created in an elevated session instead
+    if ($AllUsers -and -not $WhatIfPreference -and -not (Test-Elevated)) {
+        Invoke-Elevated (ConvertTo-ElevatedCommand -Name New-StartMenuProgramsFolder -BoundParameters $PSBoundParameters)
+        return $shortcutFolderName
+    }
+
     if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
         New-Item -ItemType Directory $shortcutFolderName -Force | Out-Null
     }
@@ -153,6 +162,7 @@ function New-StartMenuShortcut {
     .NOTES
         Default scope is User (current user).
         Alias: Administrator for -Elevated.
+        An unelevated -AllUsers run prompts for elevation once and creates folder and shortcut elevated.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
@@ -178,6 +188,17 @@ function New-StartMenuShortcut {
         [Parameter(ParameterSetName = "User")]
         [switch] $User
     )
+
+    # elevate before the folder is touched, so folder and shortcut are created in one elevated session
+    # behind one prompt; the record comes from reading back what that session wrote
+    if ($AllUsers -and -not $WhatIfPreference -and -not (Test-Elevated)) {
+        Invoke-Elevated (ConvertTo-ElevatedCommand -Name New-StartMenuShortcut -BoundParameters $PSBoundParameters)
+
+        $programsLocation = Get-StartMenuProgramsLocation -AllUsers
+        return Get-Shortcut -Location ($Folder `
+                ? "$programsLocation\$Folder\$Name.lnk" `
+                : "$programsLocation\$Name.lnk")
+    }
 
     $shortcutFolder = $Folder `
         ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
@@ -237,6 +258,7 @@ function Remove-StartMenuShortcut {
 
     .NOTES
         Default scope is User (current user).
+        An unelevated -AllUsers run prompts for elevation once and removes the shortcut elevated.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -260,6 +282,12 @@ function Remove-StartMenuShortcut {
             -Category ObjectNotFound `
             -TargetObject $shortcutLocation `
             -ErrorAction Stop
+    }
+
+    # as when creating: an All Users removal that is not already elevated runs in an elevated session
+    if ($AllUsers -and -not $WhatIfPreference -and -not (Test-Elevated)) {
+        Invoke-Elevated (ConvertTo-ElevatedCommand -Name Remove-StartMenuShortcut -BoundParameters $PSBoundParameters)
+        return
     }
 
     if ($PSCmdlet.ShouldProcess($shortcutLocation, "Remove shortcut")) {
