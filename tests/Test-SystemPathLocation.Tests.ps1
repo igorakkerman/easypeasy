@@ -54,13 +54,12 @@ Describe 'Test-SystemPathLocation' {
             Should -BeTrue
     }
 
-    It 'names the variable that is not set' {
+    It 'stays quiet about the variable that is not set' {
         $env:PATH = '%EASYPEASY_UNSET_XYZ%\bin;C:\EasypeasyRoot'
 
-        Test-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' `
-            -ErrorVariable reported -ErrorAction SilentlyContinue | Out-Null
+        Test-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -WarningVariable reported | Out-Null
 
-        $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+        $reported | Should -BeNullOrEmpty
     }
 
     It 'is exposed through the testpath alias' {

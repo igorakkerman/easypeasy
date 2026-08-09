@@ -60,20 +60,22 @@ function local:Get-UnresolvedVariableName {
     return $names
 }
 
-function local:Write-UnresolvedVariableError {
+function local:Write-UnresolvedVariableWarning {
     <#
     .SYNOPSIS
         Reports every %...% reference of a value that no environment variable resolves.
 
     .DESCRIPTION
-        Writes one non-terminating error per unresolved reference, so a command names every missing
-        variable and carries on with the value as given, keeping the reference as indirection.
+        Writes one warning per unresolved reference, so a command names every missing variable and
+        carries on with the value as given, keeping the reference as indirection. A warning, not an
+        error: the command completes, and a reference resolving later is what it was given the value
+        for. An error would leave $? false and end a caller running under -ErrorAction Stop.
 
     .PARAMETER Value
         The value to scan, a location or an environment variable value.
 
     .EXAMPLE
-        Write-UnresolvedVariableError -Value "%JAVA_HOME%\bin"
+        Write-UnresolvedVariableWarning -Value "%JAVA_HOME%\bin"
     #>
     [CmdletBinding()]
     param (
@@ -83,10 +85,7 @@ function local:Write-UnresolvedVariableError {
     )
 
     foreach ($name in Get-UnresolvedVariableName -Value $Value) {
-        Write-Error "Environment variable not set, reference left unresolved. name: $name, value: '$Value'" `
-            -ErrorId "EnvironmentVariableNotSet" `
-            -Category ObjectNotFound `
-            -TargetObject $name
+        Write-Warning "Environment variable not set, reference left unresolved. name: $name, value: '$Value'"
     }
 }
 
@@ -514,7 +513,7 @@ function local:Set-EnvironmentVariableExpandable {
         %USERPROFILE%\tmp) stay as indirection and are expanded when a process reads them.
         [Environment]::SetEnvironmentVariable always writes REG_SZ and so cannot do this;
         this function writes the registry directly and broadcasts WM_SETTINGCHANGE.
-        A reference whose variable is not set names the variable in an error of its own and is written
+        A reference whose variable is not set names the variable in a warning of its own and is written
         anyway, the reference staying as indirection.
         The change also takes effect in the current process immediately.
 
@@ -559,7 +558,7 @@ function local:Set-EnvironmentVariableExpandable {
     }
 
     # an expandable value resolves on read: a reference no variable resolves is reported and written anyway
-    Write-UnresolvedVariableError -Value $Value
+    Write-UnresolvedVariableWarning -Value $Value
 
     $scope = $Machine ? "Machine" : "User"
 

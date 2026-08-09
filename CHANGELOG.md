@@ -83,7 +83,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` force inline execution in the current terminal via `sudo --inline`, and report a terminating error on failure.
 - **Added:** `Invoke-Elevated` reports terminating error when sudo not available.
 - **Added:** `-Machine` write reports Windows sudo missing, disabled or forbidden in inline mode before reading or writing anything.
-- **Changed:** Location or value carrying `%...%` reference no variable resolves names each missing variable in error of its own and is used anyway, keeping reference as indirection. Previously `Add-SystemPathLocation` rejected it as missing folder and reference resolved against current directory.
+- **Changed:** `Add-SystemPathLocation`, `Move-SystemPathLocation` and `Set-EnvironmentVariable -Expandable` name each missing variable of `%...%` reference in warning of its own and use value anyway, keeping reference as indirection. Previously `Add-SystemPathLocation` rejected it as missing folder and reference resolved against current directory.
+- **Changed:** Reads and removals stay quiet about `%...%` reference no variable resolves; listing accents it instead.
 - **Changed:** Location that does not resolve is matched, selected and deduplicated on its stored value, so `%...%` reference is found, removed and moved by the reference itself.
 - **Fixed:** `Move-SystemPathLocation` elevates once for whole move, before either Path is written.
 - **Fixed:** `Remove-DuplicateSystemPathLocations` elevates once for whole cleanup, before either Path is written.

@@ -476,18 +476,17 @@ Describe 'Remove-SystemPathLocation' {
 
         AfterEach { $env:PATH = $originalPath }
 
-        It 'removes the entry given the reference, and names the variable' {
+        It 'removes the entry given the reference, without reporting the variable' {
             Remove-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User `
-                -ErrorVariable reported -ErrorAction SilentlyContinue
+                -WarningVariable reported
 
-            $reported.FullyQualifiedErrorId | Should -BeLike 'EnvironmentVariableNotSet,*'
-            $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+            $reported | Should -BeNullOrEmpty
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Keep' }
         }
 
         It 'ignores repeated and trailing backslashes on the reference' {
-            Remove-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\\bin\' -User -ErrorAction SilentlyContinue
+            Remove-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\\bin\' -User -WarningAction SilentlyContinue
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Keep' }

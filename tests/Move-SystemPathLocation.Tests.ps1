@@ -130,9 +130,9 @@ Describe 'Move-SystemPathLocation' {
 
         It 'moves the entry, keeping the reference, and names the variable' {
             Move-SystemPathLocation '%EASYPEASY_UNSET_XYZ%\bin' -ToUser `
-                -ErrorVariable reported -ErrorAction SilentlyContinue
+                -WarningVariable reported -WarningAction SilentlyContinue
 
-            $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+            $reported | Should -BeLike '*name: EASYPEASY_UNSET_XYZ,*'
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `

@@ -447,23 +447,35 @@ Describe 'Add-SystemPathLocation' {
 
         It 'names a %...% reference whose variable is not set, and adds it anyway' {
             Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User `
-                -ErrorVariable reported -ErrorAction SilentlyContinue
+                -WarningVariable reported -WarningAction SilentlyContinue
 
-            $reported.FullyQualifiedErrorId | Should -BeLike 'EnvironmentVariableNotSet,*'
-            $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+            $reported | Should -BeLike '*name: EASYPEASY_UNSET_XYZ,*'
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $Entries[-1].StoredValue -eq '%EASYPEASY_UNSET_XYZ%\bin' }
         }
 
+        It 'succeeds, leaving $? true' {
+            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User -WarningAction SilentlyContinue
+            $? | Should -BeTrue
+        }
+
+        It 'names each unset variable once, whatever -ErrorAction the caller runs under' {
+            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User `
+                -ErrorAction Stop -WarningVariable reported -WarningAction SilentlyContinue
+
+            @($reported).Count | Should -Be 1
+        }
+
         It 'names every unset variable of a location' {
             Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\%EASYPEASY_UNSET_ABC%\bin' -User `
-                -ErrorVariable reported -ErrorAction SilentlyContinue
+                -WarningVariable reported -WarningAction SilentlyContinue
 
-            $reported.TargetObject | Should -Be @('EASYPEASY_UNSET_XYZ', 'EASYPEASY_UNSET_ABC')
+            @($reported)[0] | Should -BeLike '*name: EASYPEASY_UNSET_XYZ,*'
+            @($reported)[1] | Should -BeLike '*name: EASYPEASY_UNSET_ABC,*'
         }
 
         It 'keeps the reference as indirection, storing it verbatim' {
-            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User -ErrorAction SilentlyContinue
+            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User -WarningAction SilentlyContinue
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { [string]::IsNullOrEmpty($Entries[-1].Location) }

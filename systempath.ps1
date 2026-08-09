@@ -302,7 +302,7 @@ function local:Sync-ProcessPath {
         [SystemPathLocation[]] $TrailingProcessLocations = @()
     )
 
-    $persisted = @(Get-SystemPath -Machine -ErrorAction SilentlyContinue) + @(Get-SystemPath -User -ErrorAction SilentlyContinue)
+    $persisted = @(Get-SystemPath -Machine) + @(Get-SystemPath -User)
 
     $locations = @($LeadingProcessLocations) + $persisted + @($TrailingProcessLocations)
 
@@ -653,7 +653,8 @@ function Get-SystemPath {
         The -Exact, -Contains, -Filter and -Match criteria select locations. Multiple criteria, of the same kind or
         of different kinds, must all be satisfied. Without any criterion, every location is returned.
         A location carrying a %...% reference whose variable is not set is listed with its stored value and an
-        empty Location, names the variable in an error of its own, and is selected on that stored value.
+        empty Location, and is selected on that stored value. The listing marks it the way it marks a
+        location naming no existing folder, so it needs no report of its own.
     .PARAMETER Machine
         If specified, the system Path for the local machine is returned.
     .PARAMETER User
@@ -806,12 +807,6 @@ function Get-SystemPath {
             Test-LocationCriteria -Location $_.Location -StoredValue $_.StoredValue @criteria
         }
 
-    # reads name every reference the listed locations carry that no variable resolves
-    $selectedLocations `
-        | ForEach-Object {
-            Write-UnresolvedVariableError -Value $_.StoredValue
-        }
-
     # -Join reproduces the stored form (StoredValue), keeping %...% references
     return $Join `
         ? ((
@@ -911,7 +906,7 @@ function local:Set-SystemPath {
     $processLocations = Get-ProcessOnlyPathLocations
 
     # the write stays quiet about the Path's own references: the command that took the location reported them
-    Set-EnvironmentVariable @context -Name Path -Value $value -Expandable -ErrorAction SilentlyContinue
+    Set-EnvironmentVariable @context -Name Path -Value $value -Expandable -WarningAction SilentlyContinue
 
     # derive the process Path from both scopes; runs after the write, so it is the authoritative one
     Sync-ProcessPath @processLocations
@@ -927,7 +922,7 @@ function Add-SystemPathLocation {
         they were given in.
         A location naming no existing folder is reported as a terminating error and nothing is written,
         unless -Force is given. The location is checked resolved.
-        A %...% reference whose variable is not set names the variable in an error of its own and is added
+        A %...% reference whose variable is not set names the variable in a warning of its own and is added
         anyway, keeping the reference as indirection: what it resolves to once the variable is set is not
         this command's business.
         Adding is idempotent: a location already present leaves the Path unchanged and is reported in a
@@ -1004,7 +999,7 @@ function Add-SystemPathLocation {
             # a reference no variable resolves is reported and added anyway, keeping the reference as
             # indirection: what it will resolve to once the variable is set is no business of this command
             $unresolved = @(Get-UnresolvedVariableName -Value $pathLocation)
-            Write-UnresolvedVariableError -Value $pathLocation
+            Write-UnresolvedVariableWarning -Value $pathLocation
 
             if (-not $Force -and -not $unresolved -and ($null -eq $resolvedLocation -or -not (Test-Path -LiteralPath $resolvedLocation -PathType Container))) {
                 $detail =
@@ -1033,9 +1028,7 @@ function Add-SystemPathLocation {
             ? "Machine" `
             : "User"
 
-        # the read stays quiet: this command reports the references of the locations it was given, not those
-        # the Path already carries
-        $currentEntries = @(Get-SystemPath @context -ErrorAction SilentlyContinue)
+        $currentEntries = @(Get-SystemPath @context)
 
         # -First puts each location before the ones added so far, so adding them back to front leaves the
         # given order at the beginning of the Path
@@ -1198,22 +1191,18 @@ function Remove-SystemPathLocation {
             return
         }
 
-        # as in Add-SystemPathLocation: the read reports nothing, the location arguments do
-        foreach ($request in $requested) {
-            Write-UnresolvedVariableError -Value $request.Location
-        }
-
+        # a removal takes a value off the Path; a reference it carries that no variable resolves is the
+        # reason to be rid of it, not something to report
         $machineLocations = @($requested | Where-Object { $_.Scope -eq "Machine" } | ForEach-Object { $_.Location })
         $userLocations = @($requested | Where-Object { $_.Scope -eq "User" } | ForEach-Object { $_.Location })
         $shellLocations = @($requested | Where-Object { $_.Scope -eq "Process" } | ForEach-Object { $_.Location })
 
-        # the reads stay quiet: this command reports the references of the locations it was given, not
-        # those the Path already carries. A scope no location names is left unread
+        # a scope no location names is left unread
         $machineEntries = $machineLocations `
-            ? @(Get-SystemPath -Machine -ErrorAction SilentlyContinue) `
+            ? @(Get-SystemPath -Machine) `
             : @()
         $userEntries = $userLocations `
-            ? @(Get-SystemPath -User -ErrorAction SilentlyContinue) `
+            ? @(Get-SystemPath -User) `
             : @()
 
         $machineTrimmed = @(Remove-PathLocations -Entries $machineEntries -Locations $machineLocations)
@@ -1444,6 +1433,8 @@ function Move-SystemPathLocation {
         Each location is removed from the source Path and added to the target Path.
         A location that is not on the source Path - whether it is already on the target Path or on neither -
         is not moved and is reported in a warning of its own.
+        A %...% reference whose variable is not set names the variable in a warning of its own and is moved
+        anyway, keeping the reference as indirection.
         A move that changes the machine Path elevates through User Account Control when the session is not
         already elevated: the whole move runs in the elevated session, so it is applied as a whole or not
         at all. Moving to the machine Path a location the machine Path already holds changes the user Path
@@ -1499,13 +1490,14 @@ function Move-SystemPathLocation {
             $target = @{ Machine = $true }; $targetName = "machine"
         }
 
-        # as in Add-SystemPathLocation: the reads report nothing, the location arguments do
+        # as in Add-SystemPathLocation: a move puts the location on a scope that did not carry it, so a
+        # reference no variable resolves is reported the way an addition reports it
         foreach ($pathLocation in $locations) {
-            Write-UnresolvedVariableError -Value $pathLocation
+            Write-UnresolvedVariableWarning -Value $pathLocation
         }
 
-        $sourceEntries = @(Get-SystemPath @source -ErrorAction SilentlyContinue)
-        $targetEntries = @(Get-SystemPath @target -ErrorAction SilentlyContinue)
+        $sourceEntries = @(Get-SystemPath @source)
+        $targetEntries = @(Get-SystemPath @target)
 
         # each location moves off what the ones before it left, so one write per scope covers them all
         $newSource = $sourceEntries

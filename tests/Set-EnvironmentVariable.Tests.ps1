@@ -121,10 +121,10 @@ Describe 'Set-EnvironmentVariable' {
 
         It 'names a variable that is not set, and writes the value anyway' {
             Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%EASYPEASY_UNSET_XYZ%\tools' -User -Expandable `
-                -ErrorVariable reported -ErrorAction SilentlyContinue
+                -WarningVariable reported -WarningAction SilentlyContinue
 
-            $unresolved = @($reported | Where-Object { $_.FullyQualifiedErrorId -like 'EnvironmentVariableNotSet,*' })
-            $unresolved.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+            $unresolved = @($reported | Where-Object { $_ -like '*reference left unresolved*' })
+            $unresolved | Should -BeLike '*name: EASYPEASY_UNSET_XYZ,*'
             (Get-Item 'HKCU:\Environment').GetValue('EASYPEASY_TEST', $null, 'DoNotExpandEnvironmentNames') |
                 Should -Be '%EASYPEASY_UNSET_XYZ%\tools'
         }

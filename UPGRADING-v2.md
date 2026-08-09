@@ -79,10 +79,11 @@ write the **canonical** name, never an alias.
   `-WindowStyle Normal` / `-WindowStyle Maximized`; the default stays `Minimized`.
 - **`Add-SystemPathLocation` rejects a location naming no existing folder** with a terminating
   `PathLocationNotFound`, where v1 persisted whatever string it was given. The location is checked
-  expanded, so a `%…%` reference whose variable is not set is rejected too. Pass `-Force` where the
-  folder is meant to appear later. The folder has to exist at the moment of the call, so a provisioning
-  script putting a folder on the Path before whatever creates it has ever run — `%USERPROFILE%\.local\bin`,
-  a package manager's `bin`, a toolchain folder — needs `-Force` on every such call.
+  expanded. Pass `-Force` where the folder is meant to appear later. The folder has to exist at the
+  moment of the call, so a provisioning script putting a folder on the Path before whatever creates it
+  has ever run — `%USERPROFILE%\.local\bin`, a package manager's `bin`, a toolchain folder — needs
+  `-Force` on every such call. A `%…%` reference whose variable is not set is exempt: it names the
+  variable in a warning and is added, the reference staying as indirection.
 - **`Test-SystemPathLocation` tests one exact location.** `-Location` is mandatory and positional;
   v1's `-Filter` is gone. A bare call now errors. Reach for `Get-SystemPath -Contains` / `-Filter` /
   `-Match` where a pattern is what the calling code needs.
