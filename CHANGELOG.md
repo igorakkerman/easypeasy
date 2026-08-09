@@ -29,6 +29,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `-Target` on `New-StartMenuShortcut` and `-Command` on `New-PowershellStartMenuShortcut` are positional.
 - **Changed:** Start Menu Programs folder resolved per call, so a folder relocated during session is picked up.
 - **Changed:** `Get-StartMenuProgramsPath` renamed to `Get-StartMenuProgramsLocation`.
+- **Fixed:** `-AllUsers` write elevates through User Account Control when not administrator, instead of failing with access denied. Folder and shortcut are created in one elevated session.
+- **Added:** `-AllUsers` write reports Windows sudo missing, disabled or forbidden in inline mode before creating or removing anything.
 
 ### Shortcut
 - **Added:** `New-Shortcut` — creates shortcut at any location and returns it; only `-Location` and `-Target` mandatory, run location defaults to folder of target, `-Force` performs complete overwrite.
@@ -80,8 +82,10 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error.
 - **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` force inline execution in the current terminal via `sudo --inline`, and report a terminating error on failure.
 - **Added:** `Invoke-Elevated` reports terminating error when sudo not available.
+- **Added:** `-Machine` write reports Windows sudo missing, disabled or forbidden in inline mode before reading or writing anything.
 - **Fixed:** `Move-SystemPathLocation` elevates once for whole move, before either Path is written.
 - **Fixed:** `Remove-DuplicateSystemPathLocations` elevates once for whole cleanup, before either Path is written.
+- **Changed:** `Add-SystemPathLocation` and `Remove-SystemPathLocation` run whole `-Machine` write elevated, so Path is read and written in same session and never crosses elevation boundary.
 - **Changed:** `Move-SystemPathLocation` writes target Path before source Path.
 - **Fixed:** `Invoke-Elevated` quotes every argument, doubling embedded single quote.
 - **Fixed:** `Invoke-Elevated` reports command elevated session cannot resolve, instead of reporting success.
