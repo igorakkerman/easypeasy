@@ -42,7 +42,7 @@ Import-Module .\easypeasy.psd1 -Force
 
 ### Testing
 
-Tests are Pester v6 specs in `tests/`, one file per command (`tests/<Command>.Tests.ps1`). They assert observable behavior and mock side effects — registry, scheduled tasks, file/registry writes, and even module-internal helpers — with `Mock -ModuleName easypeasy`. State-changing functions are also checked under `-WhatIf`. Run the full suite before every commit; do not commit if any test fails:
+Tests are Pester v6 specs in `tests/`, one file per command (`tests/<Command>.Tests.ps1`). They assert observable behavior and mock side effects — registry, scheduled tasks, file/registry writes, and even module-internal helpers — with `Mock -ModuleName easypeasy`. State-changing functions are also checked under `-WhatIf`. **Fixture locations name folders no real Path carries** (`C:\EasypeasyTool\bin`, not `C:\Program Files\Git\bin`): an effective `Get-SystemPath` read recovers `Scope` and `StoredValue` from the persisted scopes, so a fixture the host happens to carry makes the test pass or fail by machine. Run the full suite before every commit; do not commit if any test fails:
 
 ```powershell
 Invoke-Pester -Path ./tests -Output Detailed
