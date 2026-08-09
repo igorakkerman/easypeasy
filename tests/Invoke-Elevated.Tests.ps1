@@ -23,6 +23,11 @@ AfterAll {
 
 Describe 'Invoke-Elevated' {
 
+    BeforeEach {
+        # sudo feature enabled inline, whatever the host carries
+        Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
+    }
+
     It 'runs the command inline as administrator via sudo' {
         Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
 
