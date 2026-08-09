@@ -1229,22 +1229,14 @@ function Remove-SystemPathLocation {
             $shellLeading = @($processLocations.LeadingProcessLocations)
             $shellTrailing = @($processLocations.TrailingProcessLocations)
 
-            foreach ($shellLocation in $shellLocations) {
-                $trimmedLeading = @(Remove-PathLocation -Entries $shellLeading -Location $shellLocation)
-                $trimmedTrailing = @(Remove-PathLocation -Entries $shellTrailing -Location $shellLocation)
+            # both sides are filtered, but only the two together tell whether a location was there at
+            # all, so the combined run reports the warnings and each side is then filtered in silence
+            $shellEntries = @($shellLeading) + @($shellTrailing)
+            $shellTrimmed = @(Remove-PathLocations -Entries $shellEntries -Locations $shellLocations)
+            $shellChanged = (Get-StoredPathString -Entries $shellTrimmed) -ne (Get-StoredPathString -Entries $shellEntries)
 
-                # gone from neither side means the location is not among the ones only this shell knows
-                if ((Get-StoredPathString -Entries $trimmedLeading) -eq (Get-StoredPathString -Entries $shellLeading) `
-                        -and (Get-StoredPathString -Entries $trimmedTrailing) -eq (Get-StoredPathString -Entries $shellTrailing)) {
-                    Write-Warning "Location is not on the system Path: '$shellLocation'"
-                }
-                else {
-                    $shellChanged = $true
-                }
-
-                $shellLeading = $trimmedLeading
-                $shellTrailing = $trimmedTrailing
-            }
+            $shellLeading = @(Remove-PathLocations -Entries $shellLeading -Locations $shellLocations -WarningAction SilentlyContinue)
+            $shellTrailing = @(Remove-PathLocations -Entries $shellTrailing -Locations $shellLocations -WarningAction SilentlyContinue)
         }
 
         $machineChanged = (Get-StoredPathString -Entries $machineTrimmed) -ne (Get-StoredPathString -Entries $machineEntries)
