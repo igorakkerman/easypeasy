@@ -565,8 +565,10 @@ function local:Test-LocationCriteria {
         ignored on the -Contains and -Filter criteria, which are a substring and a wildcard pattern and are
         not resolved; the -Match patterns are applied as given, since a backslash is meaningful in a regular
         expression.
-        A location that does not resolve is matched on its stored value, so a %...% reference no variable
-        resolves is still found by the criteria naming it.
+        -Contains, -Filter and -Match are text, not locations, and are tested against both forms the entry
+        carries: the value as stored, %...% reference and all, and the location it resolves to. Either form
+        satisfies the criterion, so a reference is found by its own spelling as well as by the folder behind
+        it. A location that does not resolve carries the stored form alone.
         A leading '\\' is the one run that carries meaning and is kept, holding a UNC root apart from a single
         leading backslash.
     .PARAMETER Location
@@ -603,32 +605,57 @@ function local:Test-LocationCriteria {
         [string[]] $Match
     )
 
-    # every criterion below runs against the resolved location,
-    # or against the stored value where nothing resolves, e.g. an unset %...% reference
-    $searched = ConvertTo-LocationIdentity -StoredValue $StoredValue -Location $Location
-
+    # -Exact is a location: it is compared on the identity, which resolves both sides,
+    # so any spelling of the same folder equals it
     if ($Exact) {
+        $identity = ConvertTo-LocationIdentity -StoredValue $StoredValue -Location $Location
         $exactNormalized = ConvertTo-NormalizedLocation -Location $Exact
-        if ($searched -ine (ConvertTo-LocationIdentity -StoredValue $Exact -Location $exactNormalized)) {
+        if ($identity -ine (ConvertTo-LocationIdentity -StoredValue $Exact -Location $exactNormalized)) {
             return $false
         }
     }
 
+    # the text criteria below search both forms of the entry: the value as stored, %...% reference and all,
+    # and the location it resolves to. A value that does not resolve carries the stored form alone
+    $searchedForms = @(ConvertTo-ComparableLocation -Location $StoredValue)
+    if (-not [string]::IsNullOrEmpty($Location)) {
+        $searchedForms += $Location
+    }
+
     foreach ($substring in $Contains) {
         $comparableSubstring = ConvertTo-ComparableLocation -Location $substring
-        if (-not $searched.Contains($comparableSubstring, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $matched = @(
+            $searchedForms `
+                | Where-Object {
+                    $_.Contains($comparableSubstring, [System.StringComparison]::OrdinalIgnoreCase)
+                }
+        )
+        if ($matched.Count -eq 0) {
             return $false
         }
     }
 
     foreach ($pattern in $Filter) {
-        if ($searched -inotlike (ConvertTo-ComparableLocation -Location $pattern)) {
+        $comparablePattern = ConvertTo-ComparableLocation -Location $pattern
+        $matched = @(
+            $searchedForms `
+                | Where-Object {
+                    $_ -ilike $comparablePattern
+                }
+        )
+        if ($matched.Count -eq 0) {
             return $false
         }
     }
 
     foreach ($pattern in $Match) {
-        if ($searched -inotmatch $pattern) {
+        $matched = @(
+            $searchedForms `
+                | Where-Object {
+                    $_ -imatch $pattern
+                }
+        )
+        if ($matched.Count -eq 0) {
             return $false
         }
     }
@@ -653,6 +680,9 @@ function Get-SystemPath {
         values instead.
         The -Exact, -Contains, -Filter and -Match criteria select locations. Multiple criteria, of the same kind or
         of different kinds, must all be satisfied. Without any criterion, every location is returned.
+        -Contains, -Filter and -Match search both forms a location carries, its stored value and what that
+        resolves to, so an entry stored as %ProgramFiles%\Tool is found by the reference as well as by the
+        folder behind it.
         A location carrying a %...% reference whose variable is not set is listed with its stored value and an
         empty Location, and is selected on that stored value. The listing marks it the way it marks a
         location naming no existing folder, so it needs no report of its own.
@@ -674,13 +704,15 @@ function Get-SystemPath {
         Aliases: Location, Folder.
     .PARAMETER Contains
         Substrings, positional; only locations containing all of them are returned. Taken literally: wildcard and
-        regex characters carry no meaning. Matching is case-insensitive and ignores repeated and trailing
-        backslashes.
+        regex characters carry no meaning. Matching is case-insensitive, ignores repeated and trailing
+        backslashes, and takes the stored value as well as the location it resolves to.
     .PARAMETER Filter
-        Wildcard patterns; only locations matching all of them are returned. Matching is case-insensitive and
-        ignores repeated and trailing backslashes.
+        Wildcard patterns; only locations matching all of them are returned. Matching is case-insensitive,
+        ignores repeated and trailing backslashes, and takes the stored value as well as the location it
+        resolves to.
     .PARAMETER Match
-        Regular expressions; only locations matching all of them are returned. Matching is case-insensitive.
+        Regular expressions; only locations matching all of them are returned. Matching is case-insensitive and
+        takes the stored value as well as the location it resolves to.
         An invalid regular expression is a terminating error.
     .OUTPUTS
         SystemPathLocation objects with a Scope, a StoredValue and a Location property, or a

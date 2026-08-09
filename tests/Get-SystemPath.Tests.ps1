@@ -109,6 +109,25 @@ Describe 'Get-SystemPath' {
                 Should -Be '%SystemRoot%\S32'
         }
 
+        It 'selects on the stored reference' {
+            (Get-SystemPath -Machine -Contains '%SystemRoot%').StoredValue |
+                Should -Be '%SystemRoot%\S32'
+        }
+
+        It 'matches the wildcard against either form' {
+            (Get-SystemPath -Machine -Filter '%SystemRoot%\*').StoredValue |
+                Should -Be '%SystemRoot%\S32'
+            (Get-SystemPath -Machine -Filter "$env:SystemRoot\*").StoredValue |
+                Should -Be '%SystemRoot%\S32'
+        }
+
+        It 'matches the regex against either form' {
+            (Get-SystemPath -Machine -Match '^%SystemRoot%').StoredValue |
+                Should -Be '%SystemRoot%\S32'
+            (Get-SystemPath -Machine -Match '^[a-z]:\\').StoredValue |
+                Should -Be @('%SystemRoot%\S32', 'C:\Plain')
+        }
+
         It 'renders an entry as its stored value' {
             "$((Get-SystemPath -Machine -Contains 'S32'))" | Should -Be '%SystemRoot%\S32'
         }

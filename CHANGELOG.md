@@ -48,7 +48,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 ### System PATH and environment variables
 - **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.
 - **Added:** Table view for system path locations in output of `Get-SystemPath`. 
-- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath` — literal substring, wildcard pattern, regular expression.
+- **Added:** `-Contains`, `-Filter` and `-Match` on `Get-SystemPath` — literal substring, wildcard pattern, regular expression, each matched against stored value as well as resolved location.
 - **Added:** `-Match` on `Get-SystemPath` rejects invalid regular expressions.
 - **Added:** `-Exact` (aliases `-Location`, `-Folder`) on `Get-SystemPath` — exact match, case-insensitive, repeated and trailing backslashes ignored.
 - **Changed:** Location comparison ignores repeated backslashes anywhere in location, not only trailing ones. Leading `\\` of UNC root kept.
