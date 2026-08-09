@@ -119,6 +119,36 @@ Describe 'Move-SystemPathLocation' {
         }
     }
 
+    Context 'a reference whose variable is not set' {
+
+        BeforeEach {
+            $script:machineEntries = New-PathEntries 'C:\A;%EASYPEASY_UNSET_XYZ%\bin' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+        }
+
+        It 'moves the entry, keeping the reference, and names the variable' {
+            Move-SystemPathLocation '%EASYPEASY_UNSET_XYZ%\bin' -ToUser `
+                -ErrorVariable reported -ErrorAction SilentlyContinue
+
+            $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;%EASYPEASY_UNSET_XYZ%\bin' }
+        }
+
+        It 'warns when the target already carries the same reference' {
+            $script:userEntries = New-PathEntries 'C:\B;%EASYPEASY_UNSET_XYZ%\bin'
+
+            Move-SystemPathLocation '%EASYPEASY_UNSET_XYZ%\bin' -ToUser -ErrorAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly `
+                -ParameterFilter { $User }
+        }
+    }
+
     Context 'when not elevated' {
 
         BeforeEach {

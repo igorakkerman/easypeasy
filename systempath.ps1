@@ -116,7 +116,8 @@ function local:ConvertTo-NormalizedLocation {
         backslashes and '..' segments, and drops a trailing backslash. A root keeps its trailing backslash,
         'C:\' being a folder where 'C:' is a drive-relative reference; a leading '\\' is kept, holding a UNC
         root apart from a single leading backslash. Case is left as it is.
-        A value that cannot be resolved - one exceeding the path limit, say - returns null.
+        A value that cannot be resolved - one carrying a %...% reference no variable resolves, or one
+        exceeding the path limit - returns null. Reporting the reference is left to the caller.
     .PARAMETER Location
         The location to resolve, treated as expandable.
     .OUTPUTS
@@ -131,6 +132,12 @@ function local:ConvertTo-NormalizedLocation {
         [AllowEmptyString()]
         [string] $Location
     )
+
+    # a reference no variable resolves names no folder: expansion would leave it standing and the
+    # current directory would be prefixed to it
+    if (Get-UnresolvedVariableName -Value $Location) {
+        return $null
+    }
 
     $expanded = [Environment]::ExpandEnvironmentVariables($Location)
 
@@ -150,6 +157,40 @@ function local:ConvertTo-NormalizedLocation {
     catch {
         return $null
     }
+}
+
+function local:ConvertTo-LocationIdentity {
+    <#
+    .SYNOPSIS
+        Reduces a stored value and what it resolves to into the identity entries are matched on.
+    .DESCRIPTION
+        Returns the resolved location where the stored value resolves, and the comparable stored value
+        where it does not, so an entry carrying an unresolved %...% reference still matches the same
+        reference spelled the same way. Case is left as it is: comparison is case-insensitive through
+        the operator, not here.
+    .PARAMETER StoredValue
+        The value as persisted, keeping any %...% reference.
+    .PARAMETER Location
+        What the stored value resolves to, or null where it does not resolve.
+    .OUTPUTS
+        The identity of the location.
+    .EXAMPLE
+        ConvertTo-LocationIdentity -StoredValue "%JAVA_HOME%\bin" -Location $null
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string] $StoredValue,
+        [AllowEmptyString()]
+        [AllowNull()]
+        [string] $Location
+    )
+
+    return [string]::IsNullOrEmpty($Location) `
+        ? (ConvertTo-ComparableLocation -Location $StoredValue) `
+        : $Location
 }
 
 function local:Get-StoredPathString {
@@ -254,7 +295,7 @@ function local:Sync-ProcessPath {
         [SystemPathLocation[]] $TrailingProcessLocations = @()
     )
 
-    $persisted = @(Get-SystemPath -Machine) + @(Get-SystemPath -User)
+    $persisted = @(Get-SystemPath -Machine -ErrorAction SilentlyContinue) + @(Get-SystemPath -User -ErrorAction SilentlyContinue)
 
     $locations = @($LeadingProcessLocations) + $persisted + @($TrailingProcessLocations)
 
@@ -309,11 +350,12 @@ function local:Add-PathLocation {
     )
 
     $normalized = ConvertTo-NormalizedLocation -Location $Location
+    $identity = ConvertTo-LocationIdentity -StoredValue $Location -Location $normalized
 
     $present = @(
         $Entries `
             | Where-Object {
-                $null -ne $normalized -and $_.Location -ieq $normalized
+                (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
             }
     )
 
@@ -327,7 +369,7 @@ function local:Add-PathLocation {
         $remaining = @(
             $Entries `
                 | Where-Object {
-                    $_.Location -ine $normalized
+                    (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ine $identity
                 }
         )
         return $present + $remaining
@@ -370,15 +412,14 @@ function local:Remove-PathLocation {
     )
 
     $normalized = ConvertTo-NormalizedLocation -Location $Location
+    $identity = ConvertTo-LocationIdentity -StoredValue $Location -Location $normalized
 
-    return $null -eq $normalized `
-        ? @($Entries) `
-        : @(
-            $Entries `
-                | Where-Object {
-                    $_.Location -ine $normalized
-                }
-        )
+    return @(
+        $Entries `
+            | Where-Object {
+                (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ine $identity
+            }
+    )
 }
 
 function local:Remove-DuplicatePathLocation {
@@ -388,8 +429,9 @@ function local:Remove-DuplicatePathLocation {
     .DESCRIPTION
         Returns the SystemPathLocation entries with duplicates removed, keeping the first occurrence of each
         location. Duplicates are decided on the resolved Location, case-insensitively, so two entries that
-        resolve to the same folder count as one. An entry that cannot be resolved is kept. The kept entry
-        retains its stored value.
+        resolve to the same folder count as one. Entries that do not resolve are compared on their stored
+        value instead, so a %...% reference no variable resolves still counts as a duplicate of itself.
+        The kept entry retains its stored value.
     .PARAMETER Entries
         The SystemPathLocation entries to deduplicate.
     .OUTPUTS
@@ -409,7 +451,7 @@ function local:Remove-DuplicatePathLocation {
     return @(
         $Entries `
             | Where-Object {
-                $null -eq $_.Location -or $seen.Add($_.Location)
+                $seen.Add((ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location))
             }
     )
 }
@@ -472,10 +514,14 @@ function local:Test-LocationCriteria {
         ignored on the -Contains and -Filter criteria, which are a substring and a wildcard pattern and are
         not resolved; the -Match patterns are applied as given, since a backslash is meaningful in a regular
         expression.
+        A location that does not resolve is matched on its stored value, so a %...% reference no variable
+        resolves is still found by the criteria naming it.
         A leading '\\' is the one run that carries meaning and is kept, holding a UNC root apart from a single
         leading backslash.
     .PARAMETER Location
         The location to test, already resolved, or null when it could not be resolved.
+    .PARAMETER StoredValue
+        The value the location is stored as, matched on where the location does not resolve.
     .PARAMETER Exact
         Location the tested location must equal, resolved before comparing.
     .PARAMETER Contains
@@ -497,38 +543,41 @@ function local:Test-LocationCriteria {
         [Parameter(Mandatory)]
         [AllowNull()]
         $Location,
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string] $StoredValue,
         [string] $Exact,
         [string[]] $Contains,
         [string[]] $Filter,
         [string[]] $Match
     )
 
-    if ($null -eq $Location) {
-        return -not ($Exact -or $Contains -or $Filter -or $Match)
-    }
+    # every criterion below runs against the resolved location,
+    # or against the stored value where nothing resolves, e.g. an unset %...% reference
+    $searched = ConvertTo-LocationIdentity -StoredValue $StoredValue -Location $Location
 
-    # Location is already normalized, and therefore already comparable
-    $comparable = $Location
-
-    if ($Exact -and $comparable -ine (ConvertTo-NormalizedLocation -Location $Exact)) {
-        return $false
+    if ($Exact) {
+        $exactNormalized = ConvertTo-NormalizedLocation -Location $Exact
+        if ($searched -ine (ConvertTo-LocationIdentity -StoredValue $Exact -Location $exactNormalized)) {
+            return $false
+        }
     }
 
     foreach ($substring in $Contains) {
         $comparableSubstring = ConvertTo-ComparableLocation -Location $substring
-        if (-not $comparable.Contains($comparableSubstring, [System.StringComparison]::OrdinalIgnoreCase)) {
+        if (-not $searched.Contains($comparableSubstring, [System.StringComparison]::OrdinalIgnoreCase)) {
             return $false
         }
     }
 
     foreach ($pattern in $Filter) {
-        if ($comparable -inotlike (ConvertTo-ComparableLocation -Location $pattern)) {
+        if ($searched -inotlike (ConvertTo-ComparableLocation -Location $pattern)) {
             return $false
         }
     }
 
     foreach ($pattern in $Match) {
-        if ($comparable -inotmatch $pattern) {
+        if ($searched -inotmatch $pattern) {
             return $false
         }
     }
@@ -553,6 +602,8 @@ function Get-SystemPath {
         values instead.
         The -Exact, -Contains, -Filter and -Match criteria select locations. Multiple criteria, of the same kind or
         of different kinds, must all be satisfied. Without any criterion, every location is returned.
+        A location carrying a %...% reference whose variable is not set is listed with its stored value and an
+        empty Location, names the variable in an error of its own, and is selected on that stored value.
     .PARAMETER Machine
         If specified, the system Path for the local machine is returned.
     .PARAMETER User
@@ -702,7 +753,13 @@ function Get-SystemPath {
 
     $selectedLocations = $allLocations `
         | Where-Object {
-            Test-LocationCriteria -Location $_.Location @criteria
+            Test-LocationCriteria -Location $_.Location -StoredValue $_.StoredValue @criteria
+        }
+
+    # reads name every reference the listed locations carry that no variable resolves
+    $selectedLocations `
+        | ForEach-Object {
+            Write-UnresolvedVariableError -Value $_.StoredValue
         }
 
     # -Join reproduces the stored form (StoredValue), keeping %...% references
@@ -803,7 +860,8 @@ function local:Set-SystemPath {
     # distinguishable from one the session added
     $processLocations = Get-ProcessOnlyPathLocations
 
-    Set-EnvironmentVariable @context -Name Path -Value $value -Expandable
+    # the write stays quiet about the Path's own references: the command that took the location reported them
+    Set-EnvironmentVariable @context -Name Path -Value $value -Expandable -ErrorAction SilentlyContinue
 
     # derive the process Path from both scopes; runs after the write, so it is the authoritative one
     Sync-ProcessPath @processLocations
@@ -816,8 +874,10 @@ function Add-SystemPathLocation {
     .DESCRIPTION
         Adds the specified location to the system Path, either for the current user or for the local machine.
         A location naming no existing folder is reported as a terminating error and nothing is written,
-        unless -Force is given. The location is checked resolved, so a %...% reference whose variable is
-        not set names no folder either.
+        unless -Force is given. The location is checked resolved.
+        A %...% reference whose variable is not set names the variable in an error of its own and is added
+        anyway, keeping the reference as indirection: what it resolves to once the variable is set is not
+        this command's business.
         Adding is idempotent: if the location is already present, the Path is left unchanged and a warning is reported.
         If the location is already present and -First is specified, it is moved to the beginning of the Path.
     .PARAMETER Location
@@ -870,7 +930,12 @@ function Add-SystemPathLocation {
     # the location is checked before anything is read or written, so -WhatIf reports the error a real run would hit
     $resolvedLocation = ConvertTo-NormalizedLocation -Location $Location
 
-    if (-not $Force -and ($null -eq $resolvedLocation -or -not (Test-Path -LiteralPath $resolvedLocation -PathType Container))) {
+    # a reference no variable resolves is reported and added anyway, keeping the reference as indirection:
+    # what it will resolve to once the variable is set is no business of this command
+    $unresolved = @(Get-UnresolvedVariableName -Value $Location)
+    Write-UnresolvedVariableError -Value $Location
+
+    if (-not $Force -and -not $unresolved -and ($null -eq $resolvedLocation -or -not (Test-Path -LiteralPath $resolvedLocation -PathType Container))) {
         $detail =
         if ($null -eq $resolvedLocation) {
             "location: '$Location', resolved: `$null"
@@ -896,7 +961,9 @@ function Add-SystemPathLocation {
         ? "Machine" `
         : "User"
 
-    $currentEntries = @(Get-SystemPath @context)
+    # the read stays quiet: this command reports the references of the location it was given, not those
+    # the Path already carries
+    $currentEntries = @(Get-SystemPath @context -ErrorAction SilentlyContinue)
     $newEntries = Add-PathLocation -Entries $currentEntries -Location $Location -First:$First -Scope $scope
 
     # idempotent: nothing changed means the location is already present
@@ -971,7 +1038,10 @@ function Remove-SystemPathLocation {
         ? @{ Machine = $true } `
         : @{ User = $true }
 
-    $currentEntries = @(Get-SystemPath @context)
+    # as in Add-SystemPathLocation: the read reports nothing, the location argument does
+    Write-UnresolvedVariableError -Value $Location
+
+    $currentEntries = @(Get-SystemPath @context -ErrorAction SilentlyContinue)
     $newEntries = @(Remove-PathLocation -Entries $currentEntries -Location $Location)
 
     # idempotent: nothing changed means the location is not present
@@ -1198,20 +1268,24 @@ function Move-SystemPathLocation {
         $target = @{ Machine = $true }; $targetName = "machine"
     }
 
-    $sourceEntries = @(Get-SystemPath @source)
+    # as in Add-SystemPathLocation: the reads report nothing, the location argument does
+    Write-UnresolvedVariableError -Value $Location
+
+    $sourceEntries = @(Get-SystemPath @source -ErrorAction SilentlyContinue)
     $normalized = ConvertTo-NormalizedLocation -Location $Location
+    $identity = ConvertTo-LocationIdentity -StoredValue $Location -Location $normalized
     $moved = @(
         $sourceEntries `
             | Where-Object {
-                $null -ne $normalized -and $_.Location -ieq $normalized
+                (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
             }
     )
 
     # not on the source Path: nothing to move
     if ($moved.Count -eq 0) {
-        $onTarget = @(Get-SystemPath @target) `
+        $onTarget = @(Get-SystemPath @target -ErrorAction SilentlyContinue) `
             | Where-Object {
-                $null -ne $normalized -and $_.Location -ieq $normalized
+                (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
             }
 
         $reason = $onTarget `
@@ -1223,11 +1297,11 @@ function Move-SystemPathLocation {
 
     $newSource = @(Remove-PathLocation -Entries $sourceEntries -Location $Location)
 
-    $targetEntries = @(Get-SystemPath @target)
+    $targetEntries = @(Get-SystemPath @target -ErrorAction SilentlyContinue)
     $onTarget = @(
         $targetEntries `
             | Where-Object {
-                $_.Location -ieq $normalized
+                (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
             }
     )
     # append the moved entry, keeping its stored (%...%) form, unless the target already has it

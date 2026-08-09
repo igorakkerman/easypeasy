@@ -47,6 +47,22 @@ Describe 'Test-SystemPathLocation' {
         { Test-SystemPathLocation } | Should -Throw '*Location*'
     }
 
+    It 'finds a location carrying a reference whose variable is not set' {
+        $env:PATH = '%EASYPEASY_UNSET_XYZ%\bin;C:\Windows'
+
+        Test-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -ErrorAction SilentlyContinue |
+            Should -BeTrue
+    }
+
+    It 'names the variable that is not set' {
+        $env:PATH = '%EASYPEASY_UNSET_XYZ%\bin;C:\Windows'
+
+        Test-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' `
+            -ErrorVariable reported -ErrorAction SilentlyContinue | Out-Null
+
+        $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+    }
+
     It 'is exposed through the testpath alias' {
         testpath 'C:\Program Files\Git\bin' | Should -BeTrue
     }

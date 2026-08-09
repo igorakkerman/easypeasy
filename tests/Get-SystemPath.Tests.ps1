@@ -110,6 +110,45 @@ Describe 'Get-SystemPath' {
         }
     }
 
+    Context 'a reference whose variable is not set' {
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } {
+                '%EASYPEASY_UNSET_XYZ%\bin;C:\Plain'
+            }
+        }
+
+        It 'lists the location, keeping the reference and leaving Location empty' {
+            $result = Get-SystemPath -Machine -ErrorAction SilentlyContinue
+
+            $result.StoredValue | Should -Be @('%EASYPEASY_UNSET_XYZ%\bin', 'C:\Plain')
+            $result[0].Location | Should -BeNullOrEmpty
+        }
+
+        It 'names the variable that is not set' {
+            Get-SystemPath -Machine -ErrorVariable reported -ErrorAction SilentlyContinue | Out-Null
+
+            $reported.FullyQualifiedErrorId | Should -BeLike 'EnvironmentVariableNotSet,*'
+            $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+        }
+
+        It 'selects the location on its stored form' {
+            (Get-SystemPath -Machine -Contains 'EASYPEASY_UNSET_XYZ' -ErrorAction SilentlyContinue).StoredValue |
+                Should -Be '%EASYPEASY_UNSET_XYZ%\bin'
+        }
+
+        It 'selects the location by the reference spelled exactly' {
+            (Get-SystemPath -Machine -Exact '%EASYPEASY_UNSET_XYZ%\bin\' -ErrorAction SilentlyContinue).StoredValue |
+                Should -Be '%EASYPEASY_UNSET_XYZ%\bin'
+        }
+
+        It 'leaves the resolvable locations alone' {
+            Get-SystemPath -Machine -Contains 'Plain' -ErrorVariable reported -ErrorAction SilentlyContinue | Out-Null
+
+            $reported | Should -BeNullOrEmpty
+        }
+    }
+
     Context 'normalized locations' {
 
         BeforeAll { $script:originalPath = $env:PATH }

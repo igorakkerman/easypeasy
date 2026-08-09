@@ -117,6 +117,25 @@ Describe 'Remove-DuplicateSystemPathLocations' {
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A\bin;C:\B' }
         }
+
+        It 'treats a reference whose variable is not set as a duplicate of itself' {
+            $script:userEntries = New-PathEntries '%EASYPEASY_UNSET_XYZ%\bin;%EASYPEASY_UNSET_XYZ%\\bin\;C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+
+            Remove-DuplicateSystemPathLocations -User -ErrorAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq '%EASYPEASY_UNSET_XYZ%\bin;C:\B' }
+        }
+
+        It 'keeps two references naming different variables' {
+            $script:userEntries = New-PathEntries '%EASYPEASY_UNSET_XYZ%\bin;%EASYPEASY_UNSET_ABC%\bin'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+
+            Remove-DuplicateSystemPathLocations -User -ErrorAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
     }
 
     Context 'when not elevated' {

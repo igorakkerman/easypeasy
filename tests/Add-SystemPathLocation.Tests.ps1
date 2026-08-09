@@ -335,10 +335,28 @@ Describe 'Add-SystemPathLocation' {
                 Should -Throw '*not an existing folder*'
         }
 
-        It 'reports a %...% reference whose variable is not set' {
-            # an unset variable is left verbatim, so what is left resolves against the current directory
-            { Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User } |
-                Should -Throw "*location: '%EASYPEASY_UNSET_XYZ%\bin', resolved: '$PWD\%EASYPEASY_UNSET_XYZ%\bin'"
+        It 'names a %...% reference whose variable is not set, and adds it anyway' {
+            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User `
+                -ErrorVariable reported -ErrorAction SilentlyContinue
+
+            $reported.FullyQualifiedErrorId | Should -BeLike 'EnvironmentVariableNotSet,*'
+            $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Entries[-1].StoredValue -eq '%EASYPEASY_UNSET_XYZ%\bin' }
+        }
+
+        It 'names every unset variable of a location' {
+            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\%EASYPEASY_UNSET_ABC%\bin' -User `
+                -ErrorVariable reported -ErrorAction SilentlyContinue
+
+            $reported.TargetObject | Should -Be @('EASYPEASY_UNSET_XYZ', 'EASYPEASY_UNSET_ABC')
+        }
+
+        It 'keeps the reference as indirection, storing it verbatim' {
+            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User -ErrorAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { [string]::IsNullOrEmpty($Entries[-1].Location) }
         }
 
         It 'names both forms when the resolved location differs' {
@@ -373,7 +391,7 @@ Describe 'Add-SystemPathLocation' {
         }
 
         It 'stores an unresolved %...% reference unexpanded with -Force' {
-            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User -Force
+            Add-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User -Force -ErrorAction SilentlyContinue
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $Entries[-1].StoredValue -eq '%EASYPEASY_UNSET_XYZ%\bin' }

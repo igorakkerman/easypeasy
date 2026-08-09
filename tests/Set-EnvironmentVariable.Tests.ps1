@@ -119,6 +119,16 @@ Describe 'Set-EnvironmentVariable' {
             $env:EASYPEASY_TEST | Should -BeNullOrEmpty
         }
 
+        It 'names a variable that is not set, and writes the value anyway' {
+            Set-EnvironmentVariable -Name EASYPEASY_TEST -Value '%EASYPEASY_UNSET_XYZ%\tools' -User -Expandable `
+                -ErrorVariable reported -ErrorAction SilentlyContinue
+
+            $unresolved = @($reported | Where-Object { $_.FullyQualifiedErrorId -like 'EnvironmentVariableNotSet,*' })
+            $unresolved.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+            (Get-Item 'HKCU:\Environment').GetValue('EASYPEASY_TEST', $null, 'DoNotExpandEnvironmentNames') |
+                Should -Be '%EASYPEASY_UNSET_XYZ%\tools'
+        }
+
         It 'auto-elevates through Invoke-Elevated, passing -Expandable, for a machine write when not administrator' {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy Invoke-Elevated { }

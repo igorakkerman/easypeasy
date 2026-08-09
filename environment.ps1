@@ -21,6 +21,75 @@ class EnvironmentVariable {
     #>
 }
 
+function local:Get-UnresolvedVariableName {
+    <#
+    .SYNOPSIS
+        Names the %...% references of a value that no environment variable resolves.
+
+    .DESCRIPTION
+        Returns the name of every %...% reference the value carries that the current process does not set,
+        in order of occurrence and each name once. A token holding a path separator is no reference, which
+        leaves a literal percent sign alone.
+
+    .PARAMETER Value
+        The value to scan, a location or an environment variable value.
+
+    .OUTPUTS
+        Names of the unresolved references, as a string array; empty where every reference resolves.
+
+    .EXAMPLE
+        Get-UnresolvedVariableName -Value "%JAVA_HOME%\bin"
+    #>
+    [CmdletBinding()]
+    [OutputType([string[]])]
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string] $Value
+    )
+
+    $names = @()
+
+    foreach ($reference in [regex]::Matches($Value, '%([^%\\/]+)%')) {
+        $name = $reference.Groups[1].Value
+        if ($null -eq [Environment]::GetEnvironmentVariable($name) -and $names -notcontains $name) {
+            $names += $name
+        }
+    }
+
+    return $names
+}
+
+function local:Write-UnresolvedVariableError {
+    <#
+    .SYNOPSIS
+        Reports every %...% reference of a value that no environment variable resolves.
+
+    .DESCRIPTION
+        Writes one non-terminating error per unresolved reference, so a command names every missing
+        variable and carries on with the value as given, keeping the reference as indirection.
+
+    .PARAMETER Value
+        The value to scan, a location or an environment variable value.
+
+    .EXAMPLE
+        Write-UnresolvedVariableError -Value "%JAVA_HOME%\bin"
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string] $Value
+    )
+
+    foreach ($name in Get-UnresolvedVariableName -Value $Value) {
+        Write-Error "Environment variable not set, reference left unresolved. name: $name, value: '$Value'" `
+            -ErrorId "EnvironmentVariableNotSet" `
+            -Category ObjectNotFound `
+            -TargetObject $name
+    }
+}
+
 function local:Sync-ProcessEnvironmentVariable {
     <#
     .SYNOPSIS
@@ -445,6 +514,8 @@ function local:Set-EnvironmentVariableExpandable {
         %USERPROFILE%\tmp) stay as indirection and are expanded when a process reads them.
         [Environment]::SetEnvironmentVariable always writes REG_SZ and so cannot do this;
         this function writes the registry directly and broadcasts WM_SETTINGCHANGE.
+        A reference whose variable is not set names the variable in an error of its own and is written
+        anyway, the reference staying as indirection.
         The change also takes effect in the current process immediately.
 
     .PARAMETER Name
@@ -486,6 +557,9 @@ function local:Set-EnvironmentVariableExpandable {
     if ($Machine -and -not (Test-Elevated)) {
         Assert-SudoAvailable
     }
+
+    # an expandable value resolves on read: a reference no variable resolves is reported and written anyway
+    Write-UnresolvedVariableError -Value $Value
 
     $scope = $Machine ? "Machine" : "User"
 

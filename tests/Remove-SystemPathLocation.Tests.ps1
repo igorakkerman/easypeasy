@@ -194,6 +194,42 @@ Describe 'Remove-SystemPathLocation' {
         }
     }
 
+    Context 'a reference whose variable is not set' {
+
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            $script:currentEntries = New-PathEntries '%EASYPEASY_UNSET_XYZ%\bin;C:\Keep'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
+            Mock -ModuleName easypeasy Set-SystemPath { }
+        }
+
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'removes the entry given the reference, and names the variable' {
+            Remove-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\bin' -User `
+                -ErrorVariable reported -ErrorAction SilentlyContinue
+
+            $reported.FullyQualifiedErrorId | Should -BeLike 'EnvironmentVariableNotSet,*'
+            $reported.TargetObject | Should -Be 'EASYPEASY_UNSET_XYZ'
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Keep' }
+        }
+
+        It 'ignores repeated and trailing backslashes on the reference' {
+            Remove-SystemPathLocation -Location '%EASYPEASY_UNSET_XYZ%\\bin\' -User -ErrorAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Keep' }
+        }
+
+        It 'leaves an entry carrying another reference alone' {
+            Remove-SystemPathLocation -Location '%EASYPEASY_UNSET_ABC%\bin' -User `
+                -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+    }
+
     Context 'a location the other scope also carries' {
 
         # the real Set-SystemPath runs against scopes held in memory, so the process Path it rebuilds
