@@ -71,6 +71,26 @@ Describe 'Invoke-Elevated' {
         }
     }
 
+    It 'passes a collection argument on as one array argument' {
+        Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
+
+        Invoke-Elevated rmpath -Location @('C:\A', 'C:\B') -Machine
+
+        Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
+            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -like "try { rmpath -Location 'C:\A','C:\B' -Machine } catch *"
+        }
+    }
+
+    It 'doubles a single quote inside an element of a collection argument' {
+        Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
+
+        Invoke-Elevated rmpath -Location @("C:\Sam's Tools", 'C:\B')
+
+        Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
+            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -like "try { rmpath -Location 'C:\Sam''s Tools','C:\B' } catch *"
+        }
+    }
+
     It 'is exposed through the <alias> alias' -ForEach @(
         @{ alias = 'sudops' }
         @{ alias = 'sups' }

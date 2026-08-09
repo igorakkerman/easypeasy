@@ -189,6 +189,11 @@ function local:ConvertTo-ElevatedCommand {
     return , $command
 }
 
+# one literal argument on a command line: single-quoted, embedded single quote doubled
+function local:quote($Value) {
+    return "'{0}'" -f ($Value -replace "'", "''")
+}
+
 function Invoke-Elevated {
     <#
     .SYNOPSIS
@@ -203,14 +208,20 @@ function Invoke-Elevated {
 
         Every argument is single-quoted, and an embedded single quote doubled, so it reaches the
         elevated session as one literal token whatever it holds - whitespace, a semicolon or a quote.
+        An argument that is itself a collection is quoted element by element and joined with commas,
+        so it reaches the elevated session as one array argument.
         The command name itself and anything written as a parameter, -Like -This, are passed through
         as typed, so the elevated session parses them as the command and its parameters.
 
     .PARAMETER Command
         The command to run elevated, followed by its arguments, exactly as it would be typed at the prompt.
+        An argument may be a collection, passed on as an array argument.
 
     .EXAMPLE
         Invoke-Elevated New-Item -ItemType Directory 'C:\Program Files\MyTool'
+
+    .EXAMPLE
+        Invoke-Elevated Remove-SystemPathLocation -Location @('C:\Tools\bin', 'C:\Other\bin') -Machine
 
     .EXAMPLE
         sudops Restart-Service -Name Spooler
@@ -222,7 +233,7 @@ function Invoke-Elevated {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory, Position = 0, ValueFromRemainingArguments = $true)]
-        [string[]] $Command
+        [object[]] $Command
     )
 
     # the command name and parameter names have to stay bare to parse as such; every other argument is
@@ -231,11 +242,16 @@ function Invoke-Elevated {
         $Command `
             | Select-Object -Skip 1 `
             | ForEach-Object {
-                if ($_ -match '^-\w') {
+                if ($_ -is [string] -and $_ -match '^-\w') {
                     $_
                 }
+                elseif ($_ -isnot [string] -and $_ -is [System.Collections.IEnumerable]) {
+                    # a collection argument stays one argument: its elements are quoted and comma-joined,
+                    # the syntax an array argument is written in
+                    (@($_) | ForEach-Object { quote -Value $_ }) -join ','
+                }
                 else {
-                    "'{0}'" -f ($_ -replace "'", "''")
+                    quote -Value $_
                 }
             }
     )
