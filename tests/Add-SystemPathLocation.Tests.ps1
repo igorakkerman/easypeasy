@@ -175,9 +175,10 @@ Describe 'Add-SystemPathLocation' {
                 Should -Not -Throw
         }
 
-        It 'warns that the location is already present' {
+        It 'warns that the location is already present, naming the scope' {
             Add-SystemPathLocation -Location 'C:\Exists' -User -WarningVariable warning -WarningAction SilentlyContinue
             $warning | Should -Match 'already on the system Path'
+            $warning | Should -BeLike "*scope: User, location: 'C:\Exists'"
         }
 
         It 'does not persist when the location is already present' {

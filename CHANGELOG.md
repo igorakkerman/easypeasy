@@ -61,6 +61,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `Add-SystemPathLocation` reports terminating error `PathLocationNotFound` for location naming no existing folder, checked expanded.
 - **Added:** `-Force` on `Add-SystemPathLocation` — adds location naming no existing folder.
 - **Removed:** Aliases `-Prepend` and `-Start` on `Add-SystemPathLocation`.
+- **Changed:** Warning for location already on or not on system Path names scope.
 - **Fixed:** Aliases `addpath` and `rmpath` are exported;
   previously missing from the manifest.
 - **Changed:** `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` apply the change to the current process immediately.

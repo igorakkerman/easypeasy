@@ -46,6 +46,7 @@ Describe 'Remove-SystemPathLocation' {
             Remove-SystemPathLocation -Location '\server\share' -User -WarningVariable warning -WarningAction SilentlyContinue
 
             $warning | Should -Match 'not on the system Path'
+            $warning | Should -BeLike "*scope: User, location: '\server\share'"
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
 
@@ -420,9 +421,16 @@ Describe 'Remove-SystemPathLocation' {
                 Should -Not -Throw
         }
 
-        It 'warns that the location is not present' {
+        It 'warns that the location is not present, naming the scope' {
             Remove-SystemPathLocation -Location 'C:\Gone' -User -WarningVariable warning -WarningAction SilentlyContinue
             $warning | Should -Match 'not on the system Path'
+            $warning | Should -BeLike "*scope: User, location: 'C:\Gone'"
+        }
+
+        It 'names the machine scope of a machine removal' {
+            Remove-SystemPathLocation -Location 'C:\Gone' -Machine -WarningVariable warning -WarningAction SilentlyContinue
+
+            $warning | Should -BeLike "*scope: Machine, location: 'C:\Gone'"
         }
 
         It 'does not persist when the location is absent' {

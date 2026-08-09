@@ -441,10 +441,12 @@ function local:Remove-PathLocations {
         The current SystemPathLocation entries to remove the locations from.
     .PARAMETER Locations
         Folder locations to remove, each treated as expandable.
+    .PARAMETER Scope
+        Scope the entries belong to, named in the warning.
     .OUTPUTS
         The SystemPathLocation entries with the locations removed.
     .EXAMPLE
-        Remove-PathLocations -Entries $entries -Locations @("C:\Program Files\Git\bin", "C:\Tools")
+        Remove-PathLocations -Entries $entries -Locations @("C:\Program Files\Git\bin", "C:\Tools") -Scope User
     #>
     [CmdletBinding()]
     param (
@@ -453,7 +455,9 @@ function local:Remove-PathLocations {
         [SystemPathLocation[]] $Entries,
         [Parameter(Mandatory)]
         [AllowEmptyCollection()]
-        [string[]] $Locations
+        [string[]] $Locations,
+        [Parameter(Mandatory)]
+        [string] $Scope
     )
 
     $remaining = @($Entries)
@@ -463,7 +467,7 @@ function local:Remove-PathLocations {
 
         # idempotent: nothing changed means the location is not present
         if ((Get-StoredPathString -Entries $trimmed) -eq (Get-StoredPathString -Entries $remaining)) {
-            Write-Warning "Location is not on the system Path: '$pathLocation'"
+            Write-Warning "Location is not on the system Path. scope: $Scope, location: '$pathLocation'"
         }
 
         $remaining = $trimmed
@@ -1077,7 +1081,7 @@ function Add-SystemPathLocation {
 
             # idempotent: nothing changed means the location is already present
             if ((Get-StoredPathString -Entries $extendedEntries) -eq (Get-StoredPathString -Entries $newEntries)) {
-                Write-Warning "Location is already on the system Path: '$pathLocation'"
+                Write-Warning "Location is already on the system Path. scope: $scope, location: '$pathLocation'"
             }
 
             $newEntries = $extendedEntries
@@ -1239,8 +1243,8 @@ function Remove-SystemPathLocation {
             ? @(Get-SystemPath -User) `
             : @()
 
-        $machineTrimmed = @(Remove-PathLocations -Entries $machineEntries -Locations $machineLocations)
-        $userTrimmed = @(Remove-PathLocations -Entries $userEntries -Locations $userLocations)
+        $machineTrimmed = @(Remove-PathLocations -Entries $machineEntries -Locations $machineLocations -Scope Machine)
+        $userTrimmed = @(Remove-PathLocations -Entries $userEntries -Locations $userLocations -Scope User)
 
         # a process-only location is on no persisted Path: it goes from the Path of this shell alone,
         # from whichever side of the persisted ones it sits on
@@ -1255,11 +1259,11 @@ function Remove-SystemPathLocation {
             # both sides are filtered, but only the two together tell whether a location was there at
             # all, so the combined run reports the warnings and each side is then filtered in silence
             $shellEntries = @($shellLeading) + @($shellTrailing)
-            $shellTrimmed = @(Remove-PathLocations -Entries $shellEntries -Locations $shellLocations)
+            $shellTrimmed = @(Remove-PathLocations -Entries $shellEntries -Locations $shellLocations -Scope Process)
             $shellChanged = (Get-StoredPathString -Entries $shellTrimmed) -ne (Get-StoredPathString -Entries $shellEntries)
 
-            $shellLeading = @(Remove-PathLocations -Entries $shellLeading -Locations $shellLocations -WarningAction SilentlyContinue)
-            $shellTrailing = @(Remove-PathLocations -Entries $shellTrailing -Locations $shellLocations -WarningAction SilentlyContinue)
+            $shellLeading = @(Remove-PathLocations -Entries $shellLeading -Locations $shellLocations -Scope Process -WarningAction SilentlyContinue)
+            $shellTrailing = @(Remove-PathLocations -Entries $shellTrailing -Locations $shellLocations -Scope Process -WarningAction SilentlyContinue)
         }
 
         $machineChanged = (Get-StoredPathString -Entries $machineTrimmed) -ne (Get-StoredPathString -Entries $machineEntries)
