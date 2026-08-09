@@ -97,6 +97,16 @@ Describe 'easypeasy.format.ps1xml' {
             $rendered | Should -Not -Match '↳'
         }
 
+        It 'accents an unresolved %...% reference and gives it no resolved row' {
+            $PSStyle.OutputRendering = 'Ansi'
+            try { $rendered = New-Rendered -StoredValue '%EASYPEASY_UNSET_XYZ%\bin' -Location $null }
+            finally { $PSStyle.OutputRendering = 'PlainText' }
+
+            $rendered |
+                Should -Match "$([regex]::Escape($PSStyle.Foreground.Red))$([regex]::Escape('%EASYPEASY_UNSET_XYZ%\bin'))"
+            $rendered | Should -Not -Match '↳'
+        }
+
         It 'accents the single row where the stored value is itself the missing folder' {
             $PSStyle.OutputRendering = 'Ansi'
             try { $rendered = New-Rendered -StoredValue $absent -Location $absent }

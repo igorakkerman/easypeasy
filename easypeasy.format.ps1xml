@@ -105,15 +105,19 @@
                 StoredValue is shown as persisted. A %...% reference is the one form that hides which
                 folder an entry names, so that entry carries a second line with the resolved Location.
                 An entry naming no existing folder is accented.
+                A location that does not resolve has nothing to resolve to, so it stays a single accented
+                row. The emptiness is tested with IsNullOrEmpty, not against $null: the class types
+                Location as [string], which turns the null it is constructed with into an empty string.
               -->
               <TableColumnItem>
                 <ScriptBlock>
-                  $missing = $null -eq $_.Location -or
+                  $unresolved = [string]::IsNullOrEmpty($_.Location)
+                  $missing = $unresolved -or
                       -not (Test-Path -LiteralPath $_.Location -PathType Container -ErrorAction Ignore)
                   $accent = $PSStyle.Foreground.Red
                   $reset = $PSStyle.Reset
 
-                  if ($null -eq $_.Location) {
+                  if ($unresolved) {
                       "$accent$($_.StoredValue)$reset"
                   }
                   elseif ($_.StoredValue -match '%[^%]+%' -and $_.Location -cne $_.StoredValue) {
