@@ -149,6 +149,62 @@ Describe 'Move-SystemPathLocation' {
         }
     }
 
+    Context 'from the pipeline' {
+
+        BeforeEach {
+            $script:machineEntries = New-PathEntries 'C:\A;C:\X;C:\Y' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\B'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+        }
+
+        It 'takes a piped entry as the location it stores' {
+            New-PathEntries 'C:\X' -Scope Machine | Move-SystemPathLocation -ToUser
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\X' }
+        }
+
+        It 'takes the entry passed on inside ForEach-Object' {
+            New-PathEntries 'C:\X' -Scope Machine | ForEach-Object { Move-SystemPathLocation $_ -ToUser }
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\X' }
+        }
+
+        It 'moves every piped location in a single write per scope' {
+            'C:\X', 'C:\Y' | Move-SystemPathLocation -ToUser
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $Machine -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A' }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\X;C:\Y' }
+        }
+
+        It 'warns for the piped location that is not on the source Path, moving the others' {
+            'C:\X', 'C:\Nowhere' | Move-SystemPathLocation -ToUser `
+                -WarningVariable warning -WarningAction SilentlyContinue
+
+            $warning | Should -HaveCount 1
+            $warning | Should -Match 'C:\\Nowhere'
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\X' }
+        }
+
+        It 'writes nothing under -WhatIf' {
+            'C:\X', 'C:\Y' | Move-SystemPathLocation -ToUser -WhatIf
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'reads and writes nothing for an empty pipeline' {
+            @() | Move-SystemPathLocation -ToUser
+
+            Should -Invoke -ModuleName easypeasy Get-SystemPath -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+    }
+
     Context 'when not elevated' {
 
         BeforeEach {
@@ -168,19 +224,32 @@ Describe 'Move-SystemPathLocation' {
             Move-SystemPathLocation 'C:\U' -ToMachine
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
-                $Command -contains 'Move-SystemPathLocation' -and
-                $Command -contains 'C:\U' -and
+                $Command[0] -eq 'Move-SystemPathLocation' -and
+                $Command -contains '-Location' -and
+                $Command[2] -contains 'C:\U' -and
                 $Command -contains '-ToMachine'
             }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'passes every piped location on to the one elevated session' {
+            'C:\U', 'C:\B' | Move-SystemPathLocation -ToMachine
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command[0] -eq 'Move-SystemPathLocation' -and
+                $Command[2] -contains 'C:\U' -and
+                $Command[2] -contains 'C:\B' -and
+                $Command -contains '-ToMachine'
+            }
         }
 
         It 'runs the whole move elevated, writing neither Path in-process (-ToUser)' {
             Move-SystemPathLocation 'C:\M' -ToUser
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
-                $Command -contains 'Move-SystemPathLocation' -and
-                $Command -contains 'C:\M' -and
+                $Command[0] -eq 'Move-SystemPathLocation' -and
+                $Command -contains '-Location' -and
+                $Command[2] -contains 'C:\M' -and
                 $Command -contains '-ToUser'
             }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly

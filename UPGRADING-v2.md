@@ -166,3 +166,15 @@ write the **canonical** name, never an alias.
   to the current shell.
 - `Sync-SystemPath` (alias `syncpath`) — rebuild the system Path of the current shell from the
   machine and the user Path, for a change made outside easypeasy.
+- **`-Location` from the pipeline** on `Add-SystemPathLocation`, `Remove-SystemPathLocation`,
+  `Move-SystemPathLocation` and `Test-SystemPathLocation`, so a read feeds a write directly:
+  `Get-SystemPath -Contains Git | Remove-SystemPathLocation`. An entry pipes as the value it
+  stores, an unresolved `%…%` reference included. `-Location` takes several locations either way, applied
+  in one write per scope and behind one elevation prompt; inside `ForEach-Object` pass `$_` as v1 did.
+- **`Remove-SystemPathLocation` takes the scope from a piped entry** through its `-Entry` parameter, so
+  `Get-SystemPath -Contains Git | Remove-SystemPathLocation` removes each entry from the scope it lives
+  on — from both scopes where an effective read found it on both, and from the current shell's Path alone
+  where the entry is process-only. `-Machine` and `-User` then select which entries are removed rather
+  than where from. A location given as text is unaffected: it still goes to the scope the switches name,
+  the current user by default. Inside `ForEach-Object` pass `-Entry $_` to keep the scope; a bare `$_`
+  arrives as the location alone.

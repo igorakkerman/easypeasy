@@ -95,6 +95,13 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `Test-Elevated` — returns whether the current session is elevated.
 - **Added:** Error id, category and target on every reported error.
 - **Changed:** `Backup-SystemPath` returns location of backup file.
+- **Added:** `-Location` on `Add-`, `Remove-`, `Move-` and `Test-SystemPathLocation` takes locations from pipeline — `path Git | rmpath`.
+- **Added:** `-Entry` on `Remove-SystemPathLocation` — takes `SystemPathLocation` from pipeline and removes each from scope it carries, so location on both scopes goes from both.
+- **Added:** `-Machine` and `-User` select which piped entries `Remove-SystemPathLocation` removes, rather than where from.
+- **Added:** `Remove-SystemPathLocation` drops piped entry of Process scope from Path of current shell, neither persisted scope written.
+- **Added:** `-Location` on `Add-`, `Remove-`, `Move-` and `Test-SystemPathLocation` takes several locations, applied in one write per scope and one elevation.
+- **Added:** `ToString()` on `SystemPathLocation` returns `StoredValue`, so entry piped to location command names entry itself.
+- **Added:** `Invoke-Elevated` passes collection argument on as array argument, quoting each element.
 - **Changed:** `Test-SystemPathLocation` takes `-Machine`, `-User` and `-Effective` as parameter sets, matching `Get-SystemPath`.
 - **Changed:** `Remove-DuplicateSystemPathLocations` rejects `-KeepMachine` / `-KeepUser` next to a single scope, instead of ignoring them.
 - **Fixed:** `Stop-Explorer` treats absent Explorer process as success.

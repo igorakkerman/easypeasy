@@ -87,4 +87,36 @@ Describe 'Test-SystemPathLocation' {
         { Test-SystemPathLocation -Location 'C:\x' -Machine -User } |
             Should -Throw '*Parameter set cannot be resolved*'
     }
+
+    Context 'from the pipeline' {
+
+        It 'takes a piped entry as the location it stores' {
+            Get-SystemPath -Exact 'C:\EasypeasyRoot' | Test-SystemPathLocation | Should -BeTrue
+        }
+
+        It 'takes the entry passed on inside ForEach-Object' {
+            Get-SystemPath -Exact 'C:\EasypeasyRoot' | ForEach-Object { Test-SystemPathLocation $_ } |
+                Should -BeTrue
+        }
+
+        It 'reports one result per piped location' {
+            $results = @('C:\EasypeasyRoot', 'C:\Nope' | Test-SystemPathLocation)
+
+            $results | Should -HaveCount 2
+            $results[0] | Should -BeTrue
+            $results[1] | Should -BeFalse
+        }
+
+        It 'reports one result per location given as an argument list' {
+            $results = @(Test-SystemPathLocation -Location 'C:\EasypeasyRoot', 'C:\Nope')
+
+            $results | Should -HaveCount 2
+            $results[0] | Should -BeTrue
+            $results[1] | Should -BeFalse
+        }
+
+        It 'reports nothing for an empty pipeline' {
+            @(@() | Test-SystemPathLocation) | Should -HaveCount 0
+        }
+    }
 }

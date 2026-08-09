@@ -108,6 +108,10 @@ Describe 'Get-SystemPath' {
             (Get-SystemPath -Machine -Contains 'S32').StoredValue |
                 Should -Be '%SystemRoot%\S32'
         }
+
+        It 'renders an entry as its stored value' {
+            "$((Get-SystemPath -Machine -Contains 'S32'))" | Should -Be '%SystemRoot%\S32'
+        }
     }
 
     Context 'a reference whose variable is not set' {

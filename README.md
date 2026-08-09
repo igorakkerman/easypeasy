@@ -116,9 +116,16 @@ True
 
 # Remove-SystemPathLocation
 > rmpath "C:\Program Files\MyApp"           # removes every occurrence of this path
+> rmpath "C:\MyApp", "C:\OtherApp"          # several locations, one write
+> path MyApp | rmpath                       # each from the scope it lives on 🅰️
+> path MyApp | rmpath -User                 # only the ones in user scope
 ```
 
 A location naming no existing folder is rejected; pass `-Force` to add it anyway. The location is checked expanded, so a `%…%` reference whose variable is not set is rejected too.
+
+`addpath`, `rmpath`, `movepath` and `testpath` take their locations from the pipeline as well, applying them in one write per scope and behind one elevation prompt.
+
+`rmpath` reads the scope off a piped location instead of its own switches: a location both scopes carry is removed from both, one local to the current shell from that shell's Path alone, and `-Machine` / `-User` narrow which of the piped locations are removed.
 
 #### Remove duplicate folders from the system Path
 

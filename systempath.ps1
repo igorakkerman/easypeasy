@@ -35,6 +35,11 @@ class SystemPathLocation {
         $this.Location = $Location
     }
 
+    # the entry as the value the Path stores, the form the location commands take it back as
+    [string] ToString() {
+        return $this.StoredValue
+    }
+
     <#
     .SYNOPSIS
         A folder location on the system Path and the scope it belongs to.
@@ -45,6 +50,8 @@ class SystemPathLocation {
         as is a repeated or trailing backslash and a '..' segment.
         Location is what that value resolves to - expanded and normalized to an absolute folder - or null when
         it cannot be resolved. The two are equal when the stored value is already a normalized absolute folder.
+        ToString() returns StoredValue, so an entry piped to a location command names the entry itself,
+        an unresolved %...% reference included.
     .EXAMPLE
         $location = [SystemPathLocation]::new("Machine", "%ProgramFiles%\Git\bin", "C:\Program Files\Git\bin")
     #>
@@ -867,21 +874,136 @@ function local:Set-SystemPath {
     Sync-ProcessPath @processLocations
 }
 
+function local:Get-ScopePathRemoval {
+    <#
+    .SYNOPSIS
+        Works out what one scope Path holds once the given locations are removed.
+    .DESCRIPTION
+        Reads the scope Path and removes each location from what the ones before it left, so a single write
+        covers them all. A location that is not present leaves the entries unchanged and is reported in a
+        warning of its own.
+        Returns null where no location was present, so the caller leaves the scope alone without asking its
+        ShouldProcess gate.
+    .PARAMETER Locations
+        Folder locations to remove.
+    .PARAMETER Scope
+        Scope to remove them from.
+    .OUTPUTS
+        A hashtable holding the Scope, the Locations and the resulting Entries, or null where the Path
+        would not change.
+    .EXAMPLE
+        $removal = Get-ScopePathRemoval -Locations @("C:\Program Files\Git\bin") -Scope Machine
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string[]] $Locations,
+        [Parameter(Mandatory)]
+        [ValidateSet("Machine", "User")]
+        [string] $Scope
+    )
+
+    $context = $Scope -eq "Machine" `
+        ? @{ Machine = $true } `
+        : @{ User = $true }
+
+    # the read stays quiet: the command reports the references of the locations it was given
+    $currentEntries = @(Get-SystemPath @context -ErrorAction SilentlyContinue)
+
+    $newEntries = $currentEntries
+    foreach ($pathLocation in $Locations) {
+        $remainingEntries = @(Remove-PathLocation -Entries $newEntries -Location $pathLocation)
+
+        # idempotent: nothing changed means the location is not present
+        if ((Get-StoredPathString -Entries $remainingEntries) -eq (Get-StoredPathString -Entries $newEntries)) {
+            Write-Warning "Location is not on the system Path: '$pathLocation'"
+        }
+
+        $newEntries = $remainingEntries
+    }
+
+    if ((Get-StoredPathString -Entries $newEntries) -eq (Get-StoredPathString -Entries $currentEntries)) {
+        return $null
+    }
+
+    return @{
+        Scope     = $Scope
+        Locations = $Locations
+        Entries   = $newEntries
+    }
+}
+
+function local:Get-ProcessPathRemoval {
+    <#
+    .SYNOPSIS
+        Works out which process-only locations survive the removal of the given ones.
+    .DESCRIPTION
+        Takes the locations only the current shell knows - those on neither persisted Path - and drops the
+        given ones, keeping the split by position the process Path is rebuilt from. A location that is not
+        among them is reported in a warning of its own.
+        Returns null where no location was present, so the caller leaves the shell's Path alone.
+    .PARAMETER Locations
+        Folder locations to remove.
+    .OUTPUTS
+        A hashtable ready to splat into Sync-ProcessPath, or null where the Path would not change.
+    .EXAMPLE
+        $removal = Get-ProcessPathRemoval -Locations @("C:\Temp\session")
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string[]] $Locations
+    )
+
+    $processLocations = Get-ProcessOnlyPathLocations
+    $leading = @($processLocations.LeadingProcessLocations)
+    $trailing = @($processLocations.TrailingProcessLocations)
+
+    $newLeading = $leading
+    $newTrailing = $trailing
+    foreach ($pathLocation in $Locations) {
+        $remainingLeading = @(Remove-PathLocation -Entries $newLeading -Location $pathLocation)
+        $remainingTrailing = @(Remove-PathLocation -Entries $newTrailing -Location $pathLocation)
+
+        # idempotent: nothing changed means the location is not among the process-only ones
+        if ((Get-StoredPathString -Entries $remainingLeading) -eq (Get-StoredPathString -Entries $newLeading) `
+                -and (Get-StoredPathString -Entries $remainingTrailing) -eq (Get-StoredPathString -Entries $newTrailing)) {
+            Write-Warning "Location is not on the system Path: '$pathLocation'"
+        }
+
+        $newLeading = $remainingLeading
+        $newTrailing = $remainingTrailing
+    }
+
+    if ((Get-StoredPathString -Entries $newLeading) -eq (Get-StoredPathString -Entries $leading) `
+            -and (Get-StoredPathString -Entries $newTrailing) -eq (Get-StoredPathString -Entries $trailing)) {
+        return $null
+    }
+
+    return @{
+        LeadingProcessLocations  = $newLeading
+        TrailingProcessLocations = $newTrailing
+    }
+}
+
 function Add-SystemPathLocation {
     <#
     .SYNOPSIS
         Adds a location to the system Path.
     .DESCRIPTION
-        Adds the specified location to the system Path, either for the current user or for the local machine.
+        Adds the specified locations to the system Path, either for the current user or for the local machine.
+        Locations are taken as arguments or from the pipeline, and added in one write, keeping the order
+        they were given in.
         A location naming no existing folder is reported as a terminating error and nothing is written,
         unless -Force is given. The location is checked resolved.
         A %...% reference whose variable is not set names the variable in an error of its own and is added
         anyway, keeping the reference as indirection: what it resolves to once the variable is set is not
         this command's business.
-        Adding is idempotent: if the location is already present, the Path is left unchanged and a warning is reported.
+        Adding is idempotent: a location already present leaves the Path unchanged and is reported in a
+        warning of its own.
         If the location is already present and -First is specified, it is moved to the beginning of the Path.
     .PARAMETER Location
-        Folder location to add to the system Path.
+        Folder locations to add to the system Path. Taken from the pipeline as well.
     .PARAMETER Machine
         If specified, the system Path for the local machine is used.
     .PARAMETER User
@@ -907,12 +1029,14 @@ function Add-SystemPathLocation {
         Add-SystemPathLocation -Location "C:\Program Files\Git\bin" -First
     .EXAMPLE
         Add-SystemPathLocation -Location "%JAVA_HOME%\bin" -Force
+    .EXAMPLE
+        Get-SystemPath -Contains Git -User | Add-SystemPathLocation -Machine
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [Alias("Folder")]
-        [string] $Location,
+        [string[]] $Location,
         [Alias("Front")]
         [switch] $First,
         [Parameter(Mandatory, ParameterSetName = "Machine")]
@@ -922,76 +1046,111 @@ function Add-SystemPathLocation {
         [switch] $Force
     )
 
-    # fail fast: a machine write that cannot elevate stops before anything is read or written
-    if ($Machine -and -not (Test-Elevated)) {
-        Assert-SudoAvailable
-    }
-
-    # the location is checked before anything is read or written, so -WhatIf reports the error a real run would hit
-    $resolvedLocation = ConvertTo-NormalizedLocation -Location $Location
-
-    # a reference no variable resolves is reported and added anyway, keeping the reference as indirection:
-    # what it will resolve to once the variable is set is no business of this command
-    $unresolved = @(Get-UnresolvedVariableName -Value $Location)
-    Write-UnresolvedVariableError -Value $Location
-
-    if (-not $Force -and -not $unresolved -and ($null -eq $resolvedLocation -or -not (Test-Path -LiteralPath $resolvedLocation -PathType Container))) {
-        $detail =
-        if ($null -eq $resolvedLocation) {
-            "location: '$Location', resolved: `$null"
-        }
-        elseif ($resolvedLocation -ceq $Location) {
-            "location: '$Location'"
-        }
-        else {
-            "location: '$Location', resolved: '$resolvedLocation'"
+    begin {
+        # fail fast: a machine write that cannot elevate stops before anything is read or written
+        if ($Machine -and -not (Test-Elevated)) {
+            Assert-SudoAvailable
         }
 
-        Write-Error "Location is not an existing folder, use -Force to add it anyway. $detail" `
-            -ErrorId "PathLocationNotFound" `
-            -Category ObjectNotFound `
-            -TargetObject $Location `
-            -ErrorAction Stop
+        $locations = @()
     }
 
-    $context = $Machine `
-        ? @{ Machine = $true } `
-        : @{ User = $true }
-    $scope = $Machine `
-        ? "Machine" `
-        : "User"
-
-    # the read stays quiet: this command reports the references of the location it was given, not those
-    # the Path already carries
-    $currentEntries = @(Get-SystemPath @context -ErrorAction SilentlyContinue)
-    $newEntries = Add-PathLocation -Entries $currentEntries -Location $Location -First:$First -Scope $scope
-
-    # idempotent: nothing changed means the location is already present
-    if ((Get-StoredPathString -Entries $newEntries) -eq (Get-StoredPathString -Entries $currentEntries)) {
-        Write-Warning "Location is already on the system Path: '$Location'"
-        return
+    process {
+        $locations += $Location
     }
 
-    if (-not $PSCmdlet.ShouldProcess($Location, "Add location to system Path")) {
-        return
+    end {
+        # an empty pipeline has nothing to add
+        if (-not $locations) {
+            return
+        }
+
+        # every location is checked before anything is read or written, so -WhatIf reports the error a real
+        # run would hit and one location naming no folder leaves the Path untouched
+        foreach ($pathLocation in $locations) {
+            $resolvedLocation = ConvertTo-NormalizedLocation -Location $pathLocation
+
+            # a reference no variable resolves is reported and added anyway, keeping the reference as
+            # indirection: what it will resolve to once the variable is set is no business of this command
+            $unresolved = @(Get-UnresolvedVariableName -Value $pathLocation)
+            Write-UnresolvedVariableError -Value $pathLocation
+
+            if (-not $Force -and -not $unresolved -and ($null -eq $resolvedLocation -or -not (Test-Path -LiteralPath $resolvedLocation -PathType Container))) {
+                $detail =
+                if ($null -eq $resolvedLocation) {
+                    "location: '$pathLocation', resolved: `$null"
+                }
+                elseif ($resolvedLocation -ceq $pathLocation) {
+                    "location: '$pathLocation'"
+                }
+                else {
+                    "location: '$pathLocation', resolved: '$resolvedLocation'"
+                }
+
+                Write-Error "Location is not an existing folder, use -Force to add it anyway. $detail" `
+                    -ErrorId "PathLocationNotFound" `
+                    -Category ObjectNotFound `
+                    -TargetObject $pathLocation `
+                    -ErrorAction Stop
+            }
+        }
+
+        $context = $Machine `
+            ? @{ Machine = $true } `
+            : @{ User = $true }
+        $scope = $Machine `
+            ? "Machine" `
+            : "User"
+
+        # the read stays quiet: this command reports the references of the locations it was given, not those
+        # the Path already carries
+        $currentEntries = @(Get-SystemPath @context -ErrorAction SilentlyContinue)
+
+        # -First puts each location before the ones added so far, so adding them back to front leaves the
+        # given order at the beginning of the Path
+        $ordered = $First `
+            ? ($locations[($locations.Count - 1)..0]) `
+            : $locations
+
+        # each location is added to what the ones before it left, so one write covers them all
+        $newEntries = $currentEntries
+        foreach ($pathLocation in $ordered) {
+            $extendedEntries = @(Add-PathLocation -Entries $newEntries -Location $pathLocation -First:$First -Scope $scope)
+
+            # idempotent: nothing changed means the location is already present
+            if ((Get-StoredPathString -Entries $extendedEntries) -eq (Get-StoredPathString -Entries $newEntries)) {
+                Write-Warning "Location is already on the system Path: '$pathLocation'"
+            }
+
+            $newEntries = $extendedEntries
+        }
+
+        # no location changed anything: the Path is left unchanged
+        if ((Get-StoredPathString -Entries $newEntries) -eq (Get-StoredPathString -Entries $currentEntries)) {
+            return
+        }
+
+        if (-not $PSCmdlet.ShouldProcess(($locations -join ", "), "Add location to system Path")) {
+            return
+        }
+
+        # when not already elevated, the whole addition runs in an elevated session instead of in-process,
+        # so the Path is read and written on the same side of the boundary and never crosses it
+        if ($Machine -and -not (Test-Elevated)) {
+            $processLocations = Get-ProcessOnlyPathLocations
+
+            $command = @("Add-SystemPathLocation", "-Location", $locations, "-Machine")
+            if ($First) { $command += "-First" }
+            if ($Force) { $command += "-Force" }
+            Invoke-Elevated $command
+
+            Sync-ProcessPath @processLocations
+            return
+        }
+
+        # Set-SystemPath rebuilds the process Path, so the new location takes effect immediately
+        Set-SystemPath @context -Entries $newEntries
     }
-
-    # when not already elevated, the whole addition runs in an elevated session instead of in-process,
-    # so the Path is read and written on the same side of the boundary and never crosses it
-    if ($Machine -and -not (Test-Elevated)) {
-        $processLocations = Get-ProcessOnlyPathLocations
-
-        $command = @("Add-SystemPathLocation", $Location, "-Machine")
-        if ($First) { $command += "-First" }
-        if ($Force) { $command += "-Force" }
-        Invoke-Elevated $command
-
-        Sync-ProcessPath @processLocations
-        return
-    }
-
-    # Set-SystemPath rebuilds the process Path, so the new location takes effect immediately
-    Set-SystemPath @context -Entries $newEntries
 }
 
 function Remove-SystemPathLocation {
@@ -999,72 +1158,181 @@ function Remove-SystemPathLocation {
     .SYNOPSIS
         Removes a location from the system Path.
     .DESCRIPTION
-        Removes the specified location from the system Path, either for the current user or for the local machine.
-        Removing is idempotent: if the location is not present, the Path is left unchanged and a warning is reported.
+        Removes the specified locations from the system Path, either for the current user or for the local machine.
+        Locations are taken as arguments or from the pipeline, and each scope is written once.
+        A location given as text is removed from the scope the switches name, the current user by default.
+        A SystemPathLocation piped in - what Get-SystemPath returns - is removed from the scope it carries,
+        so a location an effective read found on both scopes is removed from both. An entry on neither
+        persisted Path, its scope being Process, is dropped from the Path of the current shell alone.
+        -Machine and -User select which piped entries are removed rather than where from; an entry of
+        another scope is left alone.
+        Removing is idempotent: a location that is not present leaves the Path unchanged and is reported
+        in a warning of its own.
     .PARAMETER Location
-        Folder location to remove from the system Path.
+        Folder locations to remove from the system Path, as text. Taken from the pipeline as well.
+    .PARAMETER Entry
+        System Path locations to remove, each from the scope it carries. Taken from the pipeline.
     .PARAMETER Machine
-        If specified, the system Path for the local machine is used.
+        With -Location, the system Path for the local machine is written.
+        With -Entry, the entries of the machine scope are removed and the others left alone.
     .PARAMETER User
-        If specified, the system Path for the current user is used. (Default.)
+        With -Location, the system Path for the current user is written. (Default.)
+        With -Entry, the entries of the user scope are removed and the others left alone.
     .NOTES
         Alias: rmpath
-        Default scope is User.
+        Default scope of a location given as text is User.
         An unelevated machine write prompts for elevation once and runs the whole removal elevated.
+        Inside ForEach-Object an entry passed as $_ arrives as its location alone; pass it as -Entry $_
+        to keep its scope.
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin"
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin" -Machine
     .EXAMPLE
         Remove-SystemPathLocation -Location "C:\Program Files\Git\bin" -User
+    .EXAMPLE
+        Get-SystemPath -Contains Git | Remove-SystemPathLocation
+    .EXAMPLE
+        Get-SystemPath -Contains Git | Remove-SystemPathLocation -User
     #>
-    [CmdletBinding(SupportsShouldProcess)]
+    # the scope switches cannot be shared across the two pipeline parameters - a parameter set holds one
+    # of those - so each switch joins both sets, and the type of the first piped object picks the set
+    [CmdletBinding(DefaultParameterSetName = "LocationUser", SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "LocationUser")]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "LocationMachine")]
         [Alias("Folder")]
-        [string] $Location,
-        [Parameter(Mandatory, ParameterSetName = "Machine")]
+        [string[]] $Location,
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = "EntryUser")]
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = "EntryMachine")]
+        [SystemPathLocation[]] $Entry,
+        [Parameter(Mandatory, ParameterSetName = "LocationMachine")]
+        [Parameter(Mandatory, ParameterSetName = "EntryMachine")]
         [switch] $Machine,
-        [Parameter(ParameterSetName = "User")]
+        [Parameter(ParameterSetName = "LocationUser")]
+        [Parameter(ParameterSetName = "EntryUser")]
         [switch] $User
     )
 
-    # fail fast: a machine write that cannot elevate stops before anything is read or written
-    if ($Machine -and -not (Test-Elevated)) {
-        Assert-SudoAvailable
+    begin {
+        # fail fast: a machine write that cannot elevate stops before anything is read or written.
+        # A piped entry decides its own scope, so that machine write is only known once the pipeline ends
+        if ($Machine -and $PSCmdlet.ParameterSetName -eq "LocationMachine" -and -not (Test-Elevated)) {
+            Assert-SudoAvailable
+        }
+
+        $locations = @()
+        $entries = @()
     }
 
-    $context = $Machine `
-        ? @{ Machine = $true } `
-        : @{ User = $true }
-
-    # as in Add-SystemPathLocation: the read reports nothing, the location argument does
-    Write-UnresolvedVariableError -Value $Location
-
-    $currentEntries = @(Get-SystemPath @context -ErrorAction SilentlyContinue)
-    $newEntries = @(Remove-PathLocation -Entries $currentEntries -Location $Location)
-
-    # idempotent: nothing changed means the location is not present
-    if ((Get-StoredPathString -Entries $newEntries) -eq (Get-StoredPathString -Entries $currentEntries)) {
-        Write-Warning "Location is not on the system Path: '$Location'"
-        return
+    process {
+        # the type of the input picked the parameter set, so only one of the two is bound
+        if ($null -ne $Location) {
+            $locations += $Location
+        }
+        if ($null -ne $Entry) {
+            $entries += $Entry
+        }
     }
 
-    if (-not $PSCmdlet.ShouldProcess($Location, "Remove location from system Path")) {
-        return
-    }
+    end {
+        # an empty pipeline has nothing to remove
+        if (-not $locations -and -not $entries) {
+            return
+        }
 
-    # as in Add-SystemPathLocation: an unelevated machine write runs the whole removal elevated
-    if ($Machine -and -not (Test-Elevated)) {
-        $processLocations = Get-ProcessOnlyPathLocations
-        Invoke-Elevated Remove-SystemPathLocation $Location -Machine
-        Sync-ProcessPath @processLocations
-        return
-    }
+        # a switch filters the piped entries; without one each entry names its own scope
+        $requestedScope = $Machine `
+            ? "Machine" `
+            : ($User ? "User" : $null)
 
-    # Set-SystemPath rebuilds the process Path from both scopes, so the location stays available
-    # when the other scope still carries it
-    Set-SystemPath @context -Entries $newEntries
+        # every input is reduced to a location and the scope to remove it from
+        $requested = @()
+
+        foreach ($pathLocation in $locations) {
+            $requested += @{ Location = $pathLocation; Scope = $requestedScope ?? "User" }
+        }
+
+        foreach ($pathEntry in $entries) {
+            if ($requestedScope -and $pathEntry.Scope -ne $requestedScope) {
+                Write-Verbose "Entry is of another scope, left alone. scope: $($pathEntry.Scope), location: '$($pathEntry.StoredValue)'"
+                continue
+            }
+
+            $requested += @{ Location = $pathEntry.StoredValue; Scope = $pathEntry.Scope }
+        }
+
+        # every entry was filtered out: nothing to remove
+        if (-not $requested) {
+            return
+        }
+
+        # as in Add-SystemPathLocation: the read reports nothing, the location arguments do
+        foreach ($request in $requested) {
+            Write-UnresolvedVariableError -Value $request.Location
+        }
+
+        # each scope is read and folded before the gate, so a removal that changes nothing neither asks
+        # nor writes
+        $removals = @()
+        foreach ($scope in @("Machine", "User")) {
+            $scopeLocations = @($requested | Where-Object { $_.Scope -eq $scope } | ForEach-Object { $_.Location })
+            if (-not $scopeLocations) {
+                continue
+            }
+
+            $removal = Get-ScopePathRemoval -Locations $scopeLocations -Scope $scope
+            if ($removal) {
+                $removals += $removal
+            }
+        }
+
+        # a process-only location is on no persisted Path: it goes from the Path of this shell alone
+        $shellLocations = @($requested | Where-Object { $_.Scope -eq "Process" } | ForEach-Object { $_.Location })
+        $shellRemoval = $shellLocations `
+            ? (Get-ProcessPathRemoval -Locations $shellLocations) `
+            : $null
+
+        # no location was present anywhere: every Path is left unchanged
+        if (-not $removals -and -not $shellRemoval) {
+            return
+        }
+
+        # fail fast: a machine write that cannot elevate stops before the gate is asked and before any
+        # Path is written. A piped entry names its own scope, so this is where that machine write is known
+        if (($removals | Where-Object { $_.Scope -eq "Machine" }) -and -not (Test-Elevated)) {
+            Assert-SudoAvailable
+        }
+
+        if (-not $PSCmdlet.ShouldProcess((($requested.Location | Select-Object -Unique) -join ", "), "Remove location from system Path")) {
+            return
+        }
+
+        # the machine Path goes first: an elevation the user declines ends the command with the other
+        # scopes whole, rather than half applied
+        foreach ($removal in $removals) {
+            $context = $removal.Scope -eq "Machine" `
+                ? @{ Machine = $true } `
+                : @{ User = $true }
+
+            # as in Add-SystemPathLocation: an unelevated machine write runs the whole removal elevated
+            if ($removal.Scope -eq "Machine" -and -not (Test-Elevated)) {
+                $processLocations = Get-ProcessOnlyPathLocations
+                Invoke-Elevated Remove-SystemPathLocation -Location $removal.Locations -Machine
+                Sync-ProcessPath @processLocations
+                continue
+            }
+
+            # Set-SystemPath rebuilds the process Path from both scopes, so the location stays available
+            # when the other scope still carries it
+            Set-SystemPath @context -Entries $removal.Entries
+        }
+
+        # last, so the snapshot each persisted write takes of the process-only locations is untouched
+        if ($shellRemoval) {
+            Sync-ProcessPath @shellRemoval
+        }
+    }
 }
 
 function Remove-DuplicateSystemPathLocations {
@@ -1224,17 +1492,18 @@ function Move-SystemPathLocation {
     .SYNOPSIS
         Moves a location between the machine and user system Paths.
     .DESCRIPTION
-        Moves the specified location from the machine system Path to the user system Path (-ToUser),
+        Moves the specified locations from the machine system Path to the user system Path (-ToUser),
         or from the user system Path to the machine system Path (-ToMachine).
-        The location is removed from the source Path and added to the target Path.
-        If the location is not on the source Path - whether it is already on the target Path or on neither -
-        nothing is moved and a warning is reported.
+        Locations are taken as arguments or from the pipeline, and moved in one write per scope.
+        Each location is removed from the source Path and added to the target Path.
+        A location that is not on the source Path - whether it is already on the target Path or on neither -
+        is not moved and is reported in a warning of its own.
         A move that changes the machine Path elevates through User Account Control when the session is not
         already elevated: the whole move runs in the elevated session, so it is applied as a whole or not
         at all. Moving to the machine Path a location the machine Path already holds changes the user Path
         alone and does not elevate.
     .PARAMETER Location
-        Folder location to move, positional.
+        Folder locations to move, positional. Taken from the pipeline as well.
     .PARAMETER ToUser
         Move the location from the machine system Path to the user system Path.
     .PARAMETER ToMachine
@@ -1247,110 +1516,137 @@ function Move-SystemPathLocation {
         Move-SystemPathLocation "C:\Program Files\Git\bin" -ToUser
     .EXAMPLE
         Move-SystemPathLocation "C:\Program Files\Git\bin" -ToMachine
+    .EXAMPLE
+        Get-SystemPath -Contains Git -Machine | Move-SystemPathLocation -ToUser
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [Alias("Folder")]
-        [string] $Location,
+        [string[]] $Location,
         [Parameter(Mandatory, ParameterSetName = "ToUser")]
         [switch] $ToUser,
         [Parameter(Mandatory, ParameterSetName = "ToMachine")]
         [switch] $ToMachine
     )
 
-    if ($ToUser) {
-        $source = @{ Machine = $true }; $sourceName = "machine"
-        $target = @{ User = $true }; $targetName = "user"
-    }
-    else {
-        $source = @{ User = $true }; $sourceName = "user"
-        $target = @{ Machine = $true }; $targetName = "machine"
+    begin {
+        $locations = @()
     }
 
-    # as in Add-SystemPathLocation: the reads report nothing, the location argument does
-    Write-UnresolvedVariableError -Value $Location
-
-    $sourceEntries = @(Get-SystemPath @source -ErrorAction SilentlyContinue)
-    $normalized = ConvertTo-NormalizedLocation -Location $Location
-    $identity = ConvertTo-LocationIdentity -StoredValue $Location -Location $normalized
-    $moved = @(
-        $sourceEntries `
-            | Where-Object {
-                (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
-            }
-    )
-
-    # not on the source Path: nothing to move
-    if ($moved.Count -eq 0) {
-        $onTarget = @(Get-SystemPath @target -ErrorAction SilentlyContinue) `
-            | Where-Object {
-                (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
-            }
-
-        $reason = $onTarget `
-            ? "already on the $targetName Path" `
-            : "not on the $sourceName Path"
-        Write-Warning "Nothing to move. reason: $reason, location: '$Location'"
-        return
+    process {
+        $locations += $Location
     }
 
-    $newSource = @(Remove-PathLocation -Entries $sourceEntries -Location $Location)
-
-    $targetEntries = @(Get-SystemPath @target -ErrorAction SilentlyContinue)
-    $onTarget = @(
-        $targetEntries `
-            | Where-Object {
-                (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
-            }
-    )
-    # append the moved entry, keeping its stored (%...%) form, unless the target already has it
-    $targetChanged = $onTarget.Count -eq 0
-    $newTarget = $targetChanged `
-        ? (@($targetEntries) + @($moved[0])) `
-        : $targetEntries
-
-    if (-not $targetChanged) {
-        Write-Verbose "Target Path already holds location. scope: $targetName, location: '$Location'"
-    }
-
-    # the machine Path is written whenever it is the source, and as the target only when it changes
-    $writesMachine = $ToUser -or $targetChanged
-
-    # fail fast: a move that cannot elevate stops before the gate is asked and before any Path is written
-    if ($writesMachine -and -not (Test-Elevated)) {
-        Assert-SudoAvailable
-    }
-
-    if (-not $PSCmdlet.ShouldProcess($Location, "Move location from the $sourceName to the $targetName system Path")) {
-        return
-    }
-
-    # when not already elevated, the whole move runs in an elevated session instead of in-process:
-    # one prompt for both writes, and no half-applied move when it is declined
-    if ($writesMachine -and -not (Test-Elevated)) {
-        # capture what only the session knows before the elevated writes, while a removed location is
-        # still distinguishable from one the session added
-        $processLocations = Get-ProcessOnlyPathLocations
+    end {
+        # an empty pipeline has nothing to move
+        if (-not $locations) {
+            return
+        }
 
         if ($ToUser) {
-            Invoke-Elevated Move-SystemPathLocation $Location -ToUser
+            $source = @{ Machine = $true }; $sourceName = "machine"
+            $target = @{ User = $true }; $targetName = "user"
         }
         else {
-            Invoke-Elevated Move-SystemPathLocation $Location -ToMachine
+            $source = @{ User = $true }; $sourceName = "user"
+            $target = @{ Machine = $true }; $targetName = "machine"
         }
 
-        # the elevated session synced its own process Path; this one derives its own from both scopes
-        Sync-ProcessPath @processLocations
-        return
-    }
+        # as in Add-SystemPathLocation: the reads report nothing, the location arguments do
+        foreach ($pathLocation in $locations) {
+            Write-UnresolvedVariableError -Value $pathLocation
+        }
 
-    # target first, so a failing write leaves the location on its source Path rather than on neither
-    if ($targetChanged) {
-        Set-SystemPath @target -Entries $newTarget
-    }
+        $sourceEntries = @(Get-SystemPath @source -ErrorAction SilentlyContinue)
+        $targetEntries = @(Get-SystemPath @target -ErrorAction SilentlyContinue)
 
-    Set-SystemPath @source -Entries $newSource
+        # each location moves off what the ones before it left, so one write per scope covers them all
+        $newSource = $sourceEntries
+        $newTarget = $targetEntries
+        $targetChanged = $false
+
+        foreach ($pathLocation in $locations) {
+            $normalized = ConvertTo-NormalizedLocation -Location $pathLocation
+            $identity = ConvertTo-LocationIdentity -StoredValue $pathLocation -Location $normalized
+
+            $moved = @(
+                $newSource `
+                    | Where-Object {
+                        (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
+                    }
+            )
+            $onTarget = @(
+                $newTarget `
+                    | Where-Object {
+                        (ConvertTo-LocationIdentity -StoredValue $_.StoredValue -Location $_.Location) -ieq $identity
+                    }
+            )
+
+            # not on the source Path: nothing to move
+            if ($moved.Count -eq 0) {
+                $reason = $onTarget `
+                    ? "already on the $targetName Path" `
+                    : "not on the $sourceName Path"
+                Write-Warning "Nothing to move. reason: $reason, location: '$pathLocation'"
+                continue
+            }
+
+            $newSource = @(Remove-PathLocation -Entries $newSource -Location $pathLocation)
+
+            # append the moved entry, keeping its stored (%...%) form, unless the target already has it
+            if ($onTarget.Count -eq 0) {
+                $newTarget = @($newTarget) + @($moved[0])
+                $targetChanged = $true
+            }
+            else {
+                Write-Verbose "Target Path already holds location. scope: $targetName, location: '$pathLocation'"
+            }
+        }
+
+        # no location was on the source Path: neither Path is written
+        if ((Get-StoredPathString -Entries $newSource) -eq (Get-StoredPathString -Entries $sourceEntries)) {
+            return
+        }
+
+        # the machine Path is written whenever it is the source, and as the target only when it changes
+        $writesMachine = $ToUser -or $targetChanged
+
+        # fail fast: a move that cannot elevate stops before the gate is asked and before any Path is written
+        if ($writesMachine -and -not (Test-Elevated)) {
+            Assert-SudoAvailable
+        }
+
+        if (-not $PSCmdlet.ShouldProcess(($locations -join ", "), "Move location from the $sourceName to the $targetName system Path")) {
+            return
+        }
+
+        # when not already elevated, the whole move runs in an elevated session instead of in-process:
+        # one prompt for both writes, and no half-applied move when it is declined
+        if ($writesMachine -and -not (Test-Elevated)) {
+            # capture what only the session knows before the elevated writes, while a removed location is
+            # still distinguishable from one the session added
+            $processLocations = Get-ProcessOnlyPathLocations
+
+            if ($ToUser) {
+                Invoke-Elevated Move-SystemPathLocation -Location $locations -ToUser
+            }
+            else {
+                Invoke-Elevated Move-SystemPathLocation -Location $locations -ToMachine
+            }
+
+            # the elevated session synced its own process Path; this one derives its own from both scopes
+            Sync-ProcessPath @processLocations
+            return
+        }
+
+        # target first, so a failing write leaves the location on its source Path rather than on neither
+        if ($targetChanged) {
+            Set-SystemPath @target -Entries $newTarget
+        }
+
+        Set-SystemPath @source -Entries $newSource
+    }
 }
 
 function Test-SystemPathLocation {
@@ -1360,12 +1656,14 @@ function Test-SystemPathLocation {
     .DESCRIPTION
         Returns $true if the specified location is present on the system Path, either for the current user,
         for the local machine or the system Path in effect in the current context.
+        Locations are taken as arguments or from the pipeline, one result reported per location.
         The location is compared exactly and case-insensitively, resolved the way the Path's own locations
         are, so any spelling of the same folder matches; a substring, a wildcard pattern or a regular
         expression selects nothing. Use Get-SystemPath -Contains, -Filter or -Match for those.
     .PARAMETER Location
-        Exact folder location to look for, positional. It is resolved before comparing, so any spelling of
-        the same folder matches; comparison is case-insensitive.
+        Exact folder locations to look for, positional. Taken from the pipeline as well.
+        Each is resolved before comparing, so any spelling of the same folder matches;
+        comparison is case-insensitive.
         Alias: Folder.
     .PARAMETER Machine
         If specified, the system Path for the local machine is searched.
@@ -1376,7 +1674,7 @@ function Test-SystemPathLocation {
     .PARAMETER Process
         If specified, only the locations local to the current shell are searched, those on neither persisted Path.
     .OUTPUTS
-        Boolean indicating whether the location is present.
+        Boolean indicating whether the location is present, one per location.
     .NOTES
         Alias: testpath
     .EXAMPLE
@@ -1385,13 +1683,17 @@ function Test-SystemPathLocation {
         Test-SystemPathLocation "C:\Program Files\Git\bin" -Machine
     .EXAMPLE
         Test-SystemPathLocation -Location "C:\Temp\session" -Process
+    .EXAMPLE
+        Get-SystemPath -Contains Git | Test-SystemPathLocation -Machine
     #>
-    [CmdletBinding()]
+    # the default set has to be named: with the location coming from the pipeline it is not yet bound when
+    # the set is resolved, leaving the scope switches to decide it alone
+    [CmdletBinding(DefaultParameterSetName = "Effective")]
     [OutputType([bool])]
     param (
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [Alias("Folder")]
-        [string] $Location,
+        [string[]] $Location,
         [Parameter(Mandatory, ParameterSetName = "Machine")]
         [switch] $Machine,
         [Parameter(Mandatory, ParameterSetName = "User")]
@@ -1402,22 +1704,26 @@ function Test-SystemPathLocation {
         [switch] $Process
     )
 
-    # the exact comparison lives in Get-SystemPath -Exact; the scope switch picks its parameter set
-    $locations =
-    if ($Machine) {
-        Get-SystemPath -Exact $Location -Machine
-    }
-    elseif ($User) {
-        Get-SystemPath -Exact $Location -User
-    }
-    elseif ($Process) {
-        Get-SystemPath -Exact $Location -Process
-    }
-    else {
-        Get-SystemPath -Exact $Location -Effective
-    }
+    process {
+        foreach ($pathLocation in $Location) {
+            # the exact comparison lives in Get-SystemPath -Exact; the scope switch picks its parameter set
+            $found =
+            if ($Machine) {
+                Get-SystemPath -Exact $pathLocation -Machine
+            }
+            elseif ($User) {
+                Get-SystemPath -Exact $pathLocation -User
+            }
+            elseif ($Process) {
+                Get-SystemPath -Exact $pathLocation -Process
+            }
+            else {
+                Get-SystemPath -Exact $pathLocation -Effective
+            }
 
-    return @($locations).Count -gt 0
+            @($found).Count -gt 0
+        }
+    }
 }
 
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null

@@ -61,6 +61,103 @@ Describe 'Add-SystemPathLocation' {
         }
     }
 
+    Context 'from the pipeline' {
+
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            $script:currentEntries = New-PathEntries 'C:\Old'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
+            Mock -ModuleName easypeasy Set-SystemPath { }
+        }
+
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'takes a piped entry as the location it stores' {
+            New-PathEntries 'C:\New' | Add-SystemPathLocation -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;C:\New' }
+        }
+
+        It 'takes a piped entry reference verbatim, unexpanded' {
+            New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32' | Add-SystemPathLocation -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;%SystemRoot%\S32' }
+        }
+
+        It 'takes the entry passed on inside ForEach-Object' {
+            New-PathEntries 'C:\New' | ForEach-Object { Add-SystemPathLocation $_ -User }
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;C:\New' }
+        }
+
+        It 'appends every piped location in a single write, keeping their order' {
+            'C:\New', 'C:\Other' | Add-SystemPathLocation -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;C:\New;C:\Other' }
+        }
+
+        It 'puts every piped location in front with -First, keeping their order' {
+            'C:\New', 'C:\Other' | Add-SystemPathLocation -User -First
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\New;C:\Other;C:\Old' }
+        }
+
+        It 'adds every location given as an argument list' {
+            Add-SystemPathLocation -Location 'C:\New', 'C:\Other' -User
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;C:\New;C:\Other' }
+        }
+
+        It 'warns for each piped location that is already present' {
+            $script:currentEntries = New-PathEntries 'C:\Old;C:\New'
+
+            'C:\Old', 'C:\New' | Add-SystemPathLocation -User `
+                -WarningVariable warning -WarningAction SilentlyContinue
+
+            $warning | Should -HaveCount 2
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'writes nothing under -WhatIf' {
+            'C:\New', 'C:\Other' | Add-SystemPathLocation -User -WhatIf
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'reads and writes nothing for an empty pipeline' {
+            @() | Add-SystemPathLocation -User
+
+            Should -Invoke -ModuleName easypeasy Get-SystemPath -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+    }
+
+    Context 'a location list where one location names no existing folder' {
+
+        BeforeEach {
+            $script:originalPath = $env:PATH
+            $script:currentEntries = New-PathEntries 'C:\Old'
+            Mock -ModuleName easypeasy Get-SystemPath { $script:currentEntries }
+            Mock -ModuleName easypeasy Set-SystemPath { }
+            Mock -ModuleName easypeasy Test-Path { $LiteralPath -ne 'C:\Missing' }
+        }
+
+        AfterEach { $env:PATH = $originalPath }
+
+        It 'reports the missing folder and writes neither location' {
+            { 'C:\New', 'C:\Missing' | Add-SystemPathLocation -User -ErrorAction Stop } |
+                Should -Throw '*C:\Missing*'
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+    }
+
     Context 'idempotent when the location is already present' {
 
         BeforeEach {
@@ -193,12 +290,25 @@ Describe 'Add-SystemPathLocation' {
             Add-SystemPathLocation -Location 'C:\New' -Machine
 
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
-                $Command -contains 'Add-SystemPathLocation' -and
-                $Command -contains 'C:\New' -and
+                $Command[0] -eq 'Add-SystemPathLocation' -and
+                $Command -contains '-Location' -and
+                @($Command[2]).Count -eq 1 -and
+                $Command[2] -contains 'C:\New' -and
                 $Command -contains '-Machine' -and
                 -not ($Command -join ' ').Contains('C:\Old')
             }
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'passes every piped location on to the one elevated session' {
+            'C:\New', 'C:\Other' | Add-SystemPathLocation -Machine
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command[0] -eq 'Add-SystemPathLocation' -and
+                $Command[2] -contains 'C:\New' -and
+                $Command[2] -contains 'C:\Other' -and
+                $Command -contains '-Machine'
+            }
         }
 
         It 'passes -First on to the elevated session' {
