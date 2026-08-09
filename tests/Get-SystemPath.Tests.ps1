@@ -46,10 +46,10 @@ Describe 'Get-SystemPath' {
         AfterAll { $env:PATH = $script:originalPath }
 
         BeforeEach {
-            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Windows\System32' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\EasypeasyWin\System32' }
             Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '%windir%\system32\test' }
             # Windows expands the process block, so the persisted %...% reference does not appear in it
-            $env:PATH = "C:\Windows\System32;$env:windir\system32\test;C:\OnlyProcess"
+            $env:PATH = "C:\EasypeasyWin\System32;$env:windir\system32\test;C:\OnlyProcess"
         }
 
         It 'recovers the stored %...% form from the originating scope' {
@@ -68,10 +68,10 @@ Describe 'Get-SystemPath' {
         }
 
         It 'leaves a location persisted without a reference unchanged' {
-            $result = Get-SystemPath | Where-Object { $_.Location -eq 'C:\Windows\System32' }
+            $result = Get-SystemPath | Where-Object { $_.Location -eq 'C:\EasypeasyWin\System32' }
 
             $result.Scope | Should -Be 'Machine'
-            $result.StoredValue | Should -Be 'C:\Windows\System32'
+            $result.StoredValue | Should -Be 'C:\EasypeasyWin\System32'
         }
     }
 
@@ -116,10 +116,10 @@ Describe 'Get-SystemPath' {
         AfterAll { $env:PATH = $script:originalPath }
 
         It 'normalizes <case> in Location, keeping the stored value verbatim' -ForEach @(
-            @{ case = 'repeated backslashes'; stored = 'C:\Tools\\bin'; location = 'C:\Tools\bin' }
-            @{ case = 'a trailing backslash'; stored = 'C:\Tools\bin\'; location = 'C:\Tools\bin' }
-            @{ case = 'a .. segment'; stored = 'C:\Tools\other\..\bin'; location = 'C:\Tools\bin' }
-            @{ case = 'a . segment'; stored = 'C:\Tools\.\bin'; location = 'C:\Tools\bin' }
+            @{ case = 'repeated backslashes'; stored = 'C:\EasypeasyTools\\bin'; location = 'C:\EasypeasyTools\bin' }
+            @{ case = 'a trailing backslash'; stored = 'C:\EasypeasyTools\bin\'; location = 'C:\EasypeasyTools\bin' }
+            @{ case = 'a .. segment'; stored = 'C:\EasypeasyTools\other\..\bin'; location = 'C:\EasypeasyTools\bin' }
+            @{ case = 'a . segment'; stored = 'C:\EasypeasyTools\.\bin'; location = 'C:\EasypeasyTools\bin' }
         ) {
             Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { $stored }
 
@@ -168,24 +168,24 @@ Describe 'Get-SystemPath' {
 
         It 'normalizes a location on the effective Path too' {
             Mock -ModuleName easypeasy Get-EnvironmentVariable { '' }
-            $env:PATH = 'C:\Tools\\bin\'
+            $env:PATH = 'C:\EasypeasyTools\\bin\'
 
             $result = Get-SystemPath
 
-            $result.StoredValue | Should -BeExactly 'C:\Tools\\bin\'
-            $result.Location | Should -BeExactly 'C:\Tools\bin'
+            $result.StoredValue | Should -BeExactly 'C:\EasypeasyTools\\bin\'
+            $result.Location | Should -BeExactly 'C:\EasypeasyTools\bin'
         }
 
         It 'tags a location whose stored spelling differs from the process one' {
-            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Tools\\bin' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\EasypeasyTools\\bin' }
             Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '' }
-            $env:PATH = 'C:\Tools\bin\'
+            $env:PATH = 'C:\EasypeasyTools\bin\'
 
             $result = Get-SystemPath
 
             $result.Scope | Should -Be 'Machine'
-            $result.StoredValue | Should -BeExactly 'C:\Tools\\bin'
-            $result.Location | Should -BeExactly 'C:\Tools\bin'
+            $result.StoredValue | Should -BeExactly 'C:\EasypeasyTools\\bin'
+            $result.Location | Should -BeExactly 'C:\EasypeasyTools\bin'
         }
     }
 
@@ -195,35 +195,35 @@ Describe 'Get-SystemPath' {
         AfterAll { $env:PATH = $script:originalPath }
 
         It 'returns only the location equal to it' {
-            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+            $env:PATH = 'C:\EasypeasyWin;C:\Program Files\EasypeasyTool\bin'
 
-            (Get-SystemPath -Exact 'C:\Windows').Location | Should -Be @('C:\Windows')
+            (Get-SystemPath -Exact 'C:\EasypeasyWin').Location | Should -Be @('C:\EasypeasyWin')
         }
 
         It 'matches the exact location, not a location containing it' {
-            $env:PATH = 'C:\Windows;C:\Windows\System32'
+            $env:PATH = 'C:\EasypeasyWin;C:\EasypeasyWin\System32'
 
-            (Get-SystemPath -Exact 'C:\Windows').Location | Should -Be @('C:\Windows')
+            (Get-SystemPath -Exact 'C:\EasypeasyWin').Location | Should -Be @('C:\EasypeasyWin')
         }
 
         It 'matches case-insensitively and ignores trailing backslashes' {
-            $env:PATH = 'C:\Windows'
+            $env:PATH = 'C:\EasypeasyWin'
 
-            (Get-SystemPath -Exact 'c:\windows\').Location | Should -Be @('C:\Windows')
+            (Get-SystemPath -Exact 'c:\easypeasywin\').Location | Should -Be @('C:\EasypeasyWin')
         }
 
         It 'ignores repeated backslashes on either side' {
-            $env:PATH = 'C:\Program Files\Git\bin'
+            $env:PATH = 'C:\Program Files\EasypeasyTool\bin'
 
-            (Get-SystemPath -Exact 'C:\Program Files\\Git\bin').Location |
-                Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath -Exact 'C:\Program Files\\EasypeasyTool\bin').Location |
+                Should -Be @('C:\Program Files\EasypeasyTool\bin')
 
-            $env:PATH = 'C:\Program Files\\Git\bin'
+            $env:PATH = 'C:\Program Files\\EasypeasyTool\bin'
 
-            $result = Get-SystemPath -Exact 'C:\Program Files\Git\bin'
+            $result = Get-SystemPath -Exact 'C:\Program Files\EasypeasyTool\bin'
 
-            $result.StoredValue | Should -Be @('C:\Program Files\\Git\bin')
-            $result.Location | Should -Be @('C:\Program Files\Git\bin')
+            $result.StoredValue | Should -Be @('C:\Program Files\\EasypeasyTool\bin')
+            $result.Location | Should -Be @('C:\Program Files\EasypeasyTool\bin')
         }
 
         It 'keeps the leading backslashes of a UNC root' {
@@ -238,18 +238,18 @@ Describe 'Get-SystemPath' {
         }
 
         It 'returns nothing when the location is absent' {
-            $env:PATH = 'C:\Windows'
+            $env:PATH = 'C:\EasypeasyWin'
 
             Get-SystemPath -Exact 'C:\Nope' | Should -BeNullOrEmpty
         }
 
         It 'tags the match with its origin scope' {
-            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Windows' }
-            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\me\bin' }
-            $env:PATH = 'C:\Windows;C:\Users\me\bin;C:\Temp\session'
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\EasypeasyWin' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\easypeasy\bin' }
+            $env:PATH = 'C:\EasypeasyWin;C:\Users\easypeasy\bin;C:\Temp\session'
 
-            (Get-SystemPath -Exact 'C:\Windows').Scope | Should -Be 'Machine'
-            (Get-SystemPath -Exact 'C:\Users\me\bin').Scope | Should -Be 'User'
+            (Get-SystemPath -Exact 'C:\EasypeasyWin').Scope | Should -Be 'Machine'
+            (Get-SystemPath -Exact 'C:\Users\easypeasy\bin').Scope | Should -Be 'User'
             (Get-SystemPath -Exact 'C:\Temp\session').Scope | Should -Be 'Process'
         }
 
@@ -262,29 +262,29 @@ Describe 'Get-SystemPath' {
         }
 
         It 'tags a location stored with repeated backslashes with its origin scope' {
-            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\Tools\\bin' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\EasypeasyTools\\bin' }
             Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { '' }
-            $env:PATH = 'C:\Tools\bin'
+            $env:PATH = 'C:\EasypeasyTools\bin'
 
-            $result = Get-SystemPath -Exact 'C:\Tools\bin'
+            $result = Get-SystemPath -Exact 'C:\EasypeasyTools\bin'
 
             $result.Scope | Should -Be 'Machine'
-            $result.StoredValue | Should -Be 'C:\Tools\\bin'
+            $result.StoredValue | Should -Be 'C:\EasypeasyTools\\bin'
         }
 
         It 'searches the machine Path when -Machine is given' {
-            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Windows;C:\Tools' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\EasypeasyWin;C:\EasypeasyTools' }
 
-            (Get-SystemPath -Exact 'C:\Tools' -Machine).Scope | Should -Be 'Machine'
+            (Get-SystemPath -Exact 'C:\EasypeasyTools' -Machine).Scope | Should -Be 'Machine'
 
             Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -Times 1 -Exactly `
                 -ParameterFilter { $Machine }
         }
 
         It 'searches the user Path when -User is given' {
-            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Users\me\bin' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Users\easypeasy\bin' }
 
-            (Get-SystemPath -Exact 'C:\Users\me\bin' -User).Scope | Should -Be 'User'
+            (Get-SystemPath -Exact 'C:\Users\easypeasy\bin' -User).Scope | Should -Be 'User'
 
             Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -Times 1 -Exactly `
                 -ParameterFilter { $User }
@@ -296,12 +296,12 @@ Describe 'Get-SystemPath' {
         }
 
         It 'combines with the other criteria' {
-            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd'
+            $env:PATH = 'C:\Program Files\EasypeasyTool\bin;C:\Program Files\EasypeasyTool\cmd'
 
-            (Get-SystemPath -Exact 'C:\Program Files\Git\bin' -Filter '*\bin').Location |
-                Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath -Exact 'C:\Program Files\EasypeasyTool\bin' -Filter '*\bin').Location |
+                Should -Be @('C:\Program Files\EasypeasyTool\bin')
 
-            Get-SystemPath -Exact 'C:\Program Files\Git\bin' -Filter '*\cmd' | Should -BeNullOrEmpty
+            Get-SystemPath -Exact 'C:\Program Files\EasypeasyTool\bin' -Filter '*\cmd' | Should -BeNullOrEmpty
         }
 
         It 'returns the stored form when -Join is used' {
@@ -311,10 +311,10 @@ Describe 'Get-SystemPath' {
         }
 
         It 'takes the location by its -Location and -Folder aliases' {
-            $env:PATH = 'C:\Windows;C:\Tools'
+            $env:PATH = 'C:\EasypeasyWin;C:\EasypeasyTools'
 
-            (Get-SystemPath -Location 'C:\Tools').Location | Should -Be @('C:\Tools')
-            (Get-SystemPath -Folder 'C:\Tools').Location | Should -Be @('C:\Tools')
+            (Get-SystemPath -Location 'C:\EasypeasyTools').Location | Should -Be @('C:\EasypeasyTools')
+            (Get-SystemPath -Folder 'C:\EasypeasyTools').Location | Should -Be @('C:\EasypeasyTools')
         }
     }
 
@@ -324,32 +324,32 @@ Describe 'Get-SystemPath' {
         AfterAll { $env:PATH = $script:originalPath }
 
         It 'returns only locations matching the wildcard' {
-            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin;C:\Users\me\bin'
+            $env:PATH = 'C:\EasypeasyWin;C:\Program Files\EasypeasyTool\bin;C:\Users\easypeasy\bin'
 
-            (Get-SystemPath -Filter '*\Git\*').Location |
-                Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath -Filter '*\EasypeasyTool\*').Location |
+                Should -Be @('C:\Program Files\EasypeasyTool\bin')
         }
 
         It 'matches case-insensitively' {
-            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+            $env:PATH = 'C:\EasypeasyWin;C:\Program Files\EasypeasyTool\bin'
 
-            (Get-SystemPath -Filter '*git*').Location |
-                Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath -Filter '*easypeasytool*').Location |
+                Should -Be @('C:\Program Files\EasypeasyTool\bin')
         }
 
         It 'ignores trailing backslashes on both sides' {
-            $env:PATH = 'C:\Tools\'
+            $env:PATH = 'C:\EasypeasyTools\'
 
-            (Get-SystemPath -Filter 'C:\Tools').StoredValue | Should -Be @('C:\Tools\')
+            (Get-SystemPath -Filter 'C:\EasypeasyTools').StoredValue | Should -Be @('C:\EasypeasyTools\')
         }
 
         It 'ignores repeated backslashes on both sides' {
-            $env:PATH = 'C:\Program Files\\Git\bin'
+            $env:PATH = 'C:\Program Files\\EasypeasyTool\bin'
 
-            (Get-SystemPath -Filter '*\Git\bin').StoredValue |
-                Should -Be @('C:\Program Files\\Git\bin')
-            (Get-SystemPath -Filter '*\\Git\bin').StoredValue |
-                Should -Be @('C:\Program Files\\Git\bin')
+            (Get-SystemPath -Filter '*\EasypeasyTool\bin').StoredValue |
+                Should -Be @('C:\Program Files\\EasypeasyTool\bin')
+            (Get-SystemPath -Filter '*\\EasypeasyTool\bin').StoredValue |
+                Should -Be @('C:\Program Files\\EasypeasyTool\bin')
         }
 
         It 'returns the matches joined when -Join is used' {
@@ -371,41 +371,41 @@ Describe 'Get-SystemPath' {
         AfterAll { $env:PATH = $script:originalPath }
 
         It 'returns every location containing the substring, positionally and without wildcards' {
-            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin;C:\Here\Git'
+            $env:PATH = 'C:\EasypeasyWin;C:\Program Files\EasypeasyTool\bin;C:\Here\EasypeasyTool'
 
-            (Get-SystemPath Git).Location |
-                Should -Be @('C:\Program Files\Git\bin', 'C:\Here\Git')
+            (Get-SystemPath EasypeasyTool).Location |
+                Should -Be @('C:\Program Files\EasypeasyTool\bin', 'C:\Here\EasypeasyTool')
         }
 
         It 'matches case-insensitively' {
-            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+            $env:PATH = 'C:\EasypeasyWin;C:\Program Files\EasypeasyTool\bin'
 
-            (Get-SystemPath git).Location | Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath easypeasytool).Location | Should -Be @('C:\Program Files\EasypeasyTool\bin')
         }
 
         It 'takes the substring literally, so wildcards match nothing' {
-            $env:PATH = 'C:\Windows;C:\Program Files\Git\bin'
+            $env:PATH = 'C:\EasypeasyWin;C:\Program Files\EasypeasyTool\bin'
 
-            Get-SystemPath '*Git*' | Should -BeNullOrEmpty
+            Get-SystemPath '*EasypeasyTool*' | Should -BeNullOrEmpty
         }
 
         It 'requires all substrings to be contained' {
-            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd'
+            $env:PATH = 'C:\Program Files\EasypeasyTool\bin;C:\Program Files\EasypeasyTool\cmd'
 
-            (Get-SystemPath Git bin).Location | Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath EasypeasyTool bin).Location | Should -Be @('C:\Program Files\EasypeasyTool\bin')
         }
 
         It 'ignores repeated backslashes on both sides' {
-            $env:PATH = 'C:\Program Files\\Git\bin'
+            $env:PATH = 'C:\Program Files\\EasypeasyTool\bin'
 
-            (Get-SystemPath '\Git\bin').StoredValue | Should -Be @('C:\Program Files\\Git\bin')
-            (Get-SystemPath 'Files\\Git').StoredValue | Should -Be @('C:\Program Files\\Git\bin')
+            (Get-SystemPath '\EasypeasyTool\bin').StoredValue | Should -Be @('C:\Program Files\\EasypeasyTool\bin')
+            (Get-SystemPath 'Files\\EasypeasyTool').StoredValue | Should -Be @('C:\Program Files\\EasypeasyTool\bin')
         }
 
         It 'reads a leading \\ as a UNC root, not as a repeated separator' {
-            $env:PATH = 'C:\Program Files\\Git\bin;\\server\share'
+            $env:PATH = 'C:\Program Files\\EasypeasyTool\bin;\\server\share'
 
-            Get-SystemPath '\\Git\bin' | Should -BeNullOrEmpty
+            Get-SystemPath '\\EasypeasyTool\bin' | Should -BeNullOrEmpty
             (Get-SystemPath '\\server').Location | Should -Be @('\\server\share')
         }
 
@@ -422,23 +422,23 @@ Describe 'Get-SystemPath' {
         AfterAll { $env:PATH = $script:originalPath }
 
         It 'returns only locations matching the regex' {
-            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd;C:\Windows'
+            $env:PATH = 'C:\Program Files\EasypeasyTool\bin;C:\Program Files\EasypeasyTool\cmd;C:\EasypeasyWin'
 
-            (Get-SystemPath -Match '\\Git\\(bin|cmd)$').Location |
-                Should -Be @('C:\Program Files\Git\bin', 'C:\Program Files\Git\cmd')
+            (Get-SystemPath -Match '\\EasypeasyTool\\(bin|cmd)$').Location |
+                Should -Be @('C:\Program Files\EasypeasyTool\bin', 'C:\Program Files\EasypeasyTool\cmd')
         }
 
         It 'matches case-insensitively' {
-            $env:PATH = 'C:\Program Files\Git\bin;C:\Windows'
+            $env:PATH = 'C:\Program Files\EasypeasyTool\bin;C:\EasypeasyWin'
 
-            (Get-SystemPath -Match 'git').Location | Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath -Match 'easypeasytool').Location | Should -Be @('C:\Program Files\EasypeasyTool\bin')
         }
 
         It 'requires all regexes to match' {
-            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd'
+            $env:PATH = 'C:\Program Files\EasypeasyTool\bin;C:\Program Files\EasypeasyTool\cmd'
 
-            (Get-SystemPath -Match '\\Git\\', 'bin$').Location |
-                Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath -Match '\\EasypeasyTool\\', 'bin$').Location |
+                Should -Be @('C:\Program Files\EasypeasyTool\bin')
         }
 
         It 'rejects an invalid regex, reporting the pattern and the reason' {
@@ -458,16 +458,16 @@ Describe 'Get-SystemPath' {
         AfterAll { $env:PATH = $script:originalPath }
 
         It 'requires criteria of different kinds to all be satisfied' {
-            $env:PATH = 'C:\Program Files\Git\bin;C:\Program Files\Git\cmd;C:\Tools\bin'
+            $env:PATH = 'C:\Program Files\EasypeasyTool\bin;C:\Program Files\EasypeasyTool\cmd;C:\EasypeasyTools\bin'
 
-            (Get-SystemPath Git -Filter '*\bin' -Match 'Program').Location |
-                Should -Be @('C:\Program Files\Git\bin')
+            (Get-SystemPath EasypeasyTool -Filter '*\bin' -Match 'Program').Location |
+                Should -Be @('C:\Program Files\EasypeasyTool\bin')
         }
 
         It 'returns nothing when one criterion excludes the rest' {
-            $env:PATH = 'C:\Program Files\Git\bin'
+            $env:PATH = 'C:\Program Files\EasypeasyTool\bin'
 
-            Get-SystemPath Git -Filter '*\cmd' | Should -BeNullOrEmpty
+            Get-SystemPath EasypeasyTool -Filter '*\cmd' | Should -BeNullOrEmpty
         }
     }
 
@@ -478,16 +478,16 @@ Describe 'Get-SystemPath' {
 
         BeforeEach {
             Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\WinDir;C:\Shared' }
-            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\me\bin;C:\Shared' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\easypeasy\bin;C:\Shared' }
         }
 
         It 'tags each location with its origin scope' {
-            $env:PATH = 'C:\WinDir;C:\Users\me\bin;C:\Temp\session'
+            $env:PATH = 'C:\WinDir;C:\Users\easypeasy\bin;C:\Temp\session'
 
             $result = Get-SystemPath
 
             ($result | Where-Object Location -EQ 'C:\WinDir').Scope | Should -Be 'Machine'
-            ($result | Where-Object Location -EQ 'C:\Users\me\bin').Scope | Should -Be 'User'
+            ($result | Where-Object Location -EQ 'C:\Users\easypeasy\bin').Scope | Should -Be 'User'
             ($result | Where-Object Location -EQ 'C:\Temp\session').Scope | Should -Be 'Process'
         }
 
@@ -511,11 +511,11 @@ Describe 'Get-SystemPath' {
 
         BeforeEach {
             Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $Machine } { 'C:\WinDir' }
-            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\me\bin' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } { 'C:\Users\easypeasy\bin' }
         }
 
         It 'returns only the locations on neither persisted Path' {
-            $env:PATH = 'C:\WinDir;C:\Users\me\bin;C:\Temp\session;C:\Temp\other'
+            $env:PATH = 'C:\WinDir;C:\Users\easypeasy\bin;C:\Temp\session;C:\Temp\other'
 
             $result = Get-SystemPath -Process
 
@@ -524,7 +524,7 @@ Describe 'Get-SystemPath' {
         }
 
         It 'returns nothing when every location is persisted' {
-            $env:PATH = 'C:\WinDir;C:\Users\me\bin'
+            $env:PATH = 'C:\WinDir;C:\Users\easypeasy\bin'
 
             Get-SystemPath -Process | Should -BeNullOrEmpty
         }
@@ -545,19 +545,19 @@ Describe 'Get-SystemPath' {
     Context 'machine and user scopes read the Path environment variable' {
 
         It 'reads the machine Path via Get-EnvironmentVariable' {
-            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Windows;C:\Windows\System32' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\EasypeasyWin;C:\EasypeasyWin\System32' }
 
             (Get-SystemPath -Machine).Location |
-                Should -Be @('C:\Windows', 'C:\Windows\System32')
+                Should -Be @('C:\EasypeasyWin', 'C:\EasypeasyWin\System32')
 
             Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -Times 1 -Exactly `
                 -ParameterFilter { $Machine -and $Name -eq 'Path' }
         }
 
         It 'reads the user Path and honors -Join' {
-            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Users\me\bin' }
+            Mock -ModuleName easypeasy Get-EnvironmentVariable { 'C:\Users\easypeasy\bin' }
 
-            Get-SystemPath -User -Join | Should -Be 'C:\Users\me\bin'
+            Get-SystemPath -User -Join | Should -Be 'C:\Users\easypeasy\bin'
 
             Should -Invoke -ModuleName easypeasy Get-EnvironmentVariable -Times 1 -Exactly `
                 -ParameterFilter { $User }
