@@ -86,6 +86,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Add-SystemPathLocation`, `Move-SystemPathLocation` and `Set-EnvironmentVariable -Expandable` name each missing variable of `%...%` reference in warning of its own and use value anyway, keeping reference as indirection. Previously `Add-SystemPathLocation` rejected it as missing folder and reference resolved against current directory.
 - **Changed:** Reads and removals stay quiet about `%...%` reference no variable resolves; listing accents it instead.
 - **Changed:** Location that does not resolve is matched, selected and deduplicated on its stored value, so `%...%` reference is found, removed and moved by the reference itself.
+- **Fixed:** Location carrying unresolved `%...%` reference tagged with its persisted scope on effective read, previously always `Process`.
 - **Fixed:** `Move-SystemPathLocation` elevates once for whole move, before either Path is written.
 - **Fixed:** `Remove-DuplicateSystemPathLocations` elevates once for whole cleanup, before either Path is written.
 - **Changed:** `Add-SystemPathLocation` and `Remove-SystemPathLocation` run whole `-Machine` write elevated, so Path is read and written in same session and never crosses elevation boundary.

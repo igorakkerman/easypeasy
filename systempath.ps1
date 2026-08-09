@@ -512,15 +512,17 @@ function local:Get-PathScopeStoredForms {
         Maps each location on a persisted scope Path to the stored forms it occurs as.
     .DESCRIPTION
         Reads the Path environment variable for the given scope in its stored form and returns a
-        case-insensitive dictionary mapping each resolved location's comparison key to a queue
-        of the stored values it occurs as, in order. Used to tag the effective Path's locations
-        with their origin scope and recover the value each one is persisted as, by consuming the
-        queues in order. A location occurring more than once has one queue entry per occurrence.
-        A stored value that cannot be resolved is omitted because it has no comparison key.
+        case-insensitive dictionary mapping each location's identity to a queue of the stored values
+        it occurs as, in order. Used to tag the effective Path's locations with their origin scope and
+        recover the value each one is persisted as, by consuming the queues in order. A location
+        occurring more than once has one queue entry per occurrence.
+        The identity is the one every other comparison uses, so a stored value that cannot be resolved
+        is keyed on the reference itself rather than dropped: the process Path carries an unresolved
+        %...% reference verbatim, which is how it is found again here.
     .PARAMETER Scope
         The scope to read, either "Machine" or "User".
     .OUTPUTS
-        A case-insensitive hashtable of location key to a queue of stored location values.
+        A case-insensitive hashtable of location identity to a queue of stored location values.
     #>
     [CmdletBinding()]
     param (
@@ -538,14 +540,13 @@ function local:Get-PathScopeStoredForms {
             $_
         } `
         | ForEach-Object {
-            $normalized = ConvertTo-NormalizedLocation -Location $_
-            if ($null -eq $normalized) {
-                return
+            $identity = ConvertTo-LocationIdentity `
+                -StoredValue $_ `
+                -Location (ConvertTo-NormalizedLocation -Location $_)
+            if (-not $storedForms.ContainsKey($identity)) {
+                $storedForms[$identity] = [System.Collections.Generic.Queue[string]]::new()
             }
-            if (-not $storedForms.ContainsKey($normalized)) {
-                $storedForms[$normalized] = [System.Collections.Generic.Queue[string]]::new()
-            }
-            $storedForms[$normalized].Enqueue($_)
+            $storedForms[$identity].Enqueue($_)
         }
 
     return $storedForms
@@ -761,6 +762,8 @@ function Get-SystemPath {
         # first, then user; a location on both scopes therefore appears once as Machine and once as User.
         # Windows expands the process block, so the stored %...% form is recovered from the originating scope;
         # a process-only location has no persisted form and keeps the expanded one.
+        # An unresolved %...% reference is looked up like any other location: expansion leaves it standing,
+        # so the process Path carries the very value its scope stores.
         $machineRemaining = Get-PathScopeStoredForms -Scope Machine
         $userRemaining = Get-PathScopeStoredForms -Scope User
 
@@ -770,18 +773,17 @@ function Get-SystemPath {
             } `
             | ForEach-Object {
                 $normalized = ConvertTo-NormalizedLocation -Location $_
+                $identity = ConvertTo-LocationIdentity -StoredValue $_ -Location $normalized
                 $scope = "Process"
                 $stored = $_
 
-                if ($null -ne $normalized) {
-                    if ($machineRemaining[$normalized].Count -gt 0) {
-                        $scope = "Machine"
-                        $stored = $machineRemaining[$normalized].Dequeue()
-                    }
-                    elseif ($userRemaining[$normalized].Count -gt 0) {
-                        $scope = "User"
-                        $stored = $userRemaining[$normalized].Dequeue()
-                    }
+                if ($machineRemaining[$identity].Count -gt 0) {
+                    $scope = "Machine"
+                    $stored = $machineRemaining[$identity].Dequeue()
+                }
+                elseif ($userRemaining[$identity].Count -gt 0) {
+                    $scope = "User"
+                    $stored = $userRemaining[$identity].Dequeue()
                 }
 
                 [SystemPathLocation]::new($scope, $stored, $normalized)

@@ -544,6 +544,23 @@ Describe 'Get-SystemPath' {
 
             (Get-SystemPath).Scope | Should -Be @('Machine', 'User')
         }
+
+        It 'tags a location carrying an unresolved reference with its persisted scope' {
+            Mock -ModuleName easypeasy Get-EnvironmentVariable -ParameterFilter { $User } {
+                'C:\Users\easypeasy\bin;%EASYPEASY_UNSET_XYZ%\bin'
+            }
+            $env:PATH = 'C:\Users\easypeasy\bin;%EASYPEASY_UNSET_XYZ%\bin'
+
+            $result = Get-SystemPath -WarningAction SilentlyContinue
+
+            ($result | Where-Object StoredValue -EQ '%EASYPEASY_UNSET_XYZ%\bin').Scope | Should -Be 'User'
+        }
+
+        It 'leaves an unresolved reference on no persisted Path tagged Process' {
+            $env:PATH = '%EASYPEASY_UNSET_XYZ%\bin'
+
+            (Get-SystemPath -WarningAction SilentlyContinue).Scope | Should -Be 'Process'
+        }
     }
 
     Context '-Process' {
