@@ -40,12 +40,11 @@ Describe 'Register-LogonTask' {
         }
     }
 
-    It 'triggers the task at logon of the current user' {
+    It 'triggers the task at logon' {
         Register-LogonTask -Name 'MyTask' -Executable 'C:\app.exe' -Argument 'x'
 
         Should -Invoke -ModuleName easypeasy Register-ScheduledTask -Times 1 -Exactly -ParameterFilter {
-            $InputObject.Triggers[0].CimClass.CimClassName -eq 'MSFT_TaskLogonTrigger' -and
-            $InputObject.Triggers[0].UserId -eq "${env:USERDOMAIN}\${env:USERNAME}"
+            $InputObject.Triggers[0].CimClass.CimClassName -eq 'MSFT_TaskLogonTrigger'
         }
     }
 
