@@ -969,6 +969,9 @@ function Remove-DuplicateSystemPathLocations {
         When both scopes are cleaned (the default, when neither -Machine nor -User is specified), a location present on
         both scopes is kept on only one: the machine Path by default, or the user Path if -KeepUser is specified.
         Removing duplicates is idempotent: if there are no duplicates, the Path is left unchanged.
+        A run that changes the machine Path elevates through User Account Control when the session is not
+        already elevated: the whole cleanup runs in the elevated session, so it is applied as a whole or
+        not at all.
     .PARAMETER Machine
         If specified, only the local machine system Path is cleaned.
     .PARAMETER User
@@ -979,8 +982,8 @@ function Remove-DuplicateSystemPathLocations {
         When cleaning both scopes, a location present on both is kept on the user Path and removed from the machine Path.
     .NOTES
         Alias: cleanpath
-        Cleaning both scopes writes each Path on its own: an unelevated run that changes the machine Path
-        therefore prompts for elevation once per scope and leaves one backup file per write.
+        An unelevated run that changes the machine Path prompts for elevation once, before either Path
+        is written. Each scope Path is written on its own, leaving one backup file per write.
     .EXAMPLE
         Remove-DuplicateSystemPathLocations
     .EXAMPLE
@@ -1034,13 +1037,36 @@ function Remove-DuplicateSystemPathLocations {
             }
         }
 
-        if ((Get-StoredPathString -Entries $machineDeduped) -ne (Get-StoredPathString -Entries $machineEntries) `
-                -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system Path")) {
+        # both gates are asked before either write, so -WhatIf reports every scope a real run would write
+        $writeMachine = (Get-StoredPathString -Entries $machineDeduped) -ne (Get-StoredPathString -Entries $machineEntries) `
+            -and $PSCmdlet.ShouldProcess("machine", "Remove duplicate locations from system Path")
+        $writeUser = (Get-StoredPathString -Entries $userDeduped) -ne (Get-StoredPathString -Entries $userEntries) `
+            -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system Path")
+
+        # when not already elevated, the whole cleanup runs in an elevated session instead of in-process:
+        # one prompt for both writes, and no half-applied cleanup when it is declined
+        if ($writeMachine -and -not (Test-Elevated)) {
+            # capture what only the session knows before the elevated writes, while a removed location is
+            # still distinguishable from one the session added
+            $processLocations = Get-ProcessOnlyPathLocations
+
+            if ($KeepUser) {
+                Invoke-Elevated Remove-DuplicateSystemPathLocations -KeepUser
+            }
+            else {
+                Invoke-Elevated Remove-DuplicateSystemPathLocations -KeepMachine
+            }
+
+            # the elevated session synced its own process Path; this one derives its own from both scopes
+            Sync-ProcessPath @processLocations
+            return
+        }
+
+        if ($writeMachine) {
             Set-SystemPath -Machine -Entries $machineDeduped
         }
 
-        if ((Get-StoredPathString -Entries $userDeduped) -ne (Get-StoredPathString -Entries $userEntries) `
-                -and $PSCmdlet.ShouldProcess("user", "Remove duplicate locations from system Path")) {
+        if ($writeUser) {
             Set-SystemPath -User -Entries $userDeduped
         }
     }
@@ -1055,10 +1081,20 @@ function Remove-DuplicateSystemPathLocations {
         $currentEntries = @(Get-SystemPath @context)
         $deduped = @(Remove-DuplicatePathLocation -Entries $currentEntries)
 
-        if ((Get-StoredPathString -Entries $deduped) -ne (Get-StoredPathString -Entries $currentEntries) `
-                -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system Path")) {
-            Set-SystemPath @context -Entries $deduped
+        if (-not ((Get-StoredPathString -Entries $deduped) -ne (Get-StoredPathString -Entries $currentEntries) `
+                    -and $PSCmdlet.ShouldProcess($scope, "Remove duplicate locations from system Path"))) {
+            return
         }
+
+        # as above: an unelevated machine cleanup runs in an elevated session, passing no Path across
+        if ($Machine -and -not (Test-Elevated)) {
+            $processLocations = Get-ProcessOnlyPathLocations
+            Invoke-Elevated Remove-DuplicateSystemPathLocations -Machine
+            Sync-ProcessPath @processLocations
+            return
+        }
+
+        Set-SystemPath @context -Entries $deduped
     }
     # Set-SystemPath rebuilds the process Path from the deduplicated scopes
 }

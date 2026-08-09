@@ -8,6 +8,8 @@ Describe 'Remove-DuplicateSystemPathLocations' {
     BeforeEach {
         $script:originalPath = $env:PATH
         Mock -ModuleName easypeasy Set-SystemPath { }
+        # the in-process writes; the unelevated re-invocation has its own context
+        Mock -ModuleName easypeasy Test-Elevated { $true }
     }
 
     AfterEach { $env:PATH = $originalPath }
@@ -114,6 +116,80 @@ Describe 'Remove-DuplicateSystemPathLocations' {
 
             Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
                 -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\A\bin;C:\B' }
+        }
+    }
+
+    Context 'when not elevated' {
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Get-ProcessOnlyPathLocations { @{} }
+            Mock -ModuleName easypeasy Sync-ProcessPath { }
+
+            $script:machineEntries = New-PathEntries 'C:\A;C:\B;C:\A' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\B;C:\C;C:\C'
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $Machine } { $script:machineEntries }
+            Mock -ModuleName easypeasy Get-SystemPath -ParameterFilter { $User } { $script:userEntries }
+        }
+
+        It 'runs the whole cleanup elevated once, writing neither Path in-process' {
+            Remove-DuplicateSystemPathLocations
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains 'Remove-DuplicateSystemPathLocations' -and
+                $Command -contains '-KeepMachine'
+            }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'passes -KeepUser through to the elevated session' {
+            Remove-DuplicateSystemPathLocations -KeepUser
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains '-KeepUser'
+            }
+        }
+
+        It 'elevates for a single machine scope' {
+            Remove-DuplicateSystemPathLocations -Machine
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
+                $Command -contains '-Machine'
+            }
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
+        }
+
+        It 'syncs the current process Path after the elevated cleanup' {
+            Remove-DuplicateSystemPathLocations
+
+            Should -Invoke -ModuleName easypeasy Sync-ProcessPath -Times 1 -Exactly
+        }
+
+        It 'does not elevate for a user-only cleanup' {
+            Remove-DuplicateSystemPathLocations -User
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\B;C:\C' }
+        }
+
+        It 'does not elevate when the machine Path does not change' {
+            $script:machineEntries = New-PathEntries 'C:\A' -Scope Machine
+            $script:userEntries = New-PathEntries 'C:\C;C:\C'
+
+            Remove-DuplicateSystemPathLocations
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\C' }
+        }
+
+        It 'does not elevate under -WhatIf' {
+            Remove-DuplicateSystemPathLocations -WhatIf
+
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 0 -Exactly
         }
     }
 
