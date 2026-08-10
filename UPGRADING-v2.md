@@ -12,11 +12,11 @@ write the **canonical** name, never an alias.
   removed group aliases, `-Name` not the removed app aliases.
 - **User scope is the default now.** Path and environment writes target the current user; pass
   `-Machine` only when a machine-wide change is intended. Do not add `-Machine` by reflex.
-- **Administrator is no longer required by default.** A `-Machine` **Path or environment** write
-  auto-elevates through UAC (`Invoke-Elevated` → `sudo --inline`), so drop any "run as admin" wrapping
-  around user-scope calls. Machine-scope writes need the **Windows sudo feature** enabled.
-  Start Menu `-AllUsers` writes and `Register-LogonTask` do **not** auto-elevate: they write directly and
-  still need an already-elevated session, so keep the elevated launch or the `Assert-Elevated` guard there.
+- **Administrator is no longer required by default.** A `-Machine` **Path or environment** write,
+  a Start Menu `-AllUsers` write and `Register-LogonTask -Elevated` auto-elevate through UAC
+  (`Invoke-Elevated` → `sudo --inline`), so drop any "run as admin" wrapping and the `Assert-Elevated`
+  guard around them. Such writes need the **Windows sudo feature** enabled. A `Register-LogonTask`
+  call without `-Elevated` registers a task of the current user and never elevates.
 
 ## Renamed commands
 

@@ -361,14 +361,32 @@ Both accept `-Force` to overwrite an existing shortcut.
 
 ### Start an application at logon 
 
-equivalent to checking [Process Explorer](https://learn.microsoft.com/de-de/sysinternals/downloads/process-explorer)'s menu item *Options > Run At Logon* (requires administrator)
+#### Run as the logged-in user
+
 ```powershell
+# remove comments before use
+> Register-LogonTask `
+        -Name Syncthing `
+        -Path "\Startup" `         # path in task scheduler
+        -Executable "$env:LOCALAPPDATA\Programs\Syncthing\syncthing.exe" `
+        -Argument "--no-console"   # app-specific argument to the executable
+```
+
+#### Run as an administrator 🅰️
+
+Run task at highest privileges using `-Elevated` (alias `-Administrator`).
+
+```powershell
+# remove comments before use
 > Register-LogonTask `
         -Name "Process Explorer-${env:USERDOMAIN}-${env:USERNAME}" `
         -Executable "$env:LOCALAPPDATA\Microsoft\WindowsApps\procexp.exe" `
-        -Argument "/t" `
-        -Force
+        -Argument "/t" `   # app-specific argument to the executable
+        -Elevated `        # run as an administrator
+        -Force             # overwrite existing task
 ```
+
+The example is equivalent to checking [Process Explorer](https://learn.microsoft.com/de-de/sysinternals/downloads/process-explorer)'s menu item *Options > Run At Logon*.
 
 ### Utilities
 

@@ -112,6 +112,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`
+- **Added:** `-Elevated` (alias `-Administrator`) on `Register-LogonTask` — task runs at highest privileges, registration elevates through User Account Control when not administrator; reports Windows sudo missing, disabled or forbidden in inline mode before registering anything.
+- **Fixed:** `-Elevated` registration elevates the task scheduler's own command, so it no longer needs easypeasy on the elevated session's module path.
 - **Changed:** `-Name` and `-Executable` on `Register-LogonTask` are mandatory.
 - **Fixed:** `Register-LogonTask` registers a task without `-Argument`.
 
