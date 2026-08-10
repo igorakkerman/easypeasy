@@ -172,6 +172,21 @@ A folder **removed** elsewhere is not picked up: it stays as a process-scoped fo
 > Backup-SystemPath
 ```
 
+#### Mark folders that do not exist
+
+```powershell
+> $env:EASYPEASY_USE_COLORS = "false"          # default "true", missing folders in red
+> $env:EASYPEASY_USE_WARNING_SYMBOL = "true"   # default "false", missing folders trailed by ⚠
+
+Scope      Location
+-----      --------
+Machine    C:\Windows
+Machine    C:\Windows\Missing ⚠
+Machine    %SystemRoot%\Missing
+           ↳ C:\Windows\Missing ⚠
+User       C:\Users\me\go\bin
+```
+
 ### Environment variables
 
 #### Get the value of a variable
@@ -230,7 +245,7 @@ Location           : C:\Users\me\Desktop\MyApp.lnk
 Target             : C:\Program Files\MyApp\MyApp.exe
 Arguments          : --profile Default
 RunLocation        : C:\Program Files\MyApp
-Description        : My favourite app
+Description        : My favorite app
 Icon               : C:\Program Files\MyApp\MyApp.exe,3
 Hotkey             : Alt+Ctrl+M
 WindowStyle        : Maximized
@@ -264,7 +279,7 @@ C:\Program Files\MyApp\MyApp.exe
         -Target "C:\Program Files\MyApp\MyApp.exe" `
         -Arguments "--profile Default" `
         -RunLocation "C:\Users\me\Documents" `       # default: folder of target executable
-        -Description "My favourite app" `
+        -Description "My favorite app" `
         -Icon "C:\Program Files\MyApp\MyApp.exe,3" ` # icon filename or filename,index
         -Hotkey "Ctrl+Alt+M" `
         -WindowStyle Maximized `                     # Normal, Maximized, Minimized
@@ -308,7 +323,7 @@ Every field of [`New-Shortcut`](#shortcuts) is available, and the created shortc
 > New-StartMenuShortcut -Name MyApp -Target "C:\Program Files\MyApp\MyApp.exe" `
         -Arguments "-Debug" `
         -RunLocation "C:\Data" `
-        -Description "My favourite app" `
+        -Description "My favorite app" `
         -Icon "C:\Program Files\MyApp\MyApp.exe,3" `
         -Hotkey "Ctrl+Alt+M" `
         -WindowStyle Maximized `

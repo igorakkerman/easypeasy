@@ -70,6 +70,8 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Location` on `SystemPathLocation` holds absolute normalized folder — repeated and trailing backslashes, `.` and `..` segments resolved. Relative location resolved against current directory.
 - **Changed:** System Path listing leads with `StoredValue`; resolved `Location` follows on `↳` row where stored value carries `%…%` reference.
 - **Added:** Location naming no existing folder rendered in red.
+- **Added:** `EASYPEASY_USE_COLORS` and `EASYPEASY_USE_WARNING_SYMBOL` — mark folder that does not exist in system Path listing red, with trailing `⚠`, both or neither. `true` or `false`, case-insensitive; default `true` and `false`.
+- **Added:** Value neither `true` nor `false` in `EASYPEASY_USE_COLORS` or `EASYPEASY_USE_WARNING_SYMBOL` reported as warning, default kept.
 - **Changed:** Process Path carries each location as its scope Path spells it, `%…%` references expanded and nothing else.
 - **Changed:** `Add-SystemPathLocation` names resolved location, previously expanded, in `PathLocationNotFound`.
 - **Changed:** `Get-SystemPath -Join` returns stored (expandable) locations.

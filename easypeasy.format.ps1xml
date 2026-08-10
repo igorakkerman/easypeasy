@@ -104,28 +104,56 @@
               <!--
                 StoredValue is shown as persisted. A %...% reference is the one form that hides which
                 folder an entry names, so that entry carries a second line with the resolved Location.
-                An entry naming no existing folder is accented.
-                A location that does not resolve has nothing to resolve to, so it stays a single accented
+                An entry naming no existing folder is marked.
+                A location that does not resolve has nothing to resolve to, so it stays a single marked
                 row. The emptiness is tested with IsNullOrEmpty, not against $null: the class types
                 Location as [string], which turns the null it is constructed with into an empty string.
+                EASYPEASY_USE_COLORS, default true, and EASYPEASY_USE_WARNING_SYMBOL, default false, pick
+                the marking; both off leaves a missing folder unmarked. Read per row, so a change takes
+                effect on the next listing.
               -->
               <TableColumnItem>
                 <ScriptBlock>
+                  # 'true' or 'false', case-insensitive; anything else warns and falls back
+                  function setting($name, $fallback) {
+                      $value = [System.Environment]::GetEnvironmentVariable($name)
+                      if ([string]::IsNullOrEmpty($value)) {
+                          return $fallback
+                      }
+
+                      switch ($value) {
+                          'true' { return $true }
+                          'false' { return $false }
+                      }
+
+                      Write-Warning "Environment variable has invalid value. name: $name, value: '$value', expected: 'true' or 'false'"
+                      return $fallback
+                  }
+
+                  function color($text) {
+                      return $useColors ? "$($PSStyle.Foreground.Red)$text$($PSStyle.Reset)" : $text
+                  }
+
+                  $useColors = setting 'EASYPEASY_USE_COLORS' $true
+                  $useWarningSymbol = setting 'EASYPEASY_USE_WARNING_SYMBOL' $false
+
                   $unresolved = [string]::IsNullOrEmpty($_.Location)
                   $missing = $unresolved -or
                       -not (Test-Path -LiteralPath $_.Location -PathType Container -ErrorAction Ignore)
-                  $accent = $PSStyle.Foreground.Red
-                  $reset = $PSStyle.Reset
+
+                  # Symbol trails the folder it is about, and nothing else, so a row carrying none keeps
+                  # the width it has today and the width the symbol is drawn at costs the layout nothing.
+                  $symbol = ($missing -and $useWarningSymbol) ? ' ⚠' : ''
 
                   if ($unresolved) {
-                      "$accent$($_.StoredValue)$reset"
+                      color "$($_.StoredValue)$symbol"
                   }
                   elseif ($_.StoredValue -match '%[^%]+%' -and $_.Location -cne $_.StoredValue) {
-                      $resolved = $missing ? "$accent↳ $($_.Location)$reset" : "↳ $($_.Location)"
+                      $resolved = $missing ? (color "↳ $($_.Location)$symbol") : "↳ $($_.Location)"
                       "$($_.StoredValue)`n$resolved"
                   }
                   else {
-                      $missing ? "$accent$($_.StoredValue)$reset" : $_.StoredValue
+                      $missing ? (color "$($_.StoredValue)$symbol") : $_.StoredValue
                   }
                 </ScriptBlock>
               </TableColumnItem>
