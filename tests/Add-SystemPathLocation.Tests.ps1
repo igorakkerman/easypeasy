@@ -79,6 +79,13 @@ Describe 'Add-SystemPathLocation' {
                 -ParameterFilter { (($Entries | ForEach-Object { $_.StoredValue }) -join ';') -eq 'C:\Old;C:\New' }
         }
 
+        It 'takes a piped location without a scope switch, on the user scope' {
+            'C:\New' | Add-SystemPathLocation
+
+            Should -Invoke -ModuleName easypeasy Set-SystemPath -Times 1 -Exactly `
+                -ParameterFilter { $User -and -not $Machine }
+        }
+
         It 'takes a piped entry reference verbatim, unexpanded' {
             New-PathEntry -StoredValue '%SystemRoot%\S32' -Location 'C:\WINDOWS\S32' | Add-SystemPathLocation -User
 

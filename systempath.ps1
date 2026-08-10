@@ -996,7 +996,8 @@ function Add-SystemPathLocation {
     .EXAMPLE
         Get-SystemPath -Contains Git -User | Add-SystemPathLocation -Machine
     #>
-    [CmdletBinding(SupportsShouldProcess)]
+    # pipeline input picks parameter set before first object arrives, so default set needed
+    [CmdletBinding(DefaultParameterSetName = "User", SupportsShouldProcess)]
     param (
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [Alias("Folder")]
