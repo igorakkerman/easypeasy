@@ -36,14 +36,12 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `New-Shortcut` — creates shortcut at any location and returns it; only `-Location` and `-Target` mandatory, run location defaults to folder of target, `-Force` performs complete overwrite.
 - **Added:** `Set-Shortcut` — sets any combination of shortcut fields, returns shortcut with `-PassThru`; `$null` or empty string clears a field.
 - **Added:** `-CreateFolder` on `New-Shortcut` — creates folder of shortcut when missing; without it, missing folder is reported as error.
-- **Added:** `Get-Shortcut` — every readable field of a shortcut as one record: `Location`, `Target`, `Arguments`, `RunLocation`, `Description`, `Icon`, `Hotkey`, `WindowStyle`, `Elevated`.
+- **Added:** `Get-Shortcut` — every readable field of a shortcut as one record: `Location`, `Target`, `Arguments`, `RunLocation`, `Description`, `Icon`, `Hotkey`, `WindowStyle`, `Elevated`; missing shortcut reported as `ShortcutNotFound`.
 - **Added:** `Icon` as `ShortcutIcon` record — `Location` and `Index`, combined back by `ToString()`; `$null` when shortcut carries no icon.
 - **Added:** `WindowStyle` as `ShortcutWindowStyle` enum — `Normal`, `Maximized`, `Minimized`.
 - **Removed:** `Get-ShortcutIconLocation` — read `Get-Shortcut` instead.
 - **Removed:** `Set-ShortcutTarget` — pass `-Target` to `Set-Shortcut` instead.
 - **Removed:** `Set-ShortcutRunAsAdministrator` — pass `-Elevated` to `Set-Shortcut` instead.
-- **Fixed:** `Get-Shortcut` reports missing shortcut as `ShortcutNotFound` instead of failing on file read.
-- **Fixed:** `New-Shortcut` reports missing shortcut folder as terminating error.
 
 ### System PATH and environment variables
 - **Changed:** System PATH and environment write functions now default to user scope; pass `-Machine` for machine scope. Administrator privileges no longer required by default.
@@ -80,7 +78,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `Get-Environment` — returns environment variables as records carrying scope, name and value; both scopes by default, or `-Machine` / `-User`.
 - **Fixed:** `Remove-EnvironmentVariable` deletes registry value instead of leaving empty tombstone.
 - **Fixed:** `Get-EnvironmentVariable` takes `-Name` literally in effective scope, no longer matching wildcards or missing names carrying `[` and `]`.
-- **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error.
+- **Changed:** `-Machine` write operations auto-elevate through User Account Control when not administrator, no longer error. One prompt per command, before either Path is written.
 - **Changed:** `Invoke-Elevated` and aliases `sudops`, `sups` force inline execution in the current terminal via `sudo --inline`, and report a terminating error on failure.
 - **Added:** `Invoke-Elevated` reports terminating error when sudo not available.
 - **Added:** `-Machine` write reports Windows sudo missing, disabled or forbidden in inline mode before reading or writing anything.
@@ -88,9 +86,6 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** Reads and removals stay quiet about `%...%` reference no variable resolves; listing accents it instead.
 - **Changed:** Location that does not resolve is matched, selected and deduplicated on its stored value, so `%...%` reference is found, removed and moved by the reference itself.
 - **Fixed:** Location carrying unresolved `%...%` reference tagged with its persisted scope on effective read, previously always `Process`.
-- **Fixed:** Location carrying unresolved `%...%` reference accented as single row, previously unaccented above empty `↳` row.
-- **Fixed:** `Move-SystemPathLocation` elevates once for whole move, before either Path is written.
-- **Fixed:** `Remove-DuplicateSystemPathLocations` elevates once for whole cleanup, before either Path is written.
 - **Changed:** `Add-SystemPathLocation` and `Remove-SystemPathLocation` run whole `-Machine` write elevated, so Path is read and written in same session and never crosses elevation boundary.
 - **Changed:** `Move-SystemPathLocation` writes target Path before source Path.
 - **Fixed:** `Invoke-Elevated` quotes every argument, doubling embedded single quote.
@@ -113,7 +108,6 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 ### Scheduled tasks
 - **Added:** `-WhatIf` and `-Confirm` on `Register-LogonTask`.
 - **Added:** `-Elevated` (alias `-Administrator`) on `Register-LogonTask` — task runs at highest privileges, registration elevates through User Account Control when not administrator; reports Windows sudo missing, disabled or forbidden in inline mode before registering anything.
-- **Fixed:** `-Elevated` registration elevates the task scheduler's own command, so it no longer needs easypeasy on the elevated session's module path.
 - **Changed:** `-Name` and `-Executable` on `Register-LogonTask` are mandatory.
 - **Fixed:** `Register-LogonTask` registers a task without `-Argument`.
 
