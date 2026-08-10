@@ -190,7 +190,7 @@ function New-Shortcut {
 
     .EXAMPLE
         New-Shortcut -Location "C:\Users\me\Desktop\MyApp.lnk" -Target "C:\Program Files\MyApp\MyApp.exe" `
-            -Arguments "--profile Default" -Description "My favourite app" `
+            -Arguments "--profile Default" -Description "My favorite app" `
             -Icon "C:\Program Files\MyApp\MyApp.exe,3" `
             -Hotkey "Ctrl+Alt+M" -WindowStyle Maximized -Elevated
 
