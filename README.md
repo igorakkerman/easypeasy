@@ -134,14 +134,27 @@ A non-existent location is rejected; use `-Force` to add it anyway.
 
 ```powershell
 # Remove-DuplicateSystemPathLocations
-> cleanpath                # same as `-KeepMachine` 🅰️
-> cleanpath -KeepMachine   # both scopes, keeps machine on overlap, default 🅰️
-> cleanpath -KeepUser      # both scopes, keeps user on overlap 🅰️
-> cleanpath -Machine       # machine Path only 🅰️
-> cleanpath -User          # user Path only
+> deduppath                # same as `-KeepMachine` 🅰️
+> deduppath -KeepMachine   # both scopes, keeps machine on overlap, default 🅰️
+> deduppath -KeepUser      # both scopes, keeps user on overlap 🅰️
+> deduppath -Machine       # machine Path only 🅰️
+> deduppath -User          # user Path only
 ```
 
 Within a scope, the first occurrence of each folder is kept.
+
+#### Clean up the system Path
+
+```powershell
+# Optimize-SystemPath
+> cleanpath   # both scopes 🅰️
+```
+
+So far, cleaning up removes duplicate folders, keeping the machine copy on overlap.
+
+Later versions clean up more, so a run does more than it does today.
+Do not rely on the current set of steps — adding one is not a breaking change.
+Where the exact behavior matters, call the single-purpose commands, e.g. `deduppath`.
 
 #### Move a folder between the machine and user system Path
 

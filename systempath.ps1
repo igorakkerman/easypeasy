@@ -1331,7 +1331,7 @@ function Remove-DuplicateSystemPathLocations {
     .PARAMETER KeepUser
         When cleaning both scopes, a location present on both is kept on the user Path and removed from the machine Path.
     .NOTES
-        Alias: cleanpath
+        Alias: deduppath
         An unelevated run that changes the machine Path prompts for elevation once, before either Path
         is written. Each scope Path is written on its own, leaving one backup file per write.
     .EXAMPLE
@@ -1459,6 +1459,32 @@ function Remove-DuplicateSystemPathLocations {
         Set-SystemPath @context -Entries $deduped
     }
     # Set-SystemPath rebuilds the process Path from the deduplicated scopes
+}
+
+function Optimize-SystemPath {
+    <#
+    .SYNOPSIS
+        Cleans up the system Path.
+    .DESCRIPTION
+        Cleans up the system Path of the local machine and of the current user.
+        So far, cleaning up removes duplicate locations, as Remove-DuplicateSystemPathLocations does:
+        within a scope only the first occurrence of each location is kept, and a location present on both
+        scopes is kept on the machine Path.
+        A run that changes the machine Path elevates through User Account Control when the session is not
+        already elevated.
+        Later versions clean up more, so a run does more than it does today. Do not rely on the current
+        set of steps: adding one is not a breaking change. Where the exact behavior matters, call the
+        single-purpose commands, e.g. Remove-DuplicateSystemPathLocations.
+    .NOTES
+        Alias: cleanpath
+    .EXAMPLE
+        Optimize-SystemPath
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param ()
+
+    # -WhatIf and -Confirm reach the cleanup steps through the preference variables they set
+    Remove-DuplicateSystemPathLocations
 }
 
 function Move-SystemPathLocation {
@@ -1705,7 +1731,8 @@ function Test-SystemPathLocation {
 
 New-Alias -Name addpath -Value Add-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name rmpath -Value Remove-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
-New-Alias -Name cleanpath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue `
+New-Alias -Name deduppath -Value Remove-DuplicateSystemPathLocations -ErrorAction SilentlyContinue `
     | Out-Null
+New-Alias -Name cleanpath -Value Optimize-SystemPath -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name movepath -Value Move-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null
 New-Alias -Name testpath -Value Test-SystemPathLocation -ErrorAction SilentlyContinue | Out-Null

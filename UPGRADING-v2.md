@@ -43,7 +43,6 @@ write the **canonical** name, never an alias.
 | `-Group`, `-GroupName` | Start Menu shortcut commands | `-Folder` (or `-Name` on `New-StartMenuProgramsFolder`) |
 | `-Prepend`, `-Start` | `Add-SystemPathLocation` | `-First` |
 | `removepath` alias | `Remove-SystemPathLocation` | `rmpath`, or the full name |
-| `deduppath` alias | `Remove-DuplicateSystemPathLocations` | `cleanpath`, or the full name |
 | `-IconLocation`, `-IconIndex`, `-IconFile` | shortcut and Start Menu shortcut commands | `-Icon "file,index"`, or `-Icon "file"` for the first icon |
 | `-Admin`, `-Elevate` | `New-PowershellStartMenuShortcut` | `-Elevated` (`-Administrator` kept as alias — prefer `-Elevated`) |
 

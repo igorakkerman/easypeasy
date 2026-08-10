@@ -80,6 +80,7 @@
         'Remove-SystemPathLocation',
         'Test-SystemPathLocation',
         'Remove-DuplicateSystemPathLocations',
+        'Optimize-SystemPath',
         'Move-SystemPathLocation',
         'Backup-SystemPath',
         'Get-EnvironmentVariable',
@@ -114,6 +115,7 @@
         'syncpath',
         'addpath',
         'rmpath',
+        'deduppath',
         'cleanpath',
         'movepath',
         'testpath',
@@ -157,7 +159,7 @@
             # ReleaseNotes = ''
 
             # Prerelease string of this module
-            Prerelease = 'rc8'
+            Prerelease = 'rc9'
 
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
             # RequireLicenseAcceptance = $false
