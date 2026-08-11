@@ -1,5 +1,6 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
+    . "$PSScriptRoot/../ElevatedSession.ps1"
 }
 
 Describe 'New-StartMenuProgramsFolder' {
@@ -70,38 +71,37 @@ Describe 'New-StartMenuProgramsFolder' {
     Context 'when not elevated' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Test-Elevated { $false }
-            Mock -ModuleName easypeasy Invoke-Elevated { }
+            $script:programs = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-pf-$(New-Guid)"
+            New-Item -ItemType Directory -Path $programs -Force | Out-Null
+            Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $programs }
+
+            Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
+            Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
             Mock -ModuleName easypeasy Assert-SudoAvailable { }
-            Mock -ModuleName easypeasy New-Item { }
         }
 
-        It 'creates the folder in an elevated session with -AllUsers, returning its path' {
-            $allUsersPrograms = New-Object -ComObject WScript.Shell | ForEach-Object { $_.SpecialFolders("AllUsersPrograms") }
+        AfterEach { Remove-Item -LiteralPath $programs -Recurse -Force -ErrorAction SilentlyContinue }
 
+        It 'creates the folder elevated for -AllUsers, returning its path' {
             $result = New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers
 
-            $result | Should -Be "$allUsersPrograms\EasypeasyTest"
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
-                $Command -contains 'New-StartMenuProgramsFolder' -and
-                $Command -contains 'EasypeasyTest' -and
-                $Command -contains '-AllUsers'
-            }
-            Should -Invoke -ModuleName easypeasy New-Item -Times 0 -Exactly
+            $result | Should -Be "$programs\EasypeasyTest"
+            "$programs\EasypeasyTest" | Should -Exist
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
         }
 
         It 'does not elevate for the current user' {
             New-StartMenuProgramsFolder -Name 'EasypeasyTest' -User | Out-Null
 
+            "$programs\EasypeasyTest" | Should -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
-            Should -Invoke -ModuleName easypeasy New-Item -Times 1 -Exactly
         }
 
-        It 'does not elevate under -WhatIf' {
+        It 'creates nothing under -WhatIf' {
             New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers -WhatIf | Out-Null
 
+            "$programs\EasypeasyTest" | Should -Not -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
-            Should -Invoke -ModuleName easypeasy New-Item -Times 0 -Exactly
         }
 
         It 'fails for -AllUsers before anything is created when sudo is not available' {
@@ -109,8 +109,8 @@ Describe 'New-StartMenuProgramsFolder' {
 
             { New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers } | Should -Throw '*sudo*'
 
+            "$programs\EasypeasyTest" | Should -Not -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
-            Should -Invoke -ModuleName easypeasy New-Item -Times 0 -Exactly
         }
     }
 }

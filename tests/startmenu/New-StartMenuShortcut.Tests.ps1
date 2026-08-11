@@ -1,5 +1,6 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
+    . "$PSScriptRoot/../ElevatedSession.ps1"
 }
 
 Describe 'New-StartMenuShortcut' {
@@ -10,7 +11,7 @@ Describe 'New-StartMenuShortcut' {
     }
 
     BeforeEach {
-        Mock -ModuleName easypeasy New-StartMenuProgramsFolder { $folder }
+        Mock -ModuleName easypeasy New-StartMenuProgramsFolder { "$folder\$Name" }
         Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $folder }
         Mock -ModuleName easypeasy Test-Elevated { $true }
         Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
@@ -117,42 +118,75 @@ Describe 'New-StartMenuShortcut' {
     Context 'when not elevated' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Test-Elevated { $false }
-            Mock -ModuleName easypeasy Invoke-Elevated { }
+            Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
+            Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
             Mock -ModuleName easypeasy Assert-SudoAvailable { }
-            Mock -ModuleName easypeasy Get-Shortcut { 'read back' }
         }
 
-        It 'creates folder and shortcut in one elevated session with -AllUsers' {
-            New-StartMenuShortcut -Name 'AllUsersApp' -Target 'C:\Windows\notepad.exe' -Folder 'MyFolder' -AllUsers | Out-Null
+        It 'creates the shortcut in the Programs root elevated for -AllUsers' {
+            $shortcut = New-StartMenuShortcut -Name 'ElevatedRoot' -Target 'C:\Windows\notepad.exe' -AllUsers
 
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
-                $Command -contains 'New-StartMenuShortcut' -and
-                $Command -contains 'AllUsersApp' -and
-                $Command -contains '-AllUsers' -and
-                $Command -contains '-Folder' -and
-                $Command -contains 'MyFolder'
-            }
-            Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 0 -Exactly
+            "$folder\ElevatedRoot.lnk" | Should -Exist
+            $shortcut.Location | Should -Be "$folder\ElevatedRoot.lnk"
+            $shortcut.Target   | Should -Be 'C:\Windows\notepad.exe'
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
         }
 
-        It 'returns the shortcut the elevated session wrote' {
-            $result = New-StartMenuShortcut -Name 'AllUsersApp' -Target 'C:\Windows\notepad.exe' -AllUsers
+        It 'creates the shortcut in the given -Folder elevated for -AllUsers' {
+            New-StartMenuShortcut -Name 'AllUsersFolder' -Target 'C:\Windows\notepad.exe' -Folder 'AllUsersDir' -AllUsers | Out-Null
 
-            $result | Should -Be 'read back'
-            Should -Invoke -ModuleName easypeasy Get-Shortcut -Times 1 -Exactly `
-                -ParameterFilter { $Location -like '*\AllUsersApp.lnk' }
+            "$folder\AllUsersDir\AllUsersFolder.lnk" | Should -Exist
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+        }
+
+        It 'carries every field into the shortcut it creates for -AllUsers' {
+            New-StartMenuShortcut -Name 'AllUsersFields' -Target 'C:\Windows\notepad.exe' -AllUsers `
+                -Arguments '/A C:\temp\file.txt' `
+                -RunLocation 'C:\temp' `
+                -Description 'Edit file' `
+                -Icon 'C:\Windows\explorer.exe,3' `
+                -Hotkey 'Ctrl+Alt+N' `
+                -WindowStyle Maximized `
+                -Elevated | Out-Null
+
+            $result = Get-Shortcut "$folder\AllUsersFields.lnk"
+            $result.Arguments       | Should -Be '/A C:\temp\file.txt'
+            $result.RunLocation     | Should -Be 'C:\temp'
+            $result.Description     | Should -Be 'Edit file'
+            $result.Icon.ToString() | Should -Be 'C:\Windows\explorer.exe,3'
+            $result.Hotkey          | Should -Be 'Alt+Ctrl+N'
+            $result.WindowStyle     | Should -Be 'Maximized'
+            $result.Elevated        | Should -BeTrue
+        }
+
+        It 'fails for -AllUsers when the shortcut already exists without -Force' {
+            New-StartMenuShortcut -Name 'AllUsersDup' -Target 'C:\Windows\notepad.exe' -AllUsers | Out-Null
+
+            { New-StartMenuShortcut -Name 'AllUsersDup' -Target 'C:\Windows\regedit.exe' -AllUsers } |
+                Should -Throw '*already exists*'
+
+            (Get-Shortcut "$folder\AllUsersDup.lnk").Target | Should -Be 'C:\Windows\notepad.exe'
+        }
+
+        It 'overwrites an existing shortcut for -AllUsers with -Force' {
+            New-StartMenuShortcut -Name 'AllUsersOver' -Target 'C:\Windows\notepad.exe' -AllUsers | Out-Null
+
+            New-StartMenuShortcut -Name 'AllUsersOver' -Target 'C:\Windows\regedit.exe' -AllUsers -Force | Out-Null
+
+            (Get-Shortcut "$folder\AllUsersOver.lnk").Target | Should -Be 'C:\Windows\regedit.exe'
         }
 
         It 'does not elevate for the current user' {
             New-StartMenuShortcut -Name 'UserApp' -Target 'C:\Windows\notepad.exe' | Out-Null
 
+            "$folder\UserApp.lnk" | Should -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
 
-        It 'does not elevate under -WhatIf' {
+        It 'creates nothing and does not elevate under -WhatIf' {
             New-StartMenuShortcut -Name 'WhatIfAllUsers' -Target 'C:\Windows\notepad.exe' -AllUsers -WhatIf | Out-Null
 
+            "$folder\WhatIfAllUsers.lnk" | Should -Not -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
 
@@ -161,8 +195,8 @@ Describe 'New-StartMenuShortcut' {
 
             { New-StartMenuShortcut -Name 'NoSudo' -Target 'C:\Windows\notepad.exe' -AllUsers } | Should -Throw '*sudo*'
 
+            "$folder\NoSudo.lnk" | Should -Not -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
-            Should -Invoke -ModuleName easypeasy New-StartMenuProgramsFolder -Times 0 -Exactly
         }
     }
 

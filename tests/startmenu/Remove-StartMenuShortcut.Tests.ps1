@@ -1,5 +1,6 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
+    . "$PSScriptRoot/../ElevatedSession.ps1"
     $script:wsh = New-Object -ComObject WScript.Shell
     $script:allUsers = $wsh.SpecialFolders("AllUsersPrograms")
     $script:userPrograms = $wsh.SpecialFolders("Programs")
@@ -99,51 +100,64 @@ Describe 'Remove-StartMenuShortcut' {
     Context 'when not elevated' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Test-Path { $true }
-            Mock -ModuleName easypeasy Remove-Item { }
-            Mock -ModuleName easypeasy Get-ChildItem { }
-            Mock -ModuleName easypeasy Test-Elevated { $false }
-            Mock -ModuleName easypeasy Invoke-Elevated { }
+            $script:programs = Join-Path ([System.IO.Path]::GetTempPath()) "easypeasy-rm-$(New-Guid)"
+            New-Item -ItemType Directory -Path "$programs\Bar" -Force | Out-Null
+            New-Item -ItemType File -Path "$programs\Foo.lnk" -Force | Out-Null
+            New-Item -ItemType File -Path "$programs\Bar\Foo.lnk" -Force | Out-Null
+            Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $programs }
+
+            Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
+            Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
             Mock -ModuleName easypeasy Assert-SudoAvailable { }
         }
 
-        It 'removes the shortcut in an elevated session with -AllUsers' {
+        AfterEach { Remove-Item -LiteralPath $programs -Recurse -Force -ErrorAction SilentlyContinue }
+
+        It 'removes the shortcut elevated for -AllUsers' {
             Remove-StartMenuShortcut -Name 'Foo' -AllUsers
 
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
-                $Command -contains 'Remove-StartMenuShortcut' -and
-                $Command -contains 'Foo' -and
-                $Command -contains '-AllUsers'
-            }
-            Should -Invoke -ModuleName easypeasy Remove-Item -Times 0 -Exactly
+            "$programs\Foo.lnk" | Should -Not -Exist
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
         }
 
-        It 'passes -Folder on to the elevated session' {
+        It 'removes the containing -Folder that the shortcut leaves empty' {
             Remove-StartMenuShortcut -Name 'Foo' -Folder 'Bar' -AllUsers
 
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly -ParameterFilter {
-                $Command -contains '-Folder' -and $Command -contains 'Bar'
-            }
+            "$programs\Bar" | Should -Not -Exist
+        }
+
+        It 'keeps a -Folder that still holds other items' {
+            New-Item -ItemType File -Path "$programs\Bar\Other.lnk" -Force | Out-Null
+
+            Remove-StartMenuShortcut -Name 'Foo' -Folder 'Bar' -AllUsers
+
+            "$programs\Bar\Foo.lnk"   | Should -Not -Exist
+            "$programs\Bar\Other.lnk" | Should -Exist
+        }
+
+        It 'never removes the Programs root' {
+            Remove-StartMenuShortcut -Name 'Foo' -AllUsers
+
+            $programs | Should -Exist
         }
 
         It 'does not elevate for the current user' {
             Remove-StartMenuShortcut -Name 'Foo'
 
+            "$programs\Foo.lnk" | Should -Not -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
-            Should -Invoke -ModuleName easypeasy Remove-Item -Times 1 -Exactly
         }
 
-        It 'does not elevate under -WhatIf' {
+        It 'removes nothing and does not elevate under -WhatIf' {
             Remove-StartMenuShortcut -Name 'Foo' -AllUsers -WhatIf
 
+            "$programs\Foo.lnk" | Should -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
-            Should -Invoke -ModuleName easypeasy Remove-Item -Times 0 -Exactly
         }
 
         It 'reports a missing shortcut before elevating' {
-            Mock -ModuleName easypeasy Test-Path { $false }
+            { Remove-StartMenuShortcut -Name 'Absent' -AllUsers } | Should -Throw '*not found*'
 
-            { Remove-StartMenuShortcut -Name 'Foo' -AllUsers } | Should -Throw '*not found*'
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
         }
 
@@ -152,8 +166,8 @@ Describe 'Remove-StartMenuShortcut' {
 
             { Remove-StartMenuShortcut -Name 'Foo' -AllUsers } | Should -Throw '*sudo*'
 
+            "$programs\Foo.lnk" | Should -Exist
             Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
-            Should -Invoke -ModuleName easypeasy Remove-Item -Times 0 -Exactly
         }
     }
 }
