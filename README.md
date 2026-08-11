@@ -472,6 +472,24 @@ C:\Users\me\Desktop
 ```
 
 ## Installation
+
+### Requirements
+
+#### PowerShell 7.4+
+
+PowerShell 7.4 is supported until 2026-11-10, its end of support.
+v2.x releases published after that date require PowerShell 7.6+.
+
+#### Windows `sudo` with *inline* mode
+
+All machine scope operations, marked 🅰️, need
+- [Sudo for Windows](https://learn.microsoft.com/en-us/windows/advanced-settings/sudo/) installed,
+  available since Windows 11, version 24H2
+- [*Inline* mode](https://learn.microsoft.com/en-us/windows/advanced-settings/sudo/#how-to-configure-sudo-for-windows) allowed,
+  set with `sudo config --enable normal`
+
+User scope operations alone do *not* require `sudo`.
+
 ### Installation from PowerShell Gallery
 
 To install the *easypeasy* module from the PowerShell Gallery, run the following command in PowerShell:
