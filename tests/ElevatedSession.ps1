@@ -1,8 +1,29 @@
-# Stands in for the elevated session sudo opens: the encoded payload Invoke-Elevated builds is decoded and
-# run in a separate runspace, unelevated, with the module imported. Everything below Invoke-Elevated -
-# quoting, collection joining, encoding, exit code - runs for real, and a test asserts what that session
-# wrote. The runspace carries no mocks and no test state, so a payload that leans on either fails here as
-# it would in the real child.
+# Test double for the elevated session.
+# Production code calls `sudo --inline`.
+# This file defines `$sudoMock`.
+# A spec registers it as `Mock ... sudo -MockWith $sudoMock`,
+# so that, when we test code that runs `sudo`, no elevated process starts and no UAC prompt opens.
+# A spec that forgets this registration does not reach the real `sudo` either:
+# `Initialize-ElevatedSession` defines a global `sudo` function, which shadows `sudo.exe` and
+# throws "sudo called without a mock" as soon as tested code calls `sudo`.
+
+# The `sudo` command accepts a command line as its parameters. 
+# $sudoMock decodes that command line and runs it in a separate runspace,
+# unelevated, with easypeasy imported,
+# then sets $LASTEXITCODE from the payload error stream - 1 on error, 0 otherwise.
+# Invoke-Elevated reads this value back when it calls `$sudoMock` as the mock's response.
+
+# Payload runs in the runspace, outside the test session. This means, 
+# if the spec calls `Invoke-Elevated My-FunctionUnderTest`
+# and `My-FunctionUnderTest` calls `My-HelperFunction`, then
+# - `My-HelperFunction` cannot be mocked, the real function will be called
+# - `Should -Invoke ... My-HelperFunction` cannot be used for assertions
+# - a spec variable cannot be passed to `My-HelperFunction`, only arguments given to `Invoke-Elevated`
+#   reach the payload, and they arrive as text
+# - `$env:MY_VARIABLE` or the working directory can be set, both process-wide,
+#   and `My-HelperFunction` reads them
+#
+# A spec testing a command that elevates contains:
 #
 #   BeforeAll { . "$PSScriptRoot/../ElevatedSession.ps1"; Initialize-ElevatedSession }
 #   AfterAll  { Remove-ElevatedSession }
@@ -12,11 +33,10 @@
 #       InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Inline } }
 #   }
 #
-# Helpers and runspace are global: a function dot-sourced into BeforeAll lives in that scope alone, and the
-# mock body reads the runspace from another scope again.
+# Helpers and runspace are global:
+# a function dot-sourced into BeforeAll lives in that scope alone,
+# and the mock body reads the runspace from another scope again.
 
-# resolved while this file runs: $PSScriptRoot inside a global function resolves against the caller,
-# which would name the spec folder and let the runspace fall back to the installed module
 $global:elevatedModulePath = (Resolve-Path "$PSScriptRoot\..\easypeasy.psd1").Path
 
 function global:Initialize-ElevatedSession {
