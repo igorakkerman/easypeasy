@@ -116,6 +116,9 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 ### Usage
 - **Removed:** Entire component — `Get-Usage` and alias `du`.
 
+### Agent skill
+- **Added:** Agent skill `easypeasy` — command index, aliases, and rules on scope, elevation, `-WhatIf` and error ids, with reference file per domain.
+
 ### Packaging
 - **Changed:** Requires PowerShell 7.4 or later.
 

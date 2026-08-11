@@ -32,6 +32,7 @@ Describe 'build.ps1' {
 
     It 'leaves out the development artifact <artifact>' -ForEach @(
         @{ artifact = 'tests' }
+        @{ artifact = 'skills' }
         @{ artifact = 'AGENTS.md' }
         @{ artifact = 'CLAUDE.md' }
         @{ artifact = 'build.ps1' }

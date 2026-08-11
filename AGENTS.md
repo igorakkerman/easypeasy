@@ -48,7 +48,7 @@ No build step for development. Iterate by importing the module from source:
 Import-Module .\easypeasy.psd1 -Force
 ```
 
-`build.ps1` is only for packaging: it stages the publishable files into a folder named after the module and returns its path. `Publish-Module` packs the whole folder it is pointed at, so the staging leaves out the development artifacts: `tests/`, `AGENTS.md`, `CLAUDE.md`, `build.ps1` itself, and **everything whose name starts with a dot** (`.git/`, `.github/`, `.vscode/`, `.claude/`, and whatever tool adds the next one) — a new dot folder is excluded without touching the list. Run it to inspect what a release would ship:
+`build.ps1` is only for packaging: it stages the publishable files into a folder named after the module and returns its path. `Publish-Module` packs the whole folder it is pointed at, so the staging leaves out the development artifacts: `tests/`, `skills/`, `AGENTS.md`, `CLAUDE.md`, `build.ps1` itself, and **everything whose name starts with a dot** (`.git/`, `.github/`, `.vscode/`, `.claude/`, and whatever tool adds the next one) — a new dot folder is excluded without touching the list. Run it to inspect what a release would ship:
 
 ```powershell
 ./build.ps1 -Destination .\out
@@ -78,6 +78,13 @@ Lint with PSScriptAnalyzer (config in `.vscode/analyzersettings.psd1`):
 ```powershell
 Invoke-ScriptAnalyzer -Path . -Settings .vscode\analyzersettings.psd1 -Recurse
 ```
+
+## Agent skill
+
+- `skills/easypeasy/SKILL.md` is the whole skill an agent sees up front: the command index, the alias table, and the rules that cross domains — scope parameter sets, self-elevation, `-WhatIf`, one write per scope for a batch, `-ErrorId`. `references/<domain>.md` holds the commands of one domain, named after the module file they live in, and is read only when a task touches that domain. A detail of one domain goes to its reference file, never to `SKILL.md`.
+- **The frontmatter `description` is what makes the agent load the skill.** It names the subjects and every alias, so a prompt mentioning `addpath` or `%Path%` reaches it. Add a new alias there along with the alias table.
+- **A new public function or alias stays invisible to the agent until `SKILL.md` lists it and its reference file describes it** — the same sync the manifest needs, and `UPGRADING-v2.md` for a consumer-facing change.
+- `build.ps1` excludes `skills`, so the skill stays out of the Gallery package. The skill describes the commands, the module provides them.
 
 ## Releasing
 

@@ -510,6 +510,15 @@ To install the *easypeasy* module, follow these steps:
 
 1. Open a new PowerShell session or reload your profile to make the module available. You can check if the module is available by running: `Get-Module -ListAvailable`
 
+## Agent skill
+
+`skills/easypeasy/SKILL.md` describes this module to a coding agent:
+the command index, the aliases, and the rules on scope, elevation, `-WhatIf` and error ids.
+Each domain — system Path, environment variables, shortcuts, Start Menu, logon tasks,
+elevation, utilities — carries its own reference file, read when a task touches that domain.
+
+The skill describes the commands. Install the module to run them.
+
 ## Upgrading
 
 Version 2 renames commands, parameters and aliases, changes defaults and removes a few components. See [UPGRADING-v2.md](UPGRADING-v2.md) for the v1 → v2 migration guide.

@@ -5,9 +5,9 @@
 .DESCRIPTION
     Copies the files that make up the published module into a staging folder named after the module and
     returns the path to that folder, ready to be passed to Publish-Module. Development artifacts - the
-    tests, the instructions for agents, and everything whose name starts with a dot, such as the CI
-    workflows and the editor and agent folders - are left out, since Publish-Module packs the whole
-    folder it is pointed at.
+    tests, the agent skills, the instructions for agents, and everything whose name starts with a dot,
+    such as the CI workflows and the editor and agent folders - are left out, since Publish-Module
+    packs the whole folder it is pointed at.
 
 .PARAMETER Destination
     Folder to stage the module in. Default: a new folder in the temp folder.
@@ -39,6 +39,7 @@ $moduleName = "easypeasy"
 # the next one - so a new dot folder cannot reach the package by being forgotten here.
 $excluded = @(
     "tests"
+    "skills"
     "AGENTS.md"
     "CLAUDE.md"
     "build.ps1"
