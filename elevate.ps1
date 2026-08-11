@@ -180,14 +180,16 @@ function Invoke-Elevated {
     )
 
     # the command name and parameter names have to stay bare to parse as such; every other argument is
-    # quoted literally, so a semicolon, a space or a quote in a value cannot reach the child as syntax
+    # quoted literally, so a semicolon, a space or a quote in a value cannot reach the child as syntax.
+    # A parameter is the whole token, -Name or -Name:value
     $arguments = @(
         $Command `
             | Select-Object -Skip 1 `
             | ForEach-Object {
-                if ($_ -is [string] -and $_ -match '^-\w') {
+                if ($_ -is [string] -and $_ -match '^-\w+(:\S+)?$') {
                     $_
                 }
+                # string is IEnumerable
                 elseif ($_ -isnot [string] -and $_ -is [System.Collections.IEnumerable]) {
                     # a collection argument stays one argument: its elements are quoted and comma-joined,
                     # the syntax an array argument is written in
