@@ -417,6 +417,7 @@ function New-PowershellStartMenuShortcut {
     .NOTES
         Default scope is User (current user).
         Alias: Script for -Command, NoExit for -KeepOpen, Administrator for -Elevated.
+        Using -AllUsers without elevation prompts for elevation and creates folder and shortcut.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     # the type name is a string: the Shortcut class lives in another file, unresolvable at definition time
@@ -445,22 +446,18 @@ function New-PowershellStartMenuShortcut {
         [switch] $User
     )
 
-    $shortcutFolder = $Folder `
-        ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
-        : (Get-StartMenuProgramsLocation -AllUsers:$AllUsers)
-
     $arguments = @()
     if ($KeepOpen) {
         $arguments += "-NoExit"
     }
     $arguments += "-Command `"$Command`""
 
-    # New-Shortcut gates the creation behind its own ShouldProcess, inheriting -WhatIf / -Confirm from here.
-    # -CreateFolder states that the folder is there: under -WhatIf New-StartMenuProgramsFolder only reports it.
-    # an omitted run location stays empty: the bare pwsh target has no folder to fall back to.
-    return New-Shortcut `
-        -Location "$shortcutFolder\$Name.lnk" `
+    # New-StartMenuShortcut owns folder, elevation and the -Force check.
+    # Run location is passed bound even when empty: the bare pwsh target has no folder to fall back to.
+    return New-StartMenuShortcut `
+        -Name $Name `
         -Target "pwsh" `
+        -Folder $Folder `
         -Arguments ($arguments -join ' ') `
         -RunLocation $RunLocation `
         -Description $Description `
@@ -468,6 +465,6 @@ function New-PowershellStartMenuShortcut {
         -Hotkey $Hotkey `
         -WindowStyle $WindowStyle `
         -Elevated:$Elevated `
-        -CreateFolder `
-        -Force:$Force
+        -Force:$Force `
+        -AllUsers:$AllUsers
 }
