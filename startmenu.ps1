@@ -86,10 +86,11 @@ function New-StartMenuProgramsFolder {
     $programsLocation = Get-StartMenuProgramsLocation -AllUsers:$AllUsers
     $shortcutFolderName = "$programsLocation\$Name"
 
-    # the All Users Programs folder is writable by administrators alone: when not already elevated,
-    # the folder is created in an elevated session instead
+    # All Users Programs: admin-only write
     if ($AllUsers -and -not $WhatIfPreference -and -not (Test-Elevated)) {
-        Invoke-Elevated (ConvertTo-ElevatedCommand -Name New-StartMenuProgramsFolder -BoundParameters $PSBoundParameters)
+        if ($PSCmdlet.ShouldProcess($shortcutFolderName, "Create folder")) {
+            Invoke-Elevated New-Item -ItemType Directory $shortcutFolderName -Force -Confirm:$false
+        }
         return $shortcutFolderName
     }
 
@@ -199,24 +200,48 @@ function New-StartMenuShortcut {
         Assert-SudoAvailable
     }
 
-    # elevate before the folder is touched, so folder and shortcut are created in one elevated session
-    # behind one prompt; the record comes from reading back what that session wrote
-    if ($AllUsers -and -not $WhatIfPreference -and -not (Test-Elevated)) {
-        Invoke-Elevated (ConvertTo-ElevatedCommand -Name New-StartMenuShortcut -BoundParameters $PSBoundParameters)
+    if (-not $PSBoundParameters.ContainsKey("RunLocation")) { $RunLocation = Split-Path -Parent $Target }
 
+    if ($AllUsers -and -not (Test-Elevated) -and -not $WhatIfPreference) {
         $programsLocation = Get-StartMenuProgramsLocation -AllUsers
-        return Get-Shortcut -Location ($Folder `
-                ? "$programsLocation\$Folder\$Name.lnk" `
-                : "$programsLocation\$Name.lnk")
+        $shortcutLocation = $Folder ? "$programsLocation\$Folder\$Name.lnk" : "$programsLocation\$Name.lnk"
+
+        if (-not $Force -and (Test-Path -LiteralPath $shortcutLocation)) {
+            Write-Error "Shortcut already exists, use -Force to overwrite. location: '$shortcutLocation'" `
+                -ErrorId "ShortcutAlreadyExists" `
+                -Category ResourceExists `
+                -TargetObject $shortcutLocation `
+                -ErrorAction Stop
+        }
+
+        if (-not $PSCmdlet.ShouldProcess($shortcutLocation, "Create shortcut")) {
+            return
+        }
+
+        # Invoke-Elevated takes one flat argument list: name a switch to set it, leave it out to clear it
+        $elevatedArgument = $Elevated ? @("-Elevated") : @()
+
+        # -Force: overwrite already approved by the check above
+        Invoke-Elevated New-Shortcut `
+            -Location $shortcutLocation `
+            -Target $Target `
+            -Arguments $Arguments `
+            -RunLocation $RunLocation `
+            -Description $Description `
+            -Icon $Icon `
+            -Hotkey $Hotkey `
+            -WindowStyle $WindowStyle `
+            @elevatedArgument `
+            -CreateFolder `
+            -Force `
+            -Confirm:$false
+
+        return Get-Shortcut -Location $shortcutLocation
     }
 
     $shortcutFolder = $Folder `
         ? (New-StartMenuProgramsFolder -Name $Folder -AllUsers:$AllUsers) `
         : (Get-StartMenuProgramsLocation -AllUsers:$AllUsers)
-
-    # an omitted run location is left to New-Shortcut, which defaults it to the folder of the target.
-    # the name differs from the parameter: a [string] parameter would coerce the hashtable to its type name
-    $runLocationArgument = $PSBoundParameters.ContainsKey("RunLocation") ? @{ RunLocation = $RunLocation } : @{}
 
     # New-Shortcut gates the creation behind its own ShouldProcess, inheriting -WhatIf / -Confirm from here.
     # -CreateFolder states that the folder is there: under -WhatIf New-StartMenuProgramsFolder only reports it.
@@ -224,7 +249,7 @@ function New-StartMenuShortcut {
         -Location "$shortcutFolder\$Name.lnk" `
         -Target $Target `
         -Arguments $Arguments `
-        @runLocationArgument `
+        -RunLocation $RunLocation `
         -Description $Description `
         -Icon $Icon `
         -Hotkey $Hotkey `
@@ -299,9 +324,21 @@ function Remove-StartMenuShortcut {
             -ErrorAction Stop
     }
 
-    # as when creating: an All Users removal that is not already elevated runs in an elevated session
-    if ($AllUsers -and -not $WhatIfPreference -and -not (Test-Elevated)) {
-        Invoke-Elevated (ConvertTo-ElevatedCommand -Name Remove-StartMenuShortcut -BoundParameters $PSBoundParameters)
+    # All Users unelevated: read folder contents here,
+    # then remove shortcut or whole folder with one elevated call
+    if ($AllUsers -and -not (Test-Elevated) -and -not $WhatIfPreference) {
+        if ($PSCmdlet.ShouldProcess($shortcutLocation, "Remove shortcut")) {
+            $emptiesFolder = $shortcutFolder -ne $programsLocation -and
+                -not (Get-ChildItem -LiteralPath $shortcutFolder -Force `
+                    | Where-Object FullName -NE $shortcutLocation)
+
+            if ($emptiesFolder) {
+                Invoke-Elevated Remove-Item -LiteralPath $shortcutFolder -Recurse -Force -Confirm:$false
+            }
+            else {
+                Invoke-Elevated Remove-Item -LiteralPath $shortcutLocation -Force -Confirm:$false
+            }
+        }
         return
     }
 
