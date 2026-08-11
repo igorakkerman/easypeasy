@@ -9,7 +9,7 @@
 #   BeforeEach {
 #       Mock -ModuleName easypeasy Test-Elevated { $false }
 #       Mock -ModuleName easypeasy sudo -MockWith $sudoMock
-#       Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
+#       InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Inline } }
 #   }
 #
 # Helpers and runspace are global: a function dot-sourced into BeforeAll lives in that scope alone, and the

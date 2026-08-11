@@ -111,7 +111,7 @@ Describe 'Remove-StartMenuShortcut' {
 
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy sudo -MockWith $sudoMock
-            Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
+            InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Inline } }
         }
 
         AfterEach { Remove-Item -LiteralPath $programs -Recurse -Force -ErrorAction SilentlyContinue }
@@ -165,7 +165,7 @@ Describe 'Remove-StartMenuShortcut' {
         }
 
         It 'fails for -AllUsers before anything is removed when sudo is not available' {
-            Mock -ModuleName easypeasy Get-SudoModeValue { 0 }
+            InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Disabled } }
 
             { Remove-StartMenuShortcut -Name 'Foo' -AllUsers } | Should -Throw '*sudo*'
 

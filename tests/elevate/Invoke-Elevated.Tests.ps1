@@ -11,7 +11,7 @@ Describe 'Invoke-Elevated' {
 
     BeforeEach {
         # sudo feature enabled inline, whatever the host carries
-        Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
+        InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Inline } }
     }
 
     It 'runs the command inline as administrator via sudo' {

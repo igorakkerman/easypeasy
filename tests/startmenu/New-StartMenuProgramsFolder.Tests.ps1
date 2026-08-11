@@ -80,7 +80,7 @@ Describe 'New-StartMenuProgramsFolder' {
 
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy sudo -MockWith $sudoMock
-            Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
+            InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Inline } }
         }
 
         AfterEach { Remove-Item -LiteralPath $programs -Recurse -Force -ErrorAction SilentlyContinue }
@@ -108,7 +108,7 @@ Describe 'New-StartMenuProgramsFolder' {
         }
 
         It 'fails for -AllUsers before anything is created when sudo is not available' {
-            Mock -ModuleName easypeasy Get-SudoModeValue { 0 }
+            InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Disabled } }
 
             { New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers } | Should -Throw '*sudo*'
 

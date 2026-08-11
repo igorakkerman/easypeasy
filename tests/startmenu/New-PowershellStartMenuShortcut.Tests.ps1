@@ -129,7 +129,7 @@ Describe 'New-PowershellStartMenuShortcut' {
         BeforeEach {
             Mock -ModuleName easypeasy Test-Elevated { $false }
             Mock -ModuleName easypeasy sudo -MockWith $sudoMock
-            Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
+            InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Inline } }
         }
 
         It 'creates the shortcut in the Programs root elevated for -AllUsers' {
@@ -207,7 +207,7 @@ Describe 'New-PowershellStartMenuShortcut' {
         }
 
         It 'fails for -AllUsers before anything is created when sudo is not available' {
-            Mock -ModuleName easypeasy Get-SudoModeValue { 0 }
+            InModuleScope easypeasy { Mock Get-SudoModeValue { [SudoMode]::Disabled } }
 
             { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'NoSudo' -AllUsers } | Should -Throw '*sudo*'
 
