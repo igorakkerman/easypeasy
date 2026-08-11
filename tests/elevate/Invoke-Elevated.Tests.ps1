@@ -1,25 +1,11 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
-
-    $script:systemPathSeparator = [IO.Path]::PathSeparator
-
-    # Pester's Mock needs 'sudo' discoverable; the Windows sudo feature is absent on
-    # Server-based CI runners. Provide a stub on Path so mocks resolve — it never runs.
-    if (-not (Get-Command sudo -ErrorAction SilentlyContinue)) {
-        $script:sudoStub = Join-Path ([IO.Path]::GetTempPath()) "sudostub-$([guid]::NewGuid())"
-        New-Item -ItemType Directory -Path $script:sudoStub | Out-Null
-        Set-Content -Path (Join-Path $script:sudoStub 'sudo.cmd') -Value '@echo off'
-        $env:PATH = "$script:sudoStub$($script:systemPathSeparator)$env:PATH"
-    }
+    # the stand-in defines sudo, so Pester resolves the name on a host without the Windows sudo feature
+    . "$PSScriptRoot/../ElevatedSession.ps1"
+    Initialize-ElevatedSession
 }
 
-AfterAll {
-    if ($script:sudoStub) {
-        $env:PATH = ($env:PATH -split $script:systemPathSeparator |
-            Where-Object { $_ -ne $script:sudoStub }) -join $script:systemPathSeparator
-        Remove-Item $script:sudoStub -Recurse -Force -ErrorAction SilentlyContinue
-    }
-}
+AfterAll { Remove-ElevatedSession }
 
 Describe 'Invoke-Elevated' {
 
@@ -68,6 +54,16 @@ Describe 'Invoke-Elevated' {
 
         Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
             [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -like "try { New-Item 'C:\Sam''s Tools' } catch *"
+        }
+    }
+
+    It 'single-quotes a value that merely starts with a dash, so it cannot reach the child as a parameter' {
+        Mock -ModuleName easypeasy sudo { $global:LASTEXITCODE = 0 }
+
+        Invoke-Elevated New-Shortcut -Arguments '-Command "Get-Date"'
+
+        Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly -ParameterFilter {
+            [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1])) -like "try { New-Shortcut -Arguments '-Command `"Get-Date`"' } catch *"
         }
     }
 

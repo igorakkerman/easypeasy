@@ -1,43 +1,64 @@
-# Stands in for the elevated session Invoke-Elevated opens: the command it is handed runs in-process,
-# with Test-Elevated true for its duration. A test then asserts what the elevated session did, not which
-# command carried it there. Parameter names bind as the child shell binds them.
+# Stands in for the elevated session sudo opens: the encoded payload Invoke-Elevated builds is decoded and
+# run in a separate runspace, unelevated, with the module imported. Everything below Invoke-Elevated -
+# quoting, collection joining, encoding, exit code - runs for real, and a test asserts what that session
+# wrote. The runspace carries no mocks and no test state, so a payload that leans on either fails here as
+# it would in the real child.
 #
-#   BeforeAll { . "$PSScriptRoot/../ElevatedSession.ps1" }
+#   BeforeAll { . "$PSScriptRoot/../ElevatedSession.ps1"; Initialize-ElevatedSession }
+#   AfterAll  { Remove-ElevatedSession }
 #   BeforeEach {
-#       Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
-#       Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
+#       Mock -ModuleName easypeasy Test-Elevated { $false }
+#       Mock -ModuleName easypeasy sudo -MockWith $sudoMock
+#       Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
 #   }
+#
+# Helpers and runspace are global: a function dot-sourced into BeforeAll lives in that scope alone, and the
+# mock body reads the runspace from another scope again.
 
-$script:elevatedTestMock = { $script:elevatedSession -eq $true }
+# resolved while this file runs: $PSScriptRoot inside a global function resolves against the caller,
+# which would name the spec folder and let the runspace fall back to the installed module
+$global:elevatedModulePath = (Resolve-Path "$PSScriptRoot\..\easypeasy.psd1").Path
 
-$script:elevatedSessionMock = {
-    $script:elevatedSession = $true
-    try {
-        $named = @{}
-        $positional = @()
+function global:Initialize-ElevatedSession {
+    # placeholder command for Pester to mock and Get-Command sudo to find, where the host has no sudo
+    # feature; a call reaching it names the spec that forgot the mock
+    Set-Item -Path function:global:sudo -Value { throw "sudo called without a mock" }
 
-        for ($index = 1; $index -lt $Command.Count; $index++) {
-            $token = $Command[$index]
+    $global:elevatedRunspace = [powershell]::Create()
+    $global:elevatedRunspace.AddScript("Import-Module '$global:elevatedModulePath' -Force").Invoke() | Out-Null
 
-            if ($token -isnot [string] -or $token -notmatch '^-\w') {
-                $positional += $token
-                continue
-            }
-
-            # a parameter takes the token after it, unless that is a parameter itself: then it is a switch
-            $value = ($index + 1) -lt $Command.Count ? $Command[$index + 1] : $null
-            if ($null -ne $value -and -not ($value -is [string] -and $value -match '^-\w')) {
-                $named[$token.Substring(1)] = $value
-                $index++
-            }
-            else {
-                $named[$token.Substring(1)] = $true
-            }
-        }
-
-        & $Command[0] @named @positional | Out-Null
+    $importError = $global:elevatedRunspace.Streams.Error | Select-Object -First 1
+    if ($importError) {
+        throw "Elevated session could not import the module under test: $importError"
     }
-    finally {
-        $script:elevatedSession = $false
+
+    $global:elevatedRunspace.Commands.Clear()
+}
+
+function global:Remove-ElevatedSession {
+    if ($global:elevatedRunspace) {
+        $global:elevatedRunspace.Dispose()
+        Remove-Variable -Name elevatedRunspace -Scope Global
     }
+
+    if (Test-Path function:global:sudo) {
+        Remove-Item -Path function:global:sudo
+    }
+}
+
+$script:sudoMock = {
+    # sudo --inline <powershell> -NoProfile -EncodedCommand <payload>
+    $payload = [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($args[-1]))
+
+    $global:elevatedRunspace.Commands.Clear()
+    $global:elevatedRunspace.Streams.ClearStreams()
+    $global:elevatedRunspace.AddScript($payload).Invoke() | Out-Null
+
+    $payloadError = $global:elevatedRunspace.Streams.Error | Select-Object -First 1
+    if ($payloadError) {
+        Write-Warning "Elevated payload wrote an error: $payloadError"
+    }
+
+    # the payload exits 1 on a terminating error, which Invoke-Elevated reports as ElevatedCommandFailed
+    $global:LASTEXITCODE = $payloadError ? 1 : 0
 }

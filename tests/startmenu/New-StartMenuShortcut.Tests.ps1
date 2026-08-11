@@ -1,7 +1,10 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
     . "$PSScriptRoot/../ElevatedSession.ps1"
+    Initialize-ElevatedSession
 }
+
+AfterAll { Remove-ElevatedSession }
 
 Describe 'New-StartMenuShortcut' {
 
@@ -14,7 +17,7 @@ Describe 'New-StartMenuShortcut' {
         Mock -ModuleName easypeasy New-StartMenuProgramsFolder { "$folder\$Name" }
         Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $folder }
         Mock -ModuleName easypeasy Test-Elevated { $true }
-        Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
+        Mock -ModuleName easypeasy sudo { throw 'should not elevate' }
     }
 
     AfterAll { Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue }
@@ -118,9 +121,9 @@ Describe 'New-StartMenuShortcut' {
     Context 'when not elevated' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
-            Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
-            Mock -ModuleName easypeasy Assert-SudoAvailable { }
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy sudo -MockWith $sudoMock
+            Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
         }
 
         It 'creates the shortcut in the Programs root elevated for -AllUsers' {
@@ -129,14 +132,14 @@ Describe 'New-StartMenuShortcut' {
             "$folder\ElevatedRoot.lnk" | Should -Exist
             $shortcut.Location | Should -Be "$folder\ElevatedRoot.lnk"
             $shortcut.Target   | Should -Be 'C:\Windows\notepad.exe'
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly
         }
 
         It 'creates the shortcut in the given -Folder elevated for -AllUsers' {
             New-StartMenuShortcut -Name 'AllUsersFolder' -Target 'C:\Windows\notepad.exe' -Folder 'AllUsersDir' -AllUsers | Out-Null
 
             "$folder\AllUsersDir\AllUsersFolder.lnk" | Should -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly
         }
 
         It 'carries every field into the shortcut it creates for -AllUsers' {
@@ -180,23 +183,23 @@ Describe 'New-StartMenuShortcut' {
             New-StartMenuShortcut -Name 'UserApp' -Target 'C:\Windows\notepad.exe' | Out-Null
 
             "$folder\UserApp.lnk" | Should -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'creates nothing and does not elevate under -WhatIf' {
             New-StartMenuShortcut -Name 'WhatIfAllUsers' -Target 'C:\Windows\notepad.exe' -AllUsers -WhatIf | Out-Null
 
             "$folder\WhatIfAllUsers.lnk" | Should -Not -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'fails for -AllUsers before anything is created when sudo is not available' {
-            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+            Mock -ModuleName easypeasy Get-SudoModeValue { 0 }
 
             { New-StartMenuShortcut -Name 'NoSudo' -Target 'C:\Windows\notepad.exe' -AllUsers } | Should -Throw '*sudo*'
 
             "$folder\NoSudo.lnk" | Should -Not -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
     }
 

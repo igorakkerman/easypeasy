@@ -1,7 +1,10 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
     . "$PSScriptRoot/../ElevatedSession.ps1"
+    Initialize-ElevatedSession
 }
+
+AfterAll { Remove-ElevatedSession }
 
 Describe 'New-PowershellStartMenuShortcut' {
 
@@ -13,7 +16,7 @@ Describe 'New-PowershellStartMenuShortcut' {
     BeforeEach {
         Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $folder }
         Mock -ModuleName easypeasy Test-Elevated { $true }
-        Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
+        Mock -ModuleName easypeasy sudo { throw 'should not elevate' }
     }
 
     AfterAll { Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue }
@@ -124,9 +127,9 @@ Describe 'New-PowershellStartMenuShortcut' {
     Context 'when not elevated' {
 
         BeforeEach {
-            Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
-            Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
-            Mock -ModuleName easypeasy Assert-SudoAvailable { }
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy sudo -MockWith $sudoMock
+            Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
         }
 
         It 'creates the shortcut in the Programs root elevated for -AllUsers' {
@@ -136,14 +139,14 @@ Describe 'New-PowershellStartMenuShortcut' {
             $shortcut.Location  | Should -Be "$folder\ElevatedRoot.lnk"
             $shortcut.Target    | Should -Match 'pwsh'
             $shortcut.Arguments | Should -Be '-Command "Get-Date"'
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly
         }
 
         It 'creates the shortcut in the given -Folder elevated for -AllUsers' {
             New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersFolder' -Folder 'AllUsersDir' -AllUsers | Out-Null
 
             "$folder\AllUsersDir\AllUsersFolder.lnk" | Should -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly
         }
 
         It 'carries every field into the shortcut it creates for -AllUsers' {
@@ -193,23 +196,23 @@ Describe 'New-PowershellStartMenuShortcut' {
             New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'UserShortcut' | Out-Null
 
             "$folder\UserShortcut.lnk" | Should -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'creates nothing and does not elevate under -WhatIf' {
             New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'WhatIfAllUsers' -AllUsers -WhatIf | Out-Null
 
             "$folder\WhatIfAllUsers.lnk" | Should -Not -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'fails for -AllUsers before anything is created when sudo is not available' {
-            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+            Mock -ModuleName easypeasy Get-SudoModeValue { 0 }
 
             { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'NoSudo' -AllUsers } | Should -Throw '*sudo*'
 
             "$folder\NoSudo.lnk" | Should -Not -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
     }
 

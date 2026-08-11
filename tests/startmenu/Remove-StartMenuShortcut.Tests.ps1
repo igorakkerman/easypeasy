@@ -1,10 +1,13 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
     . "$PSScriptRoot/../ElevatedSession.ps1"
+    Initialize-ElevatedSession
     $script:wsh = New-Object -ComObject WScript.Shell
     $script:allUsers = $wsh.SpecialFolders("AllUsersPrograms")
     $script:userPrograms = $wsh.SpecialFolders("Programs")
 }
+
+AfterAll { Remove-ElevatedSession }
 
 Describe 'Remove-StartMenuShortcut' {
 
@@ -15,7 +18,7 @@ Describe 'Remove-StartMenuShortcut' {
             Mock -ModuleName easypeasy Remove-Item { }
             Mock -ModuleName easypeasy Get-ChildItem { }   # folder empty after removal
             Mock -ModuleName easypeasy Test-Elevated { $true }
-            Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
+            Mock -ModuleName easypeasy sudo { throw 'should not elevate' }
         }
 
         It 'removes the .lnk from the current user Programs root by default' {
@@ -106,9 +109,9 @@ Describe 'Remove-StartMenuShortcut' {
             New-Item -ItemType File -Path "$programs\Bar\Foo.lnk" -Force | Out-Null
             Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $programs }
 
-            Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
-            Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
-            Mock -ModuleName easypeasy Assert-SudoAvailable { }
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy sudo -MockWith $sudoMock
+            Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
         }
 
         AfterEach { Remove-Item -LiteralPath $programs -Recurse -Force -ErrorAction SilentlyContinue }
@@ -117,7 +120,7 @@ Describe 'Remove-StartMenuShortcut' {
             Remove-StartMenuShortcut -Name 'Foo' -AllUsers
 
             "$programs\Foo.lnk" | Should -Not -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly
         }
 
         It 'removes the containing -Folder that the shortcut leaves empty' {
@@ -145,29 +148,29 @@ Describe 'Remove-StartMenuShortcut' {
             Remove-StartMenuShortcut -Name 'Foo'
 
             "$programs\Foo.lnk" | Should -Not -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'removes nothing and does not elevate under -WhatIf' {
             Remove-StartMenuShortcut -Name 'Foo' -AllUsers -WhatIf
 
             "$programs\Foo.lnk" | Should -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'reports a missing shortcut before elevating' {
             { Remove-StartMenuShortcut -Name 'Absent' -AllUsers } | Should -Throw '*not found*'
 
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'fails for -AllUsers before anything is removed when sudo is not available' {
-            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+            Mock -ModuleName easypeasy Get-SudoModeValue { 0 }
 
             { Remove-StartMenuShortcut -Name 'Foo' -AllUsers } | Should -Throw '*sudo*'
 
             "$programs\Foo.lnk" | Should -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
     }
 }

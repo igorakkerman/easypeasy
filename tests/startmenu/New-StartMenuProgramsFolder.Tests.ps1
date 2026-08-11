@@ -1,13 +1,16 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
     . "$PSScriptRoot/../ElevatedSession.ps1"
+    Initialize-ElevatedSession
 }
+
+AfterAll { Remove-ElevatedSession }
 
 Describe 'New-StartMenuProgramsFolder' {
 
     BeforeEach {
         Mock -ModuleName easypeasy Test-Elevated { $true }
-        Mock -ModuleName easypeasy Invoke-Elevated { throw 'should not elevate' }
+        Mock -ModuleName easypeasy sudo { throw 'should not elevate' }
     }
 
     It 'creates the folder under Start Menu > Programs and returns its path' {
@@ -75,9 +78,9 @@ Describe 'New-StartMenuProgramsFolder' {
             New-Item -ItemType Directory -Path $programs -Force | Out-Null
             Mock -ModuleName easypeasy Get-StartMenuProgramsLocation { $programs }
 
-            Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
-            Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
-            Mock -ModuleName easypeasy Assert-SudoAvailable { }
+            Mock -ModuleName easypeasy Test-Elevated { $false }
+            Mock -ModuleName easypeasy sudo -MockWith $sudoMock
+            Mock -ModuleName easypeasy Get-SudoModeValue { 3 }
         }
 
         AfterEach { Remove-Item -LiteralPath $programs -Recurse -Force -ErrorAction SilentlyContinue }
@@ -87,30 +90,30 @@ Describe 'New-StartMenuProgramsFolder' {
 
             $result | Should -Be "$programs\EasypeasyTest"
             "$programs\EasypeasyTest" | Should -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 1 -Exactly
         }
 
         It 'does not elevate for the current user' {
             New-StartMenuProgramsFolder -Name 'EasypeasyTest' -User | Out-Null
 
             "$programs\EasypeasyTest" | Should -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'creates nothing under -WhatIf' {
             New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers -WhatIf | Out-Null
 
             "$programs\EasypeasyTest" | Should -Not -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
 
         It 'fails for -AllUsers before anything is created when sudo is not available' {
-            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+            Mock -ModuleName easypeasy Get-SudoModeValue { 0 }
 
             { New-StartMenuProgramsFolder -Name 'EasypeasyTest' -AllUsers } | Should -Throw '*sudo*'
 
             "$programs\EasypeasyTest" | Should -Not -Exist
-            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+            Should -Invoke -ModuleName easypeasy sudo -Times 0 -Exactly
         }
     }
 }
