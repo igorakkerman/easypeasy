@@ -121,7 +121,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Removed:** Entire component — `Get-Usage` and alias `du`.
 
 ### Packaging
-- **Changed:** Published package ships only the module files; tests, CI workflows, editor settings and agent instructions staged out.
+- **Changed:** Requires PowerShell 7.4 or later.
 
 ## 1.11.0 - 2026-07-13
 

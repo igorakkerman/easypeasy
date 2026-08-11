@@ -27,7 +27,7 @@
     Description          = 'Collection of utility functions and aliases to simplify and automate common tasks in Windows environments.'
 
     # Minimum version of the PowerShell engine required by this module
-    PowerShellVersion    = '7.0'
+    PowerShellVersion    = '7.4'
 
     # Name of the PowerShell host required by this module
     # PowerShellHostName = ''
