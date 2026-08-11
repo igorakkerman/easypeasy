@@ -1,5 +1,6 @@
 BeforeAll {
     Import-Module "$PSScriptRoot/../../easypeasy.psd1" -Force
+    . "$PSScriptRoot/../ElevatedSession.ps1"
 }
 
 Describe 'New-PowershellStartMenuShortcut' {
@@ -118,6 +119,98 @@ Describe 'New-PowershellStartMenuShortcut' {
 
         Should -Invoke -ModuleName easypeasy Get-StartMenuProgramsLocation -Times 1 -Exactly `
             -ParameterFilter { -not $AllUsers }
+    }
+
+    Context 'when not elevated' {
+
+        BeforeEach {
+            Mock -ModuleName easypeasy Test-Elevated -MockWith $elevatedTestMock
+            Mock -ModuleName easypeasy Invoke-Elevated -MockWith $elevatedSessionMock
+            Mock -ModuleName easypeasy Assert-SudoAvailable { }
+        }
+
+        It 'creates the shortcut in the Programs root elevated for -AllUsers' {
+            $shortcut = New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'ElevatedRoot' -AllUsers
+
+            "$folder\ElevatedRoot.lnk" | Should -Exist
+            $shortcut.Location  | Should -Be "$folder\ElevatedRoot.lnk"
+            $shortcut.Target    | Should -Match 'pwsh'
+            $shortcut.Arguments | Should -Be '-Command "Get-Date"'
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+        }
+
+        It 'creates the shortcut in the given -Folder elevated for -AllUsers' {
+            New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersFolder' -Folder 'AllUsersDir' -AllUsers | Out-Null
+
+            "$folder\AllUsersDir\AllUsersFolder.lnk" | Should -Exist
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 1 -Exactly
+        }
+
+        It 'carries every field into the shortcut it creates for -AllUsers' {
+            New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersFields' -AllUsers `
+                -KeepOpen `
+                -RunLocation 'C:\temp' `
+                -Description 'Show the date' `
+                -Icon 'C:\Windows\explorer.exe,3' `
+                -Hotkey 'Ctrl+Alt+D' `
+                -WindowStyle Maximized `
+                -Elevated | Out-Null
+
+            $result = Get-Shortcut "$folder\AllUsersFields.lnk"
+            $result.Arguments       | Should -Be '-NoExit -Command "Get-Date"'
+            $result.RunLocation     | Should -Be 'C:\temp'
+            $result.Description     | Should -Be 'Show the date'
+            $result.Icon.ToString() | Should -Be 'C:\Windows\explorer.exe,3'
+            $result.Hotkey          | Should -Be 'Alt+Ctrl+D'
+            $result.WindowStyle     | Should -Be 'Maximized'
+            $result.Elevated        | Should -BeTrue
+        }
+
+        It 'leaves the run location empty for -AllUsers when it is omitted' {
+            New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersNoRunLocation' -AllUsers | Out-Null
+
+            (Get-Shortcut "$folder\AllUsersNoRunLocation.lnk").RunLocation | Should -BeNullOrEmpty
+        }
+
+        It 'fails for -AllUsers when the shortcut already exists without -Force' {
+            New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersDup' -AllUsers | Out-Null
+
+            { New-PowershellStartMenuShortcut -Command 'Get-ChildItem' -Name 'AllUsersDup' -AllUsers } |
+                Should -Throw '*already exists*'
+
+            (Get-Shortcut "$folder\AllUsersDup.lnk").Arguments | Should -Match 'Get-Date'
+        }
+
+        It 'overwrites an existing shortcut for -AllUsers with -Force' {
+            New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'AllUsersOver' -AllUsers | Out-Null
+
+            New-PowershellStartMenuShortcut -Command 'Get-ChildItem' -Name 'AllUsersOver' -AllUsers -Force | Out-Null
+
+            (Get-Shortcut "$folder\AllUsersOver.lnk").Arguments | Should -Match 'Get-ChildItem'
+        }
+
+        It 'does not elevate for the current user' {
+            New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'UserShortcut' | Out-Null
+
+            "$folder\UserShortcut.lnk" | Should -Exist
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'creates nothing and does not elevate under -WhatIf' {
+            New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'WhatIfAllUsers' -AllUsers -WhatIf | Out-Null
+
+            "$folder\WhatIfAllUsers.lnk" | Should -Not -Exist
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
+
+        It 'fails for -AllUsers before anything is created when sudo is not available' {
+            Mock -ModuleName easypeasy Assert-SudoAvailable { throw 'sudo not available' }
+
+            { New-PowershellStartMenuShortcut -Command 'Get-Date' -Name 'NoSudo' -AllUsers } | Should -Throw '*sudo*'
+
+            "$folder\NoSudo.lnk" | Should -Not -Exist
+            Should -Invoke -ModuleName easypeasy Invoke-Elevated -Times 0 -Exactly
+        }
     }
 
     It 'fails when the shortcut already exists without -Force' {
