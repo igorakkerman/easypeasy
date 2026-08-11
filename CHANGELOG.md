@@ -27,7 +27,6 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** `Remove-StartMenuShortcut` reports missing shortcut with error id `ShortcutNotFound`, category and target.
 - **Changed:** `-Name` is positional on `New-StartMenuShortcut`, `New-PowershellStartMenuShortcut` and `New-StartMenuProgramsFolder`, matching `Remove-StartMenuShortcut`.
 - **Changed:** `-Target` on `New-StartMenuShortcut` and `-Command` on `New-PowershellStartMenuShortcut` are positional.
-- **Changed:** Start Menu Programs folder resolved per call, so a folder relocated during session is picked up.
 - **Changed:** `Get-StartMenuProgramsPath` renamed to `Get-StartMenuProgramsLocation`.
 - **Fixed:** `-AllUsers` write elevates through User Account Control when not administrator, instead of failing with access denied.
 - **Added:** `-AllUsers` write reports Windows sudo missing, disabled or forbidden in inline mode before creating or removing anything.
@@ -60,8 +59,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `-Force` on `Add-SystemPathLocation` — adds location naming no existing folder.
 - **Removed:** Aliases `-Prepend` and `-Start` on `Add-SystemPathLocation`.
 - **Changed:** Warning for location already on or not on system Path names scope.
-- **Fixed:** Aliases `addpath` and `rmpath` are exported;
-  previously missing from the manifest.
+- **Fixed:** Aliases `addpath` and `rmpath` are exported.
 - **Changed:** `Set-EnvironmentVariable` and `Remove-EnvironmentVariable` apply the change to the current process immediately.
 - **Added:** `-Expandable` on `Set-EnvironmentVariable` — writes `REG_EXPAND_SZ` so a `%…%` reference stays as indirection; default `REG_SZ`.
 - **Added:** `-Expandable` on `Get-EnvironmentVariable` — reads stored expandable value without evaluating `%…%` references.
@@ -75,7 +73,7 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Changed:** Process Path carries each location as its scope Path spells it, `%…%` references expanded and nothing else.
 - **Changed:** `Add-SystemPathLocation` names resolved location, previously expanded, in `PathLocationNotFound`.
 - **Changed:** `Get-SystemPath -Join` returns stored (expandable) locations.
-- **Fixed:** Process Path derived from machine and user Path instead of patched, so a location carried by both scopes is listed once per scope and a removal in one scope leaves the other scope's location in place. Locations only the session knows are kept.
+- **Fixed:** Process Path lists location carried by both scopes once per scope, and removal in one scope leaves other scope's location in place. Locations only session knows are kept.
 - **Added:** `Sync-SystemPath` and alias `syncpath` — rebuild system Path of current shell from persisted Path, for a change made outside easypeasy.
 - **Added:** `Get-Environment` — returns environment variables as records carrying scope, name and value; both scopes by default, or `-Machine` / `-User`.
 - **Fixed:** `Remove-EnvironmentVariable` deletes registry value instead of leaving empty tombstone.
@@ -86,26 +84,24 @@ Dropping legacy parameters and aliases of little use, the theme component and th
 - **Added:** `-Machine` write reports Windows sudo missing, disabled or forbidden in inline mode before reading or writing anything.
 - **Changed:** `Add-SystemPathLocation`, `Move-SystemPathLocation` and `Set-EnvironmentVariable -Expandable` name each missing variable of `%...%` reference in warning of its own and use value anyway, keeping reference as indirection. Previously `Add-SystemPathLocation` rejected it as missing folder and reference resolved against current directory.
 - **Changed:** Reads and removals stay quiet about `%...%` reference no variable resolves; listing accents it instead.
-- **Changed:** Location that does not resolve is matched, selected and deduplicated on its stored value, so `%...%` reference is found, removed and moved by the reference itself.
+- **Changed:** Location that does not resolve is matched, selected and deduplicated on its stored value, including `%...%` references.
 - **Fixed:** Location carrying unresolved `%...%` reference tagged with its persisted scope on effective read, previously always `Process`.
-- **Changed:** `Add-SystemPathLocation` and `Remove-SystemPathLocation` run whole `-Machine` write elevated, so Path is read and written in same session and never crosses elevation boundary.
-- **Changed:** `Move-SystemPathLocation` writes target Path before source Path.
-- **Fixed:** `Invoke-Elevated` quotes every argument, doubling embedded single quote.
+- **Fixed:** `Invoke-Elevated` passes every argument on literally, whatever it holds — whitespace, semicolon or quote.
 - **Fixed:** `Invoke-Elevated` reports command elevated session cannot resolve, instead of reporting success.
 - **Changed:** `Assert-Administrator` renamed to `Assert-Elevated`.
 - **Added:** `Test-Elevated` — returns whether the current session is elevated.
 - **Added:** Error id, category and target on every reported error.
 - **Changed:** `Backup-SystemPath` returns location of backup file.
 - **Added:** `-Location` on `Add-`, `Remove-`, `Move-` and `Test-SystemPathLocation` takes locations from pipeline — `path Git | rmpath`.
-- **Added:** `-Entry` on `Remove-SystemPathLocation` — takes `SystemPathLocation` from pipeline and removes each from scope it carries, so location on both scopes goes from both.
+- **Added:** `-Entry` on `Remove-SystemPathLocation` — takes `SystemPathLocation` from pipeline and removes each from scope it carries.
 - **Added:** `-Machine` and `-User` select which piped entries `Remove-SystemPathLocation` removes, rather than where from.
 - **Added:** `Remove-SystemPathLocation` drops piped entry of Process scope from Path of current shell, neither persisted scope written.
-- **Added:** `-Location` on `Add-`, `Remove-`, `Move-` and `Test-SystemPathLocation` takes several locations, applied in one write per scope and one elevation.
-- **Added:** `ToString()` on `SystemPathLocation` returns `StoredValue`, so entry piped to location command names entry itself.
-- **Added:** `Invoke-Elevated` passes collection argument on as array argument, quoting each element.
+- **Added:** `-Location` on `Add-`, `Remove-`, `Move-` and `Test-SystemPathLocation` takes several locations.
+- **Added:** `ToString()` on `SystemPathLocation` returns `StoredValue`.
+- **Added:** `Invoke-Elevated` passes collection argument on as array argument.
 - **Changed:** `Test-SystemPathLocation` takes `-Machine`, `-User` and `-Effective` as parameter sets, matching `Get-SystemPath`.
 - **Changed:** `Remove-DuplicateSystemPathLocations` rejects `-KeepMachine` / `-KeepUser` next to a single scope, instead of ignoring them.
-- **Added:** `Optimize-SystemPath` (alias `cleanpath`) — cleans up system Path of machine and user; so far removes duplicate locations, keeping machine copy on overlap. Later versions clean up more; added step is no breaking change.
+- **Added:** `Optimize-SystemPath` (alias `cleanpath`) — cleans up system Path of machine and user; so far removes duplicate locations, keeping machine copy on overlap.
 - **Fixed:** `Stop-Explorer` treats absent Explorer process as success.
 
 ### Scheduled tasks
